@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PlayerEvaluationChart } from "@/components/player-evaluation-chart";
 
 const EVAL_TYPE_LABELS: Record<string, string> = {
   technique: "Technique",
@@ -106,6 +107,11 @@ export function PlayerEvaluations({
       <p className="mb-4 mt-2 text-xs" style={{ color: "var(--text-faint)" }}>
         Cliquer sur un indice affiche le détail de ses évaluations ci-dessous.
       </p>
+
+      <div className="card mb-4">
+        <h2 className="mb-3 font-semibold">Progression</h2>
+        <PlayerEvaluationChart evaluations={evaluations} />
+      </div>
 
       <div className="card">
         <div className="mb-3 flex items-center justify-between">
