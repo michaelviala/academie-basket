@@ -1,7 +1,17 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { calculateAge } from "@/lib/data";
-import { addEvaluation, addGoal, addPhysicalTest, addSelfAssessment, deletePhysicalTest, updateDevelopmentPlan } from "./actions";
+import { calculateAge, requireProfile } from "@/lib/data";
+import {
+  addEvaluation,
+  addGoal,
+  addPhysicalTest,
+  addSelfAssessment,
+  declareInjury,
+  deleteInjury,
+  deletePhysicalTest,
+  updateDevelopmentPlan,
+  updateInjury,
+} from "./actions";
 import { GoalStatusForm } from "@/components/goal-status-form";
 import { PlayerPhoto } from "@/components/player-photo";
 import { PlayerEvaluations } from "@/components/player-evaluations";
@@ -9,6 +19,7 @@ import { EvaluationForm } from "@/components/evaluation-form";
 import { DevelopmentPlanForm } from "@/components/development-plan-form";
 import { SelfAssessmentForm } from "@/components/self-assessment-form";
 import { PhysicalTests } from "@/components/physical-tests";
+import { Injuries } from "@/components/injuries";
 
 const EVAL_TYPE_LABELS: Record<string, string> = {
   technique: "Technique",
@@ -43,7 +54,9 @@ const SKILL_CATEGORY_LABELS: Record<string, string> = {
 
 export default async function JoueurPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const profile = await requireProfile();
   const supabase = await createClient();
+  const canSeeInjuries = ["admin", "directeur_sportif", "preparateur_physique"].includes(profile.role);
 
   const { data: player } = await supabase
     .from("players")
@@ -77,6 +90,14 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
         .eq("player_id", id)
         .order("test_date", { ascending: false }),
     ]);
+
+  const { data: injuries } = canSeeInjuries
+    ? await supabase
+        .from("injuries")
+        .select("id, injury_type, zone, start_date, estimated_duration, restrictions, return_protocol, expected_return_date, status, comment")
+        .eq("player_id", id)
+        .order("start_date", { ascending: false })
+    : { data: null };
 
   const attendanceTotal = attendance?.length ?? 0;
   const attendancePresent = attendance?.filter((a) => a.status === "present").length ?? 0;
@@ -265,6 +286,23 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
           deleteAction={deletePhysicalTest}
         />
       </section>
+
+      {/* BLESSURES (accès restreint) */}
+      {canSeeInjuries && (
+        <section className="card">
+          <h2 className="mb-1 font-semibold">Blessures</h2>
+          <p className="mb-4 text-xs" style={{ color: "var(--text-faint)" }}>
+            Module sécurisé — accès restreint : administrateur, directeur sportif, préparateur physique.
+          </p>
+          <Injuries
+            playerId={player.id}
+            injuries={injuries ?? []}
+            declareAction={declareInjury}
+            updateAction={updateInjury}
+            deleteAction={deleteInjury}
+          />
+        </section>
+      )}
 
       {/* CARNET TECHNIQUE */}
       <section className="card">

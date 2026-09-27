@@ -1,7 +1,28 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { requireProfile } from "@/lib/data";
+import { notifyStaffRoles } from "@/lib/notifications";
 import { revalidatePath } from "next/cache";
+
+const INJURY_ACTIVE_STATUSES = ["en_cours", "en_reprise"];
+
+async function syncPlayerInjuryStatus(playerId: string) {
+  const supabase = await createClient();
+
+  const [{ data: active }, { data: player }] = await Promise.all([
+    supabase.from("injuries").select("id").eq("player_id", playerId).in("status", INJURY_ACTIVE_STATUSES).limit(1),
+    supabase.from("players").select("status").eq("id", playerId).maybeSingle(),
+  ]);
+
+  if (active && active.length > 0) {
+    if (player?.status !== "blesse") {
+      await supabase.from("players").update({ status: "blesse" }).eq("id", playerId);
+    }
+  } else if (player?.status === "blesse") {
+    await supabase.from("players").update({ status: "actif" }).eq("id", playerId);
+  }
+}
 
 export async function addEvaluation(playerId: string, formData: FormData) {
   const supabase = await createClient();
@@ -150,6 +171,69 @@ export async function deletePhysicalTest(playerId: string, testId: string) {
   const { error } = await supabase.from("physical_tests").delete().eq("id", testId);
   if (error) return { error: error.message };
   revalidatePath(`/joueurs/${playerId}`);
+  return { success: true };
+}
+
+export async function declareInjury(playerId: string, formData: FormData) {
+  const profile = await requireProfile();
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("injuries").insert({
+    player_id: playerId,
+    injury_type: String(formData.get("injury_type") ?? ""),
+    zone: (formData.get("zone") as string) || null,
+    start_date: (formData.get("start_date") as string) || new Date().toISOString().slice(0, 10),
+    estimated_duration: (formData.get("estimated_duration") as string) || null,
+    restrictions: (formData.get("restrictions") as string) || null,
+    return_protocol: (formData.get("return_protocol") as string) || null,
+    expected_return_date: (formData.get("expected_return_date") as string) || null,
+    comment: (formData.get("comment") as string) || null,
+    status: "en_cours",
+    created_by: profile.id,
+  });
+
+  if (error) throw new Error(error.message);
+  await syncPlayerInjuryStatus(playerId);
+
+  await notifyStaffRoles(
+    ["admin", "directeur_sportif", "preparateur_physique"],
+    "injury",
+    "Blessure déclarée pour un joueur.",
+    playerId
+  );
+
+  revalidatePath(`/joueurs/${playerId}`);
+  revalidatePath("/dashboard");
+}
+
+export async function updateInjury(playerId: string, injuryId: string, formData: FormData) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("injuries")
+    .update({
+      status: String(formData.get("status") ?? "en_cours"),
+      restrictions: (formData.get("restrictions") as string) || null,
+      return_protocol: (formData.get("return_protocol") as string) || null,
+      expected_return_date: (formData.get("expected_return_date") as string) || null,
+      comment: (formData.get("comment") as string) || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", injuryId);
+
+  if (error) throw new Error(error.message);
+  await syncPlayerInjuryStatus(playerId);
+  revalidatePath(`/joueurs/${playerId}`);
+  revalidatePath("/dashboard");
+}
+
+export async function deleteInjury(playerId: string, injuryId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("injuries").delete().eq("id", injuryId);
+  if (error) return { error: error.message };
+  await syncPlayerInjuryStatus(playerId);
+  revalidatePath(`/joueurs/${playerId}`);
+  revalidatePath("/dashboard");
   return { success: true };
 }
 
