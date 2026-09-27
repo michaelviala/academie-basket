@@ -40,8 +40,8 @@ export default function LoginPage() {
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-orange-600 text-xl font-bold text-white">
             🏀
           </div>
-          <h1 className="text-xl font-bold">Académie Basket</h1>
-          <p className="text-sm text-slate-500">Suivi de la progression des joueurs</p>
+          <h1 className="display text-2xl font-bold tracking-wide">ACADÉMIE BASKET</h1>
+          <p className="text-sm" style={{ color: "var(--text-faint)" }}>Suivi de la progression des joueurs</p>
         </div>
 
         <form onSubmit={handleSubmit} className="card space-y-4">
@@ -71,7 +71,12 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
+            <p
+              className="rounded-lg px-3 py-2 text-sm"
+              style={{ background: "rgba(239,68,68,0.12)", color: "#f87171" }}
+            >
+              {error}
+            </p>
           )}
 
           <button type="submit" disabled={loading} className="btn-primary w-full">
@@ -79,11 +84,11 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="mt-4 text-center text-xs text-slate-400">
+        <p className="mt-4 text-center text-xs" style={{ color: "var(--text-faint)" }}>
           Accès réservé au staff, joueurs et parents de l&apos;académie.
         </p>
         <p className="mt-2 text-center text-xs">
-          <a href="/signup" className="font-medium text-orange-600 hover:underline">
+          <a href="/signup" className="font-medium hover:underline" style={{ color: "var(--brand)" }}>
             Créer un compte
           </a>
         </p>
