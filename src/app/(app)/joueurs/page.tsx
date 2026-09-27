@@ -19,10 +19,10 @@ const STATUS_COLORS: Record<string, string> = {
 export default async function JoueursPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; team?: string }>;
+  searchParams: Promise<{ q?: string; category?: string }>;
 }) {
   const profile = await requireProfile();
-  const { q } = await searchParams;
+  const { q, category } = await searchParams;
   const supabase = await createClient();
 
   let query = supabase
@@ -34,7 +34,21 @@ export default async function JoueursPage({
     query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%`);
   }
 
-  const { data: players } = await query;
+  const { data: allPlayers } = await query;
+
+  // Catégories disponibles (dérivées des équipes), avec le nombre de joueurs dans chacune
+  const categoryCounts = new Map<string, number>();
+  allPlayers?.forEach((p) => {
+    const cat = p.teams?.category ?? "Sans catégorie";
+    categoryCounts.set(cat, (categoryCounts.get(cat) ?? 0) + 1);
+  });
+  const categories = Array.from(categoryCounts.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+
+  const players = category
+    ? allPlayers?.filter((p) => (p.teams?.category ?? "Sans catégorie") === category)
+    : allPlayers;
+
+  const qParam = q ? `q=${encodeURIComponent(q)}` : "";
 
   const canCreate = ["admin", "directeur_sportif", "coach"].includes(profile.role);
 
@@ -60,6 +74,34 @@ export default async function JoueursPage({
         />
         <button className="btn-secondary" type="submit">Rechercher</button>
       </form>
+
+      <div className="flex flex-wrap gap-2">
+        <Link
+          href={`/joueurs${qParam ? `?${qParam}` : ""}`}
+          className="rounded-full px-3 py-1.5 text-xs font-medium"
+          style={{
+            background: !category ? "var(--brand)" : "var(--surf-2)",
+            color: !category ? "#fff" : "var(--text-dim)",
+            border: "1px solid var(--border)",
+          }}
+        >
+          Toutes ({allPlayers?.length ?? 0})
+        </Link>
+        {categories.map(([cat, count]) => (
+          <Link
+            key={cat}
+            href={`/joueurs?${qParam ? `${qParam}&` : ""}category=${encodeURIComponent(cat)}`}
+            className="rounded-full px-3 py-1.5 text-xs font-medium"
+            style={{
+              background: category === cat ? "var(--brand)" : "var(--surf-2)",
+              color: category === cat ? "#fff" : "var(--text-dim)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            {cat} ({count})
+          </Link>
+        ))}
+      </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {players?.map((p) => (
