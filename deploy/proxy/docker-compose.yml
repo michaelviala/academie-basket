@@ -1,0 +1,45 @@
+# Reverse proxy partagé (une seule fois sur le VPS, pour TOUS les sous-domaines de club30.cloud)
+# Gère automatiquement le routage par sous-domaine + les certificats HTTPS (Let's Encrypt)
+# À chaque nouvelle app, il suffit d'ajouter VIRTUAL_HOST / LETSENCRYPT_HOST dans son propre
+# docker-compose.yml et de la connecter au réseau "web" — rien à reconfigurer ici.
+
+services:
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy
+    container_name: nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - conf:/etc/nginx/conf.d
+      - vhost:/etc/nginx/vhost.d
+      - html:/usr/share/nginx/html
+      - certs:/etc/nginx/certs:ro
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    networks:
+      - web
+
+  acme-companion:
+    image: nginxproxy/acme-companion
+    container_name: nginx-proxy-acme
+    restart: unless-stopped
+    volumes_from:
+      - nginx-proxy
+    volumes:
+      - certs:/etc/nginx/certs
+      - acme:/etc/acme.sh
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - web
+
+networks:
+  web:
+    external: true
+
+volumes:
+  conf:
+  vhost:
+  html:
+  certs:
+  acme:
