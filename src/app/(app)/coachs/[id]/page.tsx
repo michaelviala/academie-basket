@@ -7,8 +7,15 @@ import { CoachContactForm } from "@/components/coach-contact-form";
 import { CoachTeamsManager } from "@/components/coach-teams-manager";
 import { updateCoachContact, assignTeam } from "./actions";
 
-export default async function CoachPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CoachPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ temp_password?: string }>;
+}) {
   const { id } = await params;
+  const { temp_password: tempPassword } = await searchParams;
   const viewer = await requireProfile();
   if (!["admin", "directeur_sportif"].includes(viewer.role)) notFound();
 
@@ -52,6 +59,27 @@ export default async function CoachPage({ params }: { params: Promise<{ id: stri
       <Link href="/coachs" className="text-xs" style={{ color: "var(--text-faint)" }}>
         ← Retour aux coachs
       </Link>
+
+      {tempPassword && (
+        <div
+          className="card"
+          style={{ border: "1px solid var(--brand)", background: "rgba(255,106,31,0.08)" }}
+        >
+          <p className="font-semibold">Compte créé — mot de passe temporaire</p>
+          <p className="mt-1 text-sm" style={{ color: "var(--text-dim)" }}>
+            Transmets ces identifiants à {coach.full_name} (par exemple par téléphone ou en personne — pas par email en
+            clair). Ce mot de passe ne sera plus affiché après avoir quitté cette page.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-4 text-sm">
+            <span>
+              Email : <span className="font-mono">{coach.email}</span>
+            </span>
+            <span>
+              Mot de passe : <span className="font-mono">{tempPassword}</span>
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* PROFIL */}
       <div className="card flex flex-wrap items-center gap-4">

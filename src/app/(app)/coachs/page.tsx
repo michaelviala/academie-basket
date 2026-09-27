@@ -19,11 +19,14 @@ export default async function CoachsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Coachs</h1>
-        <p className="text-sm" style={{ color: "var(--text-faint)" }}>
-          Un compte coach est créé via l&apos;inscription (rôle attribué ensuite dans Administration). Cette page réunit leur fiche, leurs équipes et leurs créneaux.
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Coachs</h1>
+          <p className="text-sm" style={{ color: "var(--text-faint)" }}>
+            Fiche, équipes entraînées et créneaux de chaque coach.
+          </p>
+        </div>
+        <Link href="/coachs/nouveau" className="btn-primary">+ Nouveau coach</Link>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
