@@ -68,9 +68,19 @@ export default async function JoueursPage({
             href={`/joueurs/${p.id}`}
             className="card flex items-center gap-3 hover:border-orange-300"
           >
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-100 text-lg font-bold text-slate-500">
-              {p.first_name[0]}
-              {p.last_name[0]}
+            <div
+              className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full text-lg font-bold"
+              style={{ background: "var(--surf-2)", color: "var(--text-dim)" }}
+            >
+              {p.photo_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={p.photo_url} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <>
+                  {p.first_name[0]}
+                  {p.last_name[0]}
+                </>
+              )}
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate font-semibold">{p.first_name} {p.last_name}</p>

@@ -27,6 +27,50 @@ export async function addEvaluation(playerId: string, formData: FormData) {
   revalidatePath(`/joueurs/${playerId}`);
 }
 
+const PHOTO_BUCKET = "player-photos";
+
+export async function uploadPlayerPhoto(playerId: string, formData: FormData) {
+  const file = formData.get("photo") as File | null;
+  if (!file || file.size === 0) return { error: "Aucun fichier sélectionné." };
+  if (!file.type.startsWith("image/")) return { error: "Le fichier doit être une image." };
+  if (file.size > 3 * 1024 * 1024) return { error: "Image trop lourde (3 Mo max)." };
+
+  const supabase = await createClient();
+
+  const ext = file.name.split(".").pop() || "jpg";
+  const path = `${playerId}-${Date.now()}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(PHOTO_BUCKET)
+    .upload(path, file, { upsert: true, contentType: file.type });
+
+  if (uploadError) return { error: uploadError.message };
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+
+  const { error: updateError } = await supabase
+    .from("players")
+    .update({ photo_url: publicUrl })
+    .eq("id", playerId);
+
+  if (updateError) return { error: updateError.message };
+
+  revalidatePath(`/joueurs/${playerId}`);
+  revalidatePath("/joueurs");
+  return { success: true, url: publicUrl };
+}
+
+export async function removePlayerPhoto(playerId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("players").update({ photo_url: null }).eq("id", playerId);
+  if (error) return { error: error.message };
+  revalidatePath(`/joueurs/${playerId}`);
+  revalidatePath("/joueurs");
+  return { success: true };
+}
+
 export async function addGoal(playerId: string, formData: FormData) {
   const supabase = await createClient();
 

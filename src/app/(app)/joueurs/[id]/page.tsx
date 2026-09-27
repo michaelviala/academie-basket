@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { calculateAge } from "@/lib/data";
 import { addEvaluation, addGoal } from "./actions";
 import { GoalStatusForm } from "@/components/goal-status-form";
+import { PlayerPhoto } from "@/components/player-photo";
 
 const EVAL_TYPE_LABELS: Record<string, string> = {
   technique: "Technique",
@@ -76,17 +77,19 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
     <div className="space-y-6">
       {/* PROFIL */}
       <div className="card flex flex-wrap items-center gap-4">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-2xl font-bold text-slate-500">
-          {player.first_name[0]}{player.last_name[0]}
-        </div>
+        <PlayerPhoto
+          playerId={player.id}
+          initialPhotoUrl={player.photo_url}
+          initials={`${player.first_name[0]}${player.last_name[0]}`}
+        />
         <div className="flex-1">
           <h1 className="text-2xl font-bold">{player.first_name} {player.last_name}</h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm" style={{ color: "var(--text-faint)" }}>
             {player.teams?.name ?? "Sans équipe"} ({player.teams?.category ?? "—"}) · {calculateAge(player.birth_date)} ans
             {player.jersey_number ? ` · #${player.jersey_number}` : ""} · {player.primary_position ?? "Poste non défini"}
           </p>
         </div>
-        <span className="badge bg-slate-100 text-slate-600">{player.status}</span>
+        <span className="badge">{player.status}</span>
       </div>
 
       {/* INDICES */}
