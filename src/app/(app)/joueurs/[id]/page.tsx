@@ -1,13 +1,14 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { calculateAge } from "@/lib/data";
-import { addEvaluation, addGoal, addSelfAssessment, updateDevelopmentPlan } from "./actions";
+import { addEvaluation, addGoal, addPhysicalTest, addSelfAssessment, deletePhysicalTest, updateDevelopmentPlan } from "./actions";
 import { GoalStatusForm } from "@/components/goal-status-form";
 import { PlayerPhoto } from "@/components/player-photo";
 import { PlayerEvaluations } from "@/components/player-evaluations";
 import { EvaluationForm } from "@/components/evaluation-form";
 import { DevelopmentPlanForm } from "@/components/development-plan-form";
 import { SelfAssessmentForm } from "@/components/self-assessment-form";
+import { PhysicalTests } from "@/components/physical-tests";
 
 const EVAL_TYPE_LABELS: Record<string, string> = {
   technique: "Technique",
@@ -52,7 +53,7 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
 
   if (!player) notFound();
 
-  const [{ data: skills }, { data: evaluations }, { data: goals }, { data: attendance }, { data: devPlan }, { data: selfAssessments }] =
+  const [{ data: skills }, { data: evaluations }, { data: goals }, { data: attendance }, { data: devPlan }, { data: selfAssessments }, { data: physicalTests }] =
     await Promise.all([
       supabase.from("skills").select("id, category, name").order("category"),
       supabase
@@ -70,6 +71,11 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
         .eq("player_id", id)
         .order("created_at", { ascending: false })
         .limit(10),
+      supabase
+        .from("physical_tests")
+        .select("id, test_type, result, unit, test_date, comment")
+        .eq("player_id", id)
+        .order("test_date", { ascending: false }),
     ]);
 
   const attendanceTotal = attendance?.length ?? 0;
@@ -244,6 +250,20 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
           À remplir par le joueur lui-même, régulièrement.
         </p>
         <SelfAssessmentForm playerId={player.id} history={selfAssessments ?? []} action={addSelfAssessment} />
+      </section>
+
+      {/* PREPARATION PHYSIQUE */}
+      <section className="card">
+        <h2 className="mb-1 font-semibold">Préparation physique</h2>
+        <p className="mb-4 text-xs" style={{ color: "var(--text-faint)" }}>
+          Tests physiques (sprint, détente, agilité, endurance...) et suivi de la progression.
+        </p>
+        <PhysicalTests
+          playerId={player.id}
+          tests={physicalTests ?? []}
+          addAction={addPhysicalTest}
+          deleteAction={deletePhysicalTest}
+        />
       </section>
 
       {/* CARNET TECHNIQUE */}

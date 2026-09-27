@@ -125,6 +125,34 @@ export async function addSelfAssessment(playerId: string, formData: FormData) {
   revalidatePath(`/joueurs/${playerId}`);
 }
 
+export async function addPhysicalTest(playerId: string, formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { error } = await supabase.from("physical_tests").insert({
+    player_id: playerId,
+    test_type: String(formData.get("test_type") ?? ""),
+    result: Number(formData.get("result")),
+    unit: String(formData.get("unit") ?? ""),
+    test_date: (formData.get("test_date") as string) || new Date().toISOString().slice(0, 10),
+    comment: (formData.get("comment") as string) || null,
+    evaluator_id: user?.id ?? null,
+  });
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/joueurs/${playerId}`);
+}
+
+export async function deletePhysicalTest(playerId: string, testId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("physical_tests").delete().eq("id", testId);
+  if (error) return { error: error.message };
+  revalidatePath(`/joueurs/${playerId}`);
+  return { success: true };
+}
+
 export async function updateGoalStatus(formData: FormData) {
   const supabase = await createClient();
   const goalId = String(formData.get("goal_id"));
