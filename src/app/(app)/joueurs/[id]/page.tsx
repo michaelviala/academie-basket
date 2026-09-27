@@ -88,6 +88,16 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
   });
   timeline.sort((a, b) => (a.date < b.date ? 1 : -1));
 
+  // Moyenne globale : moyenne des 4 moyennes par rubrique (technique/tactique/physique/mental)
+  const EVAL_TYPES = ["technique", "tactique", "physique", "mental"] as const;
+  const avgByType = (type: string) => {
+    const rows = (evaluations ?? []).filter((e) => e.evaluation_type === type);
+    if (rows.length === 0) return null;
+    return rows.reduce((s, r) => s + Number(r.score), 0) / rows.length;
+  };
+  const typeAverages = EVAL_TYPES.map((t) => avgByType(t)).filter((v): v is number => v !== null);
+  const globalAverage = typeAverages.length > 0 ? typeAverages.reduce((s, v) => s + v, 0) / typeAverages.length : null;
+
   // Carnet technique : apprentissages (évaluations liées à une compétence) groupés par catégorie
   type LogbookEntry = {
     id: string;
@@ -108,28 +118,47 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
   return (
     <div className="space-y-6">
       {/* PROFIL */}
-      <div className="card flex flex-wrap items-start gap-4">
-        <PlayerPhoto
-          playerId={player.id}
-          initialPhotoUrl={player.photo_url}
-          initials={`${player.first_name[0]}${player.last_name[0]}`}
-        />
-        <div className="flex-1">
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-bold">{player.first_name} {player.last_name}</h1>
-            <span className="badge">{player.status}</span>
-          </div>
+      <div className="flex flex-wrap items-stretch gap-4">
+        <div className="card flex flex-1 flex-wrap items-start gap-4" style={{ minWidth: 280 }}>
+          <PlayerPhoto
+            playerId={player.id}
+            initialPhotoUrl={player.photo_url}
+            initials={`${player.first_name[0]}${player.last_name[0]}`}
+          />
+          <div className="flex-1">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl font-bold">{player.first_name} {player.last_name}</h1>
+              <span className="badge">{player.status}</span>
+            </div>
 
-          {/* ACTIONS RAPIDES */}
-          <div className="mt-3 flex flex-wrap gap-2">
-            <a href="#nouvelle-evaluation" className="btn-secondary">+ Ajouter une évaluation</a>
-            <a href="#nouvel-objectif" className="btn-secondary">+ Ajouter un objectif</a>
-            <a href="#historique" className="btn-secondary">Voir l&apos;historique</a>
-          </div>
+            {/* ACTIONS RAPIDES */}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <a href="#nouvelle-evaluation" className="btn-secondary">+ Ajouter une évaluation</a>
+              <a href="#nouvel-objectif" className="btn-secondary">+ Ajouter un objectif</a>
+              <a href="#historique" className="btn-secondary">Voir l&apos;historique</a>
+            </div>
 
-          <p className="mt-3 text-sm" style={{ color: "var(--text-faint)" }}>
-            {player.teams?.name ?? "Sans équipe"} ({player.teams?.category ?? "—"}) · {calculateAge(player.birth_date)} ans
-            {player.jersey_number ? ` · #${player.jersey_number}` : ""} · {player.primary_position ?? "Poste non défini"}
+            <p className="mt-3 text-sm" style={{ color: "var(--text-faint)" }}>
+              {player.teams?.name ?? "Sans équipe"} ({player.teams?.category ?? "—"}) · {calculateAge(player.birth_date)} ans
+              {player.jersey_number ? ` · #${player.jersey_number}` : ""} · {player.primary_position ?? "Poste non défini"}
+            </p>
+          </div>
+        </div>
+
+        <div
+          className="card flex flex-col items-center justify-center text-center"
+          style={{ width: 176, flexShrink: 0 }}
+        >
+          <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--text-dim)" }}>
+            Moyenne globale
+          </p>
+          <p className="display mt-1 text-4xl font-bold" style={{ color: "var(--brand)" }}>
+            {globalAverage !== null ? globalAverage.toFixed(1) : "—"}
+          </p>
+          <p className="mt-1 text-xs" style={{ color: "var(--text-faint)" }}>
+            Technique, tactique,
+            <br />
+            physique, mental
           </p>
         </div>
       </div>
