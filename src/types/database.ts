@@ -678,6 +678,89 @@ export type Database = {
         }
         Relationships: []
       }
+      systems: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          shared: boolean
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          shared?: boolean
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          shared?: boolean
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "systems_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "systems_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      system_sequences: {
+        Row: {
+          id: string
+          label: string
+          notes: string | null
+          position: number
+          positions: Json
+          system_id: string
+        }
+        Insert: {
+          id?: string
+          label?: string
+          notes?: string | null
+          position?: number
+          positions?: Json
+          system_id: string
+        }
+        Update: {
+          id?: string
+          label?: string
+          notes?: string | null
+          position?: number
+          positions?: Json
+          system_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_sequences_system_id_fkey"
+            columns: ["system_id"]
+            isOneToOne: false
+            referencedRelation: "systems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       team_coaches: {
         Row: {
           coach_id: string

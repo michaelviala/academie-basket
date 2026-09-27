@@ -2,15 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/data";
 import { createTraining } from "./actions";
-import { TrainingGymSelect } from "@/components/training-gym-select";
-
-const WEEKDAY_LABELS = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
-
-function formatDateLabel(dateStr: string): string {
-  const d = new Date(`${dateStr}T00:00:00`);
-  const weekday = WEEKDAY_LABELS[d.getDay()];
-  return `${weekday} ${d.toLocaleDateString("fr-FR", { day: "2-digit", month: "long" })}`;
-}
+import { TrainingCalendar } from "@/components/training-calendar";
 
 export default async function EntrainementsPage() {
   const profile = await requireProfile();
@@ -20,8 +12,7 @@ export default async function EntrainementsPage() {
     supabase
       .from("trainings")
       .select("*, teams(name), gyms(name)")
-      .order("date", { ascending: false })
-      .limit(60),
+      .order("date", { ascending: false }),
     supabase.from("teams").select("id, name").order("name"),
     supabase.from("gyms").select("id, name").order("name"),
   ]);
@@ -29,17 +20,10 @@ export default async function EntrainementsPage() {
   const canManage = ["admin", "directeur_sportif", "coach"].includes(profile.role);
 
   const today = new Date().toISOString().slice(0, 10);
-  const upcoming = (trainings ?? [])
-    .filter((t) => t.date >= today)
-    .sort((a, b) => (a.date === b.date ? (a.start_time ?? "").localeCompare(b.start_time ?? "") : a.date.localeCompare(b.date)));
-  const past = (trainings ?? []).filter((t) => t.date < today);
-
-  const upcomingByDate = new Map<string, typeof upcoming>();
-  upcoming.forEach((t) => {
-    const list = upcomingByDate.get(t.date) ?? [];
-    list.push(t);
-    upcomingByDate.set(t.date, list);
-  });
+  const past = (trainings ?? [])
+    .filter((t) => t.date < today)
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .slice(0, 30);
 
   return (
     <div className="space-y-6">
@@ -77,38 +61,7 @@ export default async function EntrainementsPage() {
       {/* PLANNING */}
       <section>
         <h2 className="mb-3 font-semibold">Planning</h2>
-        {upcomingByDate.size === 0 && (
-          <p className="card text-sm" style={{ color: "var(--text-faint)" }}>Aucune séance à venir.</p>
-        )}
-        <div className="space-y-4">
-          {Array.from(upcomingByDate.entries()).map(([date, items]) => (
-            <div key={date}>
-              <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: "var(--text-faint)" }}>
-                {formatDateLabel(date)}
-              </p>
-              <div className="space-y-2">
-                {items.map((t) => (
-                  <div key={t.id} className="card flex flex-wrap items-center justify-between gap-3">
-                    <Link href={`/entrainements/${t.id}`} className="flex-1">
-                      <p className="font-medium">
-                        {t.start_time ? `${t.start_time} · ` : ""}{t.teams?.name ?? "Équipe"} — {t.objective ?? "Séance"}
-                      </p>
-                      <p className="text-xs" style={{ color: "var(--text-faint)" }}>
-                        {t.duration_minutes ?? "?"} min · Intensité {t.intensity ?? "—"}
-                        {!canManage && ` · ${t.gyms?.name ?? "Gymnase non défini"}`}
-                      </p>
-                    </Link>
-                    {canManage ? (
-                      <TrainingGymSelect trainingId={t.id} gyms={gyms ?? []} currentGymId={t.gym_id} />
-                    ) : (
-                      <span className="badge">{t.gyms?.name ?? "—"}</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+        <TrainingCalendar trainings={trainings ?? []} teams={teams ?? []} />
       </section>
 
       {/* HISTORIQUE */}
