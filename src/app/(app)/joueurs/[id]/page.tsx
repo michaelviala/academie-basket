@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { calculateAge, requireProfile } from "@/lib/data";
 import {
@@ -25,30 +26,6 @@ import { Meetings } from "@/components/meetings";
 
 const EVAL_TYPE_LABELS: Record<string, string> = {
   technique: "Technique",
-  tactique: "Tactique",
-  physique: "Physique",
-  mental: "Mental",
-};
-
-const SKILL_CATEGORY_ORDER = [
-  "tir",
-  "dribble",
-  "finition",
-  "passe",
-  "defense",
-  "rebond",
-  "tactique",
-  "physique",
-  "mental",
-] as const;
-
-const SKILL_CATEGORY_LABELS: Record<string, string> = {
-  tir: "Tir",
-  dribble: "Dribble",
-  finition: "Finition",
-  passe: "Passe",
-  defense: "Défense",
-  rebond: "Rebond",
   tactique: "Tactique",
   physique: "Physique",
   mental: "Mental",
@@ -156,23 +133,6 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
       ? [lastFeedbackRows[0].positives, lastFeedbackRows[0].improvements].filter(Boolean).join(" · ") || null
       : null,
   };
-
-  // Carnet technique : apprentissages (évaluations liées à une compétence) groupés par catégorie
-  type LogbookEntry = {
-    id: string;
-    skillName: string;
-    score: number;
-    comment: string | null;
-    evaluated_at: string;
-  };
-  const logbookByCategory = new Map<string, LogbookEntry[]>();
-  evaluations?.forEach((e) => {
-    if (!e.skills) return;
-    const category = e.skills.category;
-    const list = logbookByCategory.get(category) ?? [];
-    list.push({ id: e.id, skillName: e.skills.name, score: Number(e.score), comment: e.comment, evaluated_at: e.evaluated_at });
-    logbookByCategory.set(category, list);
-  });
 
   return (
     <div className="space-y-6">
@@ -338,43 +298,16 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
         </section>
       )}
 
-      {/* CARNET TECHNIQUE */}
-      <section className="card">
-        <h2 className="mb-1 font-semibold">Carnet technique</h2>
-        <p className="mb-4 text-xs" style={{ color: "var(--text-faint)" }}>
-          Apprentissages enregistrés, regroupés par catégorie de compétence.
-        </p>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {SKILL_CATEGORY_ORDER.filter((cat) => logbookByCategory.has(cat)).map((cat) => (
-            <div key={cat} className="rounded-lg p-3" style={{ background: "var(--surf-2)" }}>
-              <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: "var(--text-dim)" }}>
-                {SKILL_CATEGORY_LABELS[cat]}
-              </p>
-              <div className="space-y-2">
-                {logbookByCategory.get(cat)!.map((entry) => (
-                  <div key={entry.id} className="text-sm">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium">{entry.skillName}</span>
-                      <span className="badge" style={{ background: "rgba(255,106,31,0.14)", color: "var(--text)", borderColor: "transparent" }}>
-                        {entry.score}
-                      </span>
-                    </div>
-                    <p className="text-xs" style={{ color: "var(--text-faint)" }}>
-                      {entry.evaluated_at}
-                      {entry.comment ? ` · ${entry.comment}` : ""}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-          {logbookByCategory.size === 0 && (
-            <p className="text-sm" style={{ color: "var(--text-faint)" }}>
-              Aucun apprentissage enregistré pour l&apos;instant. Lie une évaluation à une compétence pour l&apos;ajouter ici.
-            </p>
-          )}
+      {/* CARNET TECHNIQUE (déplacé dans sa propre rubrique du menu) */}
+      <Link href={`/carnet-technique/${player.id}`} className="card flex items-center justify-between gap-3">
+        <div>
+          <h2 className="font-semibold">Carnet technique</h2>
+          <p className="text-xs" style={{ color: "var(--text-faint)" }}>
+            Apprentissages enregistrés, regroupés par catégorie de compétence.
+          </p>
         </div>
-      </section>
+        <span className="btn-secondary">Voir le carnet technique →</span>
+      </Link>
 
       {/* TIMELINE */}
       <section className="card">
