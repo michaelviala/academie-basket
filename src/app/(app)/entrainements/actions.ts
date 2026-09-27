@@ -14,7 +14,7 @@ export async function createTraining(formData: FormData) {
     start_time: (formData.get("start_time") as string) || null,
     team_id: (formData.get("team_id") as string) || null,
     gym_id: (formData.get("gym_id") as string) || null,
-    coach_id: user?.id ?? null,
+    coach_id: (formData.get("coach_id") as string) || user?.id || null,
     duration_minutes: formData.get("duration_minutes") ? Number(formData.get("duration_minutes")) : null,
     objective: (formData.get("objective") as string) || null,
     intensity: (formData.get("intensity") as string) || null,

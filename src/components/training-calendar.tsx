@@ -11,6 +11,8 @@ type CalendarTraining = {
   objective: string | null;
   intensity: string | null;
   team_id: string | null;
+  coach_id: string | null;
+  gym_id: string | null;
   teams: { name: string } | null;
   gyms: { name: string } | null;
 };
@@ -39,13 +41,19 @@ function toKey(y: number, m: number, d: number) {
 export function TrainingCalendar({
   trainings,
   teams,
+  coaches,
+  gyms,
 }: {
   trainings: CalendarTraining[];
   teams: { id: string; name: string }[];
+  coaches: { id: string; full_name: string }[];
+  gyms: { id: string; name: string }[];
 }) {
   const today = new Date();
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [teamFilter, setTeamFilter] = useState("");
+  const [coachFilter, setCoachFilter] = useState("");
+  const [gymFilter, setGymFilter] = useState("");
 
   const teamColor = useMemo(() => {
     const map = new Map<string, string>();
@@ -57,6 +65,8 @@ export function TrainingCalendar({
     const map = new Map<string, CalendarTraining[]>();
     trainings
       .filter((t) => !teamFilter || t.team_id === teamFilter)
+      .filter((t) => !coachFilter || t.coach_id === coachFilter)
+      .filter((t) => !gymFilter || t.gym_id === gymFilter)
       .forEach((t) => {
         const list = map.get(t.date) ?? [];
         list.push(t);
@@ -64,7 +74,7 @@ export function TrainingCalendar({
         map.set(t.date, list);
       });
     return map;
-  }, [trainings, teamFilter]);
+  }, [trainings, teamFilter, coachFilter, gymFilter]);
 
   const year = cursor.getFullYear();
   const month = cursor.getMonth();
@@ -131,19 +141,47 @@ export function TrainingCalendar({
           </button>
         </div>
 
-        {teams.length > 0 && (
-          <select
-            className="input"
-            style={{ width: "auto" }}
-            value={teamFilter}
-            onChange={(e) => setTeamFilter(e.target.value)}
-          >
-            <option value="">Toutes les équipes</option>
-            {teams.map((t) => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </select>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {teams.length > 0 && (
+            <select
+              className="input"
+              style={{ width: "auto" }}
+              value={teamFilter}
+              onChange={(e) => setTeamFilter(e.target.value)}
+            >
+              <option value="">Toutes les équipes</option>
+              {teams.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          )}
+          {coaches.length > 0 && (
+            <select
+              className="input"
+              style={{ width: "auto" }}
+              value={coachFilter}
+              onChange={(e) => setCoachFilter(e.target.value)}
+            >
+              <option value="">Tous les coachs</option>
+              {coaches.map((c) => (
+                <option key={c.id} value={c.id}>{c.full_name}</option>
+              ))}
+            </select>
+          )}
+          {gyms.length > 0 && (
+            <select
+              className="input"
+              style={{ width: "auto" }}
+              value={gymFilter}
+              onChange={(e) => setGymFilter(e.target.value)}
+            >
+              <option value="">Tous les gymnases</option>
+              {gyms.map((g) => (
+                <option key={g.id} value={g.id}>{g.name}</option>
+              ))}
+            </select>
+          )}
+        </div>
       </div>
 
       {teams.length > 0 && (
