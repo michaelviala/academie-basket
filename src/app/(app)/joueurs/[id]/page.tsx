@@ -78,14 +78,14 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
         .order("start_date", { ascending: false })
     : { data: null };
 
-  const [{ data: meetings }, { data: lastFeedbackRows }] = await Promise.all([
+  const [{ data: meetings }, { data: feedbacks }] = await Promise.all([
     supabase.from("meetings").select("id, meeting_date, participants, summary").eq("player_id", id).order("meeting_date", { ascending: false }),
     supabase
       .from("feedbacks")
-      .select("positives, improvements, created_at")
+      .select("id, positives, improvements, priority, next_session_goal, created_at")
       .eq("player_id", id)
       .order("created_at", { ascending: false })
-      .limit(1),
+      .limit(20),
   ]);
 
   const attendanceTotal = attendance?.length ?? 0;
@@ -129,8 +129,8 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
     attendanceTotal,
     goalsInProgress: goals?.filter((g) => g.status === "en_cours").length ?? 0,
     goalsAchieved: goals?.filter((g) => g.status === "atteint").length ?? 0,
-    lastFeedback: lastFeedbackRows?.[0]
-      ? [lastFeedbackRows[0].positives, lastFeedbackRows[0].improvements].filter(Boolean).join(" · ") || null
+    lastFeedback: feedbacks?.[0]
+      ? [feedbacks[0].positives, feedbacks[0].improvements].filter(Boolean).join(" · ") || null
       : null,
   };
 
@@ -155,6 +155,10 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
               <a href="#nouvelle-evaluation" className="btn-secondary">+ Ajouter une évaluation</a>
               <a href="#nouvel-objectif" className="btn-secondary">+ Ajouter un objectif</a>
               <a href="#historique" className="btn-secondary">Voir l&apos;historique</a>
+              <a href="#feedback" className="btn-secondary">Feedback</a>
+              <a href="#auto-evaluation" className="btn-secondary">Auto-évaluation</a>
+              <a href="#preparation-physique" className="btn-secondary">Préparation physique</a>
+              <a href="#reunion-de-suivi" className="btn-secondary">Réunion de suivi</a>
             </div>
 
             <p className="mt-3 text-sm" style={{ color: "var(--text-faint)" }}>
@@ -249,8 +253,34 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
         </div>
       </section>
 
+      {/* FEEDBACK (historique, saisi depuis les fiches séance) */}
+      <section id="feedback" className="card">
+        <h2 className="mb-1 font-semibold">Feedback</h2>
+        <p className="mb-4 text-xs" style={{ color: "var(--text-faint)" }}>
+          Feedbacks reçus suite aux entraînements (à ajouter depuis la fiche de la séance).
+        </p>
+        <div className="space-y-2">
+          {feedbacks?.map((f) => (
+            <div key={f.id} className="rounded-lg px-3 py-2 text-sm" style={{ background: "var(--surf-2)" }}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs" style={{ color: "var(--text-faint)" }}>{f.created_at.slice(0, 10)}</span>
+                {f.priority && <span className="badge">Priorité {f.priority}</span>}
+              </div>
+              {f.positives && <p className="mt-1"><span style={{ color: "#4ade80" }}>+ </span>{f.positives}</p>}
+              {f.improvements && <p><span style={{ color: "#eda100" }}>→ </span>{f.improvements}</p>}
+              {f.next_session_goal && (
+                <p className="text-xs" style={{ color: "var(--text-faint)" }}>Prochaine séance : {f.next_session_goal}</p>
+              )}
+            </div>
+          ))}
+          {(!feedbacks || feedbacks.length === 0) && (
+            <p className="text-sm" style={{ color: "var(--text-faint)" }}>Aucun feedback pour l&apos;instant.</p>
+          )}
+        </div>
+      </section>
+
       {/* AUTO-EVALUATION JOUEUR */}
-      <section className="card">
+      <section id="auto-evaluation" className="card">
         <h2 className="mb-1 font-semibold">Auto-évaluation</h2>
         <p className="mb-4 text-xs" style={{ color: "var(--text-faint)" }}>
           À remplir par le joueur lui-même, régulièrement.
@@ -259,7 +289,7 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
       </section>
 
       {/* PREPARATION PHYSIQUE */}
-      <section className="card">
+      <section id="preparation-physique" className="card">
         <h2 className="mb-1 font-semibold">Préparation physique</h2>
         <p className="mb-4 text-xs" style={{ color: "var(--text-faint)" }}>
           Tests physiques (sprint, détente, agilité, endurance...) et suivi de la progression.
@@ -273,7 +303,7 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
       </section>
 
       {/* REUNIONS DE SUIVI */}
-      <section className="card">
+      <section id="reunion-de-suivi" className="card">
         <h2 className="mb-1 font-semibold">Réunion de suivi</h2>
         <p className="mb-4 text-xs" style={{ color: "var(--text-faint)" }}>
           Point d&apos;étape avec le joueur, sa famille et le staff : progression, présence, objectifs, compte rendu.
