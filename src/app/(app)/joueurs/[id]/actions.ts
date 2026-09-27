@@ -108,6 +108,23 @@ export async function updateDevelopmentPlan(playerId: string, formData: FormData
   revalidatePath(`/joueurs/${playerId}`);
 }
 
+export async function addSelfAssessment(playerId: string, formData: FormData) {
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("self_assessments").insert({
+    player_id: playerId,
+    strongest_skill: (formData.get("strongest_skill") as string) || null,
+    skill_to_improve: (formData.get("skill_to_improve") as string) || null,
+    confidence_score: formData.get("confidence_score") ? Number(formData.get("confidence_score")) : null,
+    engagement_score: formData.get("engagement_score") ? Number(formData.get("engagement_score")) : null,
+    next_objective: (formData.get("next_objective") as string) || null,
+    useful_exercises: (formData.get("useful_exercises") as string) || null,
+  });
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/joueurs/${playerId}`);
+}
+
 export async function updateGoalStatus(formData: FormData) {
   const supabase = await createClient();
   const goalId = String(formData.get("goal_id"));

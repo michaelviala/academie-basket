@@ -1,12 +1,13 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { calculateAge } from "@/lib/data";
-import { addEvaluation, addGoal, updateDevelopmentPlan } from "./actions";
+import { addEvaluation, addGoal, addSelfAssessment, updateDevelopmentPlan } from "./actions";
 import { GoalStatusForm } from "@/components/goal-status-form";
 import { PlayerPhoto } from "@/components/player-photo";
 import { PlayerEvaluations } from "@/components/player-evaluations";
 import { EvaluationForm } from "@/components/evaluation-form";
 import { DevelopmentPlanForm } from "@/components/development-plan-form";
+import { SelfAssessmentForm } from "@/components/self-assessment-form";
 
 const EVAL_TYPE_LABELS: Record<string, string> = {
   technique: "Technique",
@@ -51,7 +52,7 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
 
   if (!player) notFound();
 
-  const [{ data: skills }, { data: evaluations }, { data: goals }, { data: attendance }, { data: devPlan }] =
+  const [{ data: skills }, { data: evaluations }, { data: goals }, { data: attendance }, { data: devPlan }, { data: selfAssessments }] =
     await Promise.all([
       supabase.from("skills").select("id, category, name").order("category"),
       supabase
@@ -63,6 +64,12 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
       supabase.from("goals").select("*").eq("player_id", id).order("due_date", { ascending: true }),
       supabase.from("attendance").select("status").eq("player_id", id),
       supabase.from("development_plans").select("*").eq("player_id", id).maybeSingle(),
+      supabase
+        .from("self_assessments")
+        .select("*")
+        .eq("player_id", id)
+        .order("created_at", { ascending: false })
+        .limit(10),
     ]);
 
   const attendanceTotal = attendance?.length ?? 0;
@@ -228,6 +235,15 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
             )}
           </div>
         </div>
+      </section>
+
+      {/* AUTO-EVALUATION JOUEUR */}
+      <section className="card">
+        <h2 className="mb-1 font-semibold">Auto-évaluation</h2>
+        <p className="mb-4 text-xs" style={{ color: "var(--text-faint)" }}>
+          À remplir par le joueur lui-même, régulièrement.
+        </p>
+        <SelfAssessmentForm playerId={player.id} history={selfAssessments ?? []} action={addSelfAssessment} />
       </section>
 
       {/* CARNET TECHNIQUE */}
