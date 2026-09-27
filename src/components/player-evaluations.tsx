@@ -130,7 +130,7 @@ export function PlayerEvaluations({
                   {e.comment ? ` · ${e.comment}` : ""}
                 </p>
               </div>
-              <span className="badge" style={{ background: "rgba(255,106,31,0.14)", color: "var(--brand)", borderColor: "transparent" }}>
+              <span className="badge" style={{ background: "rgba(255,106,31,0.14)", color: "var(--text)", borderColor: "transparent" }}>
                 {e.score}
               </span>
             </div>

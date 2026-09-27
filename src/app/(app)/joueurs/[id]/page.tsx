@@ -247,7 +247,7 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
                   <div key={entry.id} className="text-sm">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-medium">{entry.skillName}</span>
-                      <span className="badge" style={{ background: "rgba(255,106,31,0.14)", color: "var(--brand)", borderColor: "transparent" }}>
+                      <span className="badge" style={{ background: "rgba(255,106,31,0.14)", color: "var(--text)", borderColor: "transparent" }}>
                         {entry.score}
                       </span>
                     </div>
