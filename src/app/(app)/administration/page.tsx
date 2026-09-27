@@ -1,14 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
 import { getClubSettings } from "@/lib/data";
 import { BrandingForm } from "@/components/branding-form";
+import { GymsManager } from "@/components/gyms-manager";
 
 export default async function AdministrationPage() {
   const supabase = await createClient();
 
-  const [{ data: profiles }, { data: seasons }, { data: skillsCount }, settings] = await Promise.all([
+  const [{ data: profiles }, { data: seasons }, { data: skillsCount }, { data: gyms }, settings] = await Promise.all([
     supabase.from("profiles").select("id, full_name, email, role").order("full_name"),
     supabase.from("seasons").select("id, label, start_date, end_date, is_active").order("start_date", { ascending: false }),
     supabase.from("skills").select("category"),
+    supabase.from("gyms").select("id, name, address").order("name"),
     getClubSettings(),
   ]);
 
@@ -31,7 +33,10 @@ export default async function AdministrationPage() {
         currentLogoUrl={settings.logo_url}
         currentColor={settings.brand_color}
         currentBgColor={settings.bg_color}
+        currentSidebarColor={settings.sidebar_color}
       />
+
+      <GymsManager initialGyms={gyms ?? []} />
 
       <div className="card">
         <h2 className="mb-3 font-semibold">Utilisateurs</h2>

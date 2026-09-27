@@ -45,6 +45,7 @@ export async function getClubSettings(): Promise<ClubSettings> {
       logo_url: null,
       brand_color: "#ff6a1f",
       bg_color: "#0e0f12",
+      sidebar_color: "#16181d",
       updated_at: new Date().toISOString(),
     }
   );

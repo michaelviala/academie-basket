@@ -66,6 +66,47 @@ export async function updateBrandColor(formData: FormData) {
   return { success: true };
 }
 
+export async function updateSidebarColor(formData: FormData) {
+  const color = String(formData.get("sidebar_color") || "");
+  if (!/^#[0-9a-fA-F]{6}$/.test(color)) return { error: "Couleur invalide." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("club_settings")
+    .update({ sidebar_color: color, updated_at: new Date().toISOString() })
+    .eq("id", true);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
+export async function createGym(formData: FormData) {
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return { error: "Le nom du gymnase est requis." };
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("gyms").insert({
+    name,
+    address: (formData.get("address") as string) || null,
+  });
+
+  if (error) return { error: error.message };
+  revalidatePath("/administration");
+  revalidatePath("/entrainements");
+  return { success: true };
+}
+
+export async function deleteGym(gymId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("gyms").delete().eq("id", gymId);
+  if (error) return { error: error.message };
+  revalidatePath("/administration");
+  revalidatePath("/entrainements");
+  return { success: true };
+}
+
 export async function updateBackgroundColor(formData: FormData) {
   const color = String(formData.get("bg_color") || "");
   if (!/^#[0-9a-fA-F]{6}$/.test(color)) return { error: "Couleur invalide." };

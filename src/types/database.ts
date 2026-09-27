@@ -110,6 +110,7 @@ export type Database = {
           brand_color: string
           id: boolean
           logo_url: string | null
+          sidebar_color: string
           updated_at: string
         }
         Insert: {
@@ -117,6 +118,7 @@ export type Database = {
           brand_color?: string
           id?: boolean
           logo_url?: string | null
+          sidebar_color?: string
           updated_at?: string
         }
         Update: {
@@ -124,6 +126,7 @@ export type Database = {
           brand_color?: string
           id?: boolean
           logo_url?: string | null
+          sidebar_color?: string
           updated_at?: string
         }
         Relationships: []
@@ -317,6 +320,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      gyms: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       matches: {
         Row: {
@@ -762,6 +786,7 @@ export type Database = {
           created_at: string
           date: string
           duration_minutes: number | null
+          gym_id: string | null
           id: string
           intensity: string | null
           objective: string | null
@@ -774,6 +799,7 @@ export type Database = {
           created_at?: string
           date: string
           duration_minutes?: number | null
+          gym_id?: string | null
           id?: string
           intensity?: string | null
           objective?: string | null
@@ -786,6 +812,7 @@ export type Database = {
           created_at?: string
           date?: string
           duration_minutes?: number | null
+          gym_id?: string | null
           id?: string
           intensity?: string | null
           objective?: string | null
@@ -798,6 +825,13 @@ export type Database = {
             columns: ["coach_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trainings_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
             referencedColumns: ["id"]
           },
           {
