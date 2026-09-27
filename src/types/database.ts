@@ -252,6 +252,67 @@ export type Database = {
           },
         ]
       }
+      feedbacks: {
+        Row: {
+          author_id: string | null
+          created_at: string
+          id: string
+          improvements: string | null
+          is_player_feedback: boolean
+          next_session_goal: string | null
+          player_id: string
+          positives: string | null
+          priority: string | null
+          training_id: string | null
+        }
+        Insert: {
+          author_id?: string | null
+          created_at?: string
+          id?: string
+          improvements?: string | null
+          is_player_feedback?: boolean
+          next_session_goal?: string | null
+          player_id: string
+          positives?: string | null
+          priority?: string | null
+          training_id?: string | null
+        }
+        Update: {
+          author_id?: string | null
+          created_at?: string
+          id?: string
+          improvements?: string | null
+          is_player_feedback?: boolean
+          next_session_goal?: string | null
+          player_id?: string
+          positives?: string | null
+          priority?: string | null
+          training_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedbacks_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedbacks_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedbacks_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       goals: {
         Row: {
           category: string | null
@@ -342,6 +403,72 @@ export type Database = {
         }
         Relationships: []
       }
+      injuries: {
+        Row: {
+          comment: string | null
+          created_at: string
+          created_by: string | null
+          estimated_duration: string | null
+          expected_return_date: string | null
+          id: string
+          injury_type: string
+          player_id: string
+          restrictions: string | null
+          return_protocol: string | null
+          start_date: string
+          status: string
+          updated_at: string
+          zone: string | null
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          created_by?: string | null
+          estimated_duration?: string | null
+          expected_return_date?: string | null
+          id?: string
+          injury_type: string
+          player_id: string
+          restrictions?: string | null
+          return_protocol?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string
+          zone?: string | null
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          created_by?: string | null
+          estimated_duration?: string | null
+          expected_return_date?: string | null
+          id?: string
+          injury_type?: string
+          player_id?: string
+          restrictions?: string | null
+          return_protocol?: string | null
+          start_date?: string
+          status?: string
+          updated_at?: string
+          zone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "injuries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "injuries_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matches: {
         Row: {
           competition: string | null
@@ -386,6 +513,96 @@ export type Database = {
           },
         ]
       }
+      meetings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          meeting_date: string
+          participants: string | null
+          player_id: string
+          summary: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          meeting_date?: string
+          participants?: string | null
+          player_id: string
+          summary?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          meeting_date?: string
+          participants?: string | null
+          player_id?: string
+          summary?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetings_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetings_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          player_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          player_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          player_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parent_player: {
         Row: {
           parent_id: string
@@ -409,6 +626,57 @@ export type Database = {
           },
           {
             foreignKeyName: "parent_player_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      physical_tests: {
+        Row: {
+          comment: string | null
+          created_at: string
+          evaluator_id: string | null
+          id: string
+          player_id: string
+          result: number
+          test_date: string
+          test_type: string
+          unit: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          evaluator_id?: string | null
+          id?: string
+          player_id: string
+          result: number
+          test_date?: string
+          test_type: string
+          unit: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          evaluator_id?: string | null
+          id?: string
+          player_id?: string
+          result?: number
+          test_date?: string
+          test_type?: string
+          unit?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "physical_tests_evaluator_id_fkey"
+            columns: ["evaluator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "physical_tests_player_id_fkey"
             columns: ["player_id"]
             isOneToOne: false
             referencedRelation: "players"
@@ -653,6 +921,50 @@ export type Database = {
           start_date?: string
         }
         Relationships: []
+      }
+      self_assessments: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          engagement_score: number | null
+          id: string
+          next_objective: string | null
+          player_id: string
+          skill_to_improve: string | null
+          strongest_skill: string | null
+          useful_exercises: string | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          engagement_score?: number | null
+          id?: string
+          next_objective?: string | null
+          player_id: string
+          skill_to_improve?: string | null
+          strongest_skill?: string | null
+          useful_exercises?: string | null
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          engagement_score?: number | null
+          id?: string
+          next_objective?: string | null
+          player_id?: string
+          skill_to_improve?: string | null
+          strongest_skill?: string | null
+          useful_exercises?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "self_assessments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       skills: {
         Row: {
@@ -934,6 +1246,70 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      videos: {
+        Row: {
+          comment: string | null
+          comment_timestamp_seconds: number | null
+          created_at: string
+          created_by: string | null
+          duration_seconds: number | null
+          id: string
+          player_id: string | null
+          skill_category: string | null
+          title: string
+          training_id: string | null
+          video_url: string | null
+        }
+        Insert: {
+          comment?: string | null
+          comment_timestamp_seconds?: number | null
+          created_at?: string
+          created_by?: string | null
+          duration_seconds?: number | null
+          id?: string
+          player_id?: string | null
+          skill_category?: string | null
+          title: string
+          training_id?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          comment?: string | null
+          comment_timestamp_seconds?: number | null
+          created_at?: string
+          created_by?: string | null
+          duration_seconds?: number | null
+          id?: string
+          player_id?: string | null
+          skill_category?: string | null
+          title?: string
+          training_id?: string | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "videos_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "videos_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "videos_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
             referencedColumns: ["id"]
           },
         ]

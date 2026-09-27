@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/data";
 import { SessionBlocks } from "@/components/session-blocks";
+import { TrainingFeedback } from "@/components/training-feedback";
 import { addBlock } from "./actions";
 
 const BLOCK_TYPES = [
@@ -27,14 +28,32 @@ export default async function SeancePage({ params }: { params: Promise<{ id: str
 
   if (!training) notFound();
 
-  const [{ data: blocks }, { data: skills }] = await Promise.all([
+  const [{ data: blocks }, { data: skills }, { data: players }, { data: feedbacks }] = await Promise.all([
     supabase
       .from("training_exercises")
       .select("*, skills(name)")
       .eq("training_id", id)
       .order("position", { ascending: true }),
     supabase.from("skills").select("id, category, name").order("category"),
+    training.team_id
+      ? supabase
+          .from("players")
+          .select("id, first_name, last_name, photo_url")
+          .eq("team_id", training.team_id)
+          .order("last_name")
+      : Promise.resolve({ data: [] as never[] }),
+    supabase
+      .from("feedbacks")
+      .select("id, player_id, positives, improvements, priority, next_session_goal, created_at")
+      .eq("training_id", id)
+      .order("created_at", { ascending: false }),
   ]);
+
+  type FeedbackRow = NonNullable<typeof feedbacks>[number];
+  const feedbacksByPlayer: Record<string, FeedbackRow[]> = {};
+  for (const f of feedbacks ?? []) {
+    (feedbacksByPlayer[f.player_id] ??= []).push(f);
+  }
 
   const canManage = ["admin", "directeur_sportif", "coach"].includes(profile.role);
 
@@ -63,6 +82,16 @@ export default async function SeancePage({ params }: { params: Promise<{ id: str
           trainingId={training.id}
           startTime={training.start_time}
           blocks={blocks ?? []}
+          canManage={canManage}
+        />
+      </div>
+
+      <div className="card">
+        <h2 className="mb-3 font-semibold">Feedback joueurs</h2>
+        <TrainingFeedback
+          trainingId={training.id}
+          players={players ?? []}
+          feedbacksByPlayer={feedbacksByPlayer}
           canManage={canManage}
         />
       </div>

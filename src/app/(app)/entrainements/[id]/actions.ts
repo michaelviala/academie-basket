@@ -1,6 +1,8 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { requireProfile } from "@/lib/data";
+import { notifyPlayer } from "@/lib/notifications";
 import { revalidatePath } from "next/cache";
 
 export async function addBlock(trainingId: string, formData: FormData) {
@@ -34,6 +36,45 @@ export async function addBlock(trainingId: string, formData: FormData) {
 export async function deleteBlock(trainingId: string, blockId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("training_exercises").delete().eq("id", blockId);
+  if (error) return { error: error.message };
+  revalidatePath(`/entrainements/${trainingId}`);
+  return { success: true };
+}
+
+export async function upsertFeedback(trainingId: string, playerId: string, formData: FormData) {
+  const profile = await requireProfile();
+  const supabase = await createClient();
+
+  const positives = (formData.get("positives") as string) || null;
+  const improvements = (formData.get("improvements") as string) || null;
+  const priority = (formData.get("priority") as string) || null;
+  const next_session_goal = (formData.get("next_session_goal") as string) || null;
+
+  if (!positives && !improvements && !priority && !next_session_goal) {
+    throw new Error("Renseigne au moins un champ du feedback.");
+  }
+
+  const { error } = await supabase.from("feedbacks").insert({
+    training_id: trainingId,
+    player_id: playerId,
+    positives,
+    improvements,
+    priority,
+    next_session_goal,
+    author_id: profile.id,
+    is_player_feedback: false,
+  });
+
+  if (error) throw new Error(error.message);
+
+  await notifyPlayer(playerId, "feedback", "Nouveau feedback ajouté suite à un entraînement.");
+
+  revalidatePath(`/entrainements/${trainingId}`);
+}
+
+export async function deleteFeedback(trainingId: string, feedbackId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("feedbacks").delete().eq("id", feedbackId);
   if (error) return { error: error.message };
   revalidatePath(`/entrainements/${trainingId}`);
   return { success: true };
