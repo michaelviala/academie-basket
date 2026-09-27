@@ -739,25 +739,34 @@ export type Database = {
       }
       training_exercises: {
         Row: {
+          block_type: string
           comment: string | null
+          duration_minutes: number | null
           id: string
           name: string
+          position: number
           skill_id: string | null
           training_id: string
           video_url: string | null
         }
         Insert: {
+          block_type?: string
           comment?: string | null
+          duration_minutes?: number | null
           id?: string
           name: string
+          position?: number
           skill_id?: string | null
           training_id: string
           video_url?: string | null
         }
         Update: {
+          block_type?: string
           comment?: string | null
+          duration_minutes?: number | null
           id?: string
           name?: string
+          position?: number
           skill_id?: string | null
           training_id?: string
           video_url?: string | null

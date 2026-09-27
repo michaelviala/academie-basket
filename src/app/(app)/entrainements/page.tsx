@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/data";
 import { createTraining } from "./actions";
@@ -46,14 +47,24 @@ export default async function EntrainementsPage() {
 
       <div className="space-y-2">
         {trainings?.map((t) => (
-          <div key={t.id} className="card flex items-center justify-between">
+          <Link
+            key={t.id}
+            href={`/entrainements/${t.id}`}
+            className="card flex items-center justify-between transition-colors"
+            style={{ display: "flex" }}
+          >
             <div>
               <p className="font-medium">{t.teams?.name ?? "Équipe"} — {t.objective ?? "Séance"}</p>
-              <p className="text-xs text-slate-400">{t.date} {t.start_time ?? ""} · {t.duration_minutes ?? "?"} min · Intensité {t.intensity ?? "—"}</p>
+              <p className="text-xs" style={{ color: "var(--text-faint)" }}>
+                {t.date} {t.start_time ?? ""} · {t.duration_minutes ?? "?"} min · Intensité {t.intensity ?? "—"}
+              </p>
             </div>
-          </div>
+            <span className="text-xs" style={{ color: "var(--text-faint)" }}>Voir le déroulé →</span>
+          </Link>
         ))}
-        {(!trainings || trainings.length === 0) && <p className="text-sm text-slate-400">Aucune séance planifiée.</p>}
+        {(!trainings || trainings.length === 0) && (
+          <p className="text-sm" style={{ color: "var(--text-faint)" }}>Aucune séance planifiée.</p>
+        )}
       </div>
     </div>
   );
