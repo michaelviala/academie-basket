@@ -91,6 +91,23 @@ export async function addGoal(playerId: string, formData: FormData) {
   revalidatePath(`/joueurs/${playerId}`);
 }
 
+export async function updateDevelopmentPlan(playerId: string, formData: FormData) {
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("development_plans").upsert(
+    {
+      player_id: playerId,
+      strengths: (formData.get("strengths") as string) || null,
+      weaknesses: (formData.get("weaknesses") as string) || null,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "player_id" }
+  );
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/joueurs/${playerId}`);
+}
+
 export async function updateGoalStatus(formData: FormData) {
   const supabase = await createClient();
   const goalId = String(formData.get("goal_id"));

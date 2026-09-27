@@ -1,14 +1,39 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { calculateAge } from "@/lib/data";
-import { addEvaluation, addGoal } from "./actions";
+import { addEvaluation, addGoal, updateDevelopmentPlan } from "./actions";
 import { GoalStatusForm } from "@/components/goal-status-form";
 import { PlayerPhoto } from "@/components/player-photo";
 import { PlayerEvaluations } from "@/components/player-evaluations";
 import { EvaluationForm } from "@/components/evaluation-form";
+import { DevelopmentPlanForm } from "@/components/development-plan-form";
 
 const EVAL_TYPE_LABELS: Record<string, string> = {
   technique: "Technique",
+  tactique: "Tactique",
+  physique: "Physique",
+  mental: "Mental",
+};
+
+const SKILL_CATEGORY_ORDER = [
+  "tir",
+  "dribble",
+  "finition",
+  "passe",
+  "defense",
+  "rebond",
+  "tactique",
+  "physique",
+  "mental",
+] as const;
+
+const SKILL_CATEGORY_LABELS: Record<string, string> = {
+  tir: "Tir",
+  dribble: "Dribble",
+  finition: "Finition",
+  passe: "Passe",
+  defense: "Défense",
+  rebond: "Rebond",
   tactique: "Tactique",
   physique: "Physique",
   mental: "Mental",
@@ -31,7 +56,7 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
       supabase.from("skills").select("id, category, name").order("category"),
       supabase
         .from("evaluations")
-        .select("*, skills(name)")
+        .select("*, skills(name, category)")
         .eq("player_id", id)
         .order("evaluated_at", { ascending: false })
         .limit(30),
@@ -63,62 +88,99 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
   });
   timeline.sort((a, b) => (a.date < b.date ? 1 : -1));
 
+  // Carnet technique : apprentissages (évaluations liées à une compétence) groupés par catégorie
+  type LogbookEntry = {
+    id: string;
+    skillName: string;
+    score: number;
+    comment: string | null;
+    evaluated_at: string;
+  };
+  const logbookByCategory = new Map<string, LogbookEntry[]>();
+  evaluations?.forEach((e) => {
+    if (!e.skills) return;
+    const category = e.skills.category;
+    const list = logbookByCategory.get(category) ?? [];
+    list.push({ id: e.id, skillName: e.skills.name, score: Number(e.score), comment: e.comment, evaluated_at: e.evaluated_at });
+    logbookByCategory.set(category, list);
+  });
+
   return (
     <div className="space-y-6">
       {/* PROFIL */}
-      <div className="card flex flex-wrap items-center gap-4">
+      <div className="card flex flex-wrap items-start gap-4">
         <PlayerPhoto
           playerId={player.id}
           initialPhotoUrl={player.photo_url}
           initials={`${player.first_name[0]}${player.last_name[0]}`}
         />
         <div className="flex-1">
-          <h1 className="text-2xl font-bold">{player.first_name} {player.last_name}</h1>
-          <p className="text-sm" style={{ color: "var(--text-faint)" }}>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-bold">{player.first_name} {player.last_name}</h1>
+            <span className="badge">{player.status}</span>
+          </div>
+
+          {/* ACTIONS RAPIDES */}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <a href="#nouvelle-evaluation" className="btn-secondary">+ Ajouter une évaluation</a>
+            <a href="#nouvel-objectif" className="btn-secondary">+ Ajouter un objectif</a>
+            <a href="#historique" className="btn-secondary">Voir l&apos;historique</a>
+          </div>
+
+          <p className="mt-3 text-sm" style={{ color: "var(--text-faint)" }}>
             {player.teams?.name ?? "Sans équipe"} ({player.teams?.category ?? "—"}) · {calculateAge(player.birth_date)} ans
             {player.jersey_number ? ` · #${player.jersey_number}` : ""} · {player.primary_position ?? "Poste non défini"}
           </p>
         </div>
-        <span className="badge">{player.status}</span>
       </div>
 
-      {/* INDICES CLIQUABLES + PRESENCE */}
-      <PlayerEvaluations
-        evaluations={evaluations ?? []}
-        attendanceRate={attendanceRate}
-        attendancePresent={attendancePresent}
-        attendanceTotal={attendanceTotal}
-      />
+      {/* INDICES CLIQUABLES + PRESENCE + HISTORIQUE */}
+      <div id="historique">
+        <PlayerEvaluations
+          evaluations={evaluations ?? []}
+          attendanceRate={attendanceRate}
+          attendancePresent={attendancePresent}
+          attendanceTotal={attendanceTotal}
+        />
+      </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* NOUVELLE EVALUATION */}
-        <section className="card space-y-4">
-          <h2 className="font-semibold">Nouvelle évaluation</h2>
-          <EvaluationForm skills={skills ?? []} action={addEvaluation.bind(null, player.id)} />
-        </section>
+      {/* NOUVELLE EVALUATION */}
+      <section id="nouvelle-evaluation" className="card space-y-4">
+        <h2 className="font-semibold">Nouvelle évaluation</h2>
+        <EvaluationForm skills={skills ?? []} action={addEvaluation.bind(null, player.id)} />
+      </section>
 
-        {/* OBJECTIFS */}
-        <section className="card space-y-4">
-          <h2 className="font-semibold">Objectifs individuels</h2>
-          <form action={addGoal.bind(null, player.id)} className="space-y-3">
-            <input className="input" name="title" placeholder="Titre de l'objectif" required />
-            <div className="grid grid-cols-2 gap-3">
-              <input className="input" name="category" placeholder="Catégorie" />
-              <input className="input" name="priority" placeholder="Priorité" />
-              <input className="input" name="initial_level" placeholder="Niveau initial" />
-              <input className="input" name="target_level" placeholder="Niveau cible" />
-              <label className="col-span-2 -mb-1 text-xs" style={{ color: "var(--text-faint)" }}>
-                Date de fin
-              </label>
-              <input className="input col-span-2" type="date" name="due_date" />
-            </div>
-            <textarea className="input" name="description" placeholder="Description" rows={2} />
-            <textarea className="input" name="planned_actions" placeholder="Actions prévues" rows={2} />
-            <input className="input" name="success_indicator" placeholder="Indicateur de réussite" />
-            <button className="btn-primary" type="submit">Ajouter l&apos;objectif</button>
+      {/* PLAN DE DEVELOPPEMENT (points forts / axes + objectifs) */}
+      <section className="card space-y-6">
+        <div>
+          <h2 className="mb-3 font-semibold">Plan de développement</h2>
+          <DevelopmentPlanForm
+            playerId={player.id}
+            initialStrengths={devPlan?.strengths ?? ""}
+            initialWeaknesses={devPlan?.weaknesses ?? ""}
+            action={updateDevelopmentPlan}
+          />
+        </div>
+
+        <div id="nouvel-objectif" style={{ borderTop: "1px solid var(--border)", paddingTop: "1.25rem" }}>
+          <h3 className="mb-3 font-semibold">Objectifs individuels</h3>
+          <form action={addGoal.bind(null, player.id)} className="mb-4 grid gap-3 sm:grid-cols-2">
+            <input className="input sm:col-span-2" name="title" placeholder="Titre de l'objectif" required />
+            <input className="input" name="category" placeholder="Catégorie" />
+            <input className="input" name="priority" placeholder="Priorité" />
+            <input className="input" name="initial_level" placeholder="Niveau initial" />
+            <input className="input" name="target_level" placeholder="Niveau cible" />
+            <label className="-mb-1 text-xs sm:col-span-2" style={{ color: "var(--text-faint)" }}>
+              Date de fin
+            </label>
+            <input className="input sm:col-span-2" type="date" name="due_date" />
+            <textarea className="input sm:col-span-2" name="description" placeholder="Description" rows={2} />
+            <textarea className="input sm:col-span-2" name="planned_actions" placeholder="Actions prévues" rows={2} />
+            <input className="input sm:col-span-2" name="success_indicator" placeholder="Indicateur de réussite" />
+            <button className="btn-primary sm:col-span-2" type="submit">Ajouter l&apos;objectif</button>
           </form>
 
-          <div className="space-y-2">
+          <div className="grid gap-2 sm:grid-cols-2">
             {goals?.map((g) => (
               <div key={g.id} className="rounded-lg px-3 py-2 text-sm" style={{ background: "var(--surf-2)" }}>
                 <div className="flex items-center justify-between gap-2">
@@ -136,30 +198,45 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
               <p className="text-sm" style={{ color: "var(--text-faint)" }}>Aucun objectif défini.</p>
             )}
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
 
-      {/* PLAN DE DEVELOPPEMENT */}
+      {/* CARNET TECHNIQUE */}
       <section className="card">
-        <h2 className="mb-2 font-semibold">Plan de développement</h2>
-        {devPlan ? (
-          <div className="space-y-1 text-sm">
-            {devPlan.strengths && (
-              <p>
-                <span style={{ color: "var(--text-faint)" }}>Points forts : </span>
-                {devPlan.strengths}
+        <h2 className="mb-1 font-semibold">Carnet technique</h2>
+        <p className="mb-4 text-xs" style={{ color: "var(--text-faint)" }}>
+          Apprentissages enregistrés, regroupés par catégorie de compétence.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {SKILL_CATEGORY_ORDER.filter((cat) => logbookByCategory.has(cat)).map((cat) => (
+            <div key={cat} className="rounded-lg p-3" style={{ background: "var(--surf-2)" }}>
+              <p className="mb-2 text-xs font-bold uppercase tracking-widest" style={{ color: "var(--text-dim)" }}>
+                {SKILL_CATEGORY_LABELS[cat]}
               </p>
-            )}
-            {devPlan.weaknesses && (
-              <p>
-                <span style={{ color: "var(--text-faint)" }}>Axes d&apos;amélioration : </span>
-                {devPlan.weaknesses}
-              </p>
-            )}
-          </div>
-        ) : (
-          <p className="text-sm" style={{ color: "var(--text-faint)" }}>Pas encore de plan de développement.</p>
-        )}
+              <div className="space-y-2">
+                {logbookByCategory.get(cat)!.map((entry) => (
+                  <div key={entry.id} className="text-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium">{entry.skillName}</span>
+                      <span className="badge" style={{ background: "rgba(255,106,31,0.14)", color: "var(--brand)", borderColor: "transparent" }}>
+                        {entry.score}
+                      </span>
+                    </div>
+                    <p className="text-xs" style={{ color: "var(--text-faint)" }}>
+                      {entry.evaluated_at}
+                      {entry.comment ? ` · ${entry.comment}` : ""}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+          {logbookByCategory.size === 0 && (
+            <p className="text-sm" style={{ color: "var(--text-faint)" }}>
+              Aucun apprentissage enregistré pour l&apos;instant. Lie une évaluation à une compétence pour l&apos;ajouter ici.
+            </p>
+          )}
+        </div>
       </section>
 
       {/* TIMELINE */}
