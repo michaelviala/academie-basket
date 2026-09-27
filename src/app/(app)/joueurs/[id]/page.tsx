@@ -5,6 +5,7 @@ import { addEvaluation, addGoal } from "./actions";
 import { GoalStatusForm } from "@/components/goal-status-form";
 import { PlayerPhoto } from "@/components/player-photo";
 import { PlayerEvaluations } from "@/components/player-evaluations";
+import { EvaluationForm } from "@/components/evaluation-form";
 
 const EVAL_TYPE_LABELS: Record<string, string> = {
   technique: "Technique",
@@ -93,25 +94,7 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
         {/* NOUVELLE EVALUATION */}
         <section className="card space-y-4">
           <h2 className="font-semibold">Nouvelle évaluation</h2>
-          <form action={addEvaluation.bind(null, player.id)} className="grid grid-cols-2 gap-3">
-            <select name="evaluation_type" className="input col-span-2" required defaultValue="">
-              <option value="" disabled>Type d&apos;évaluation</option>
-              <option value="technique">Technique</option>
-              <option value="tactique">Tactique</option>
-              <option value="physique">Physique</option>
-              <option value="mental">Mental</option>
-            </select>
-            <select name="skill_id" className="input col-span-2" defaultValue="">
-              <option value="">Compétence (optionnel)</option>
-              {skills?.map((s) => (
-                <option key={s.id} value={s.id}>[{s.category}] {s.name}</option>
-              ))}
-            </select>
-            <input className="input" type="number" name="score" min={1} max={10} step={0.5} placeholder="Score" required />
-            <input className="input" type="date" name="evaluated_at" />
-            <textarea className="input col-span-2" name="comment" placeholder="Commentaire" rows={2} />
-            <button className="btn-primary col-span-2" type="submit">Enregistrer l&apos;évaluation</button>
-          </form>
+          <EvaluationForm skills={skills ?? []} action={addEvaluation.bind(null, player.id)} />
         </section>
 
         {/* OBJECTIFS */}
