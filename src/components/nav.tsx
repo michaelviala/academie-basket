@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Profile } from "@/lib/data";
 
-type IconName = "home" | "users" | "trophy" | "video" | "whistle" | "file" | "settings";
+type IconName = "home" | "users" | "trophy" | "video" | "clip" | "whistle" | "file" | "settings";
 
 function Icon({ name }: { name: IconName }) {
   const common = {
@@ -53,6 +53,13 @@ function Icon({ name }: { name: IconName }) {
           <path d="M15 10.5 21 7v10l-6-3.5Z" />
         </svg>
       );
+    case "clip":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="9" />
+          <path d="M10 8.5v7l6-3.5-6-3.5Z" />
+        </svg>
+      );
     case "whistle":
       return (
         <svg {...common}>
@@ -85,6 +92,7 @@ const ALL_ITEMS: { href: string; label: string; icon: IconName; roles?: Profile[
   { href: "/joueurs", label: "Joueurs", icon: "users" },
   { href: "/equipes", label: "Équipes", icon: "trophy", roles: ["admin", "directeur_sportif", "coach"] },
   { href: "/entrainements", label: "Entraînements", icon: "video" },
+  { href: "/videos", label: "Vidéos", icon: "clip" },
   { href: "/coachs", label: "Coachs", icon: "whistle", roles: ["admin", "directeur_sportif"] },
   { href: "/rapports", label: "Rapports", icon: "file", roles: ["admin", "directeur_sportif", "coach"] },
   { href: "/administration", label: "Administration", icon: "settings", roles: ["admin"] },
