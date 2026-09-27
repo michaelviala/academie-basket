@@ -39,7 +39,15 @@ export type ClubSettings = Tables<"club_settings">;
 export async function getClubSettings(): Promise<ClubSettings> {
   const supabase = await createClient();
   const { data } = await supabase.from("club_settings").select("*").eq("id", true).single();
-  return data ?? { id: true, logo_url: null, brand_color: "#ff6a1f", updated_at: new Date().toISOString() };
+  return (
+    data ?? {
+      id: true,
+      logo_url: null,
+      brand_color: "#ff6a1f",
+      bg_color: "#0e0f12",
+      updated_at: new Date().toISOString(),
+    }
+  );
 }
 
 /** Assombrit une couleur hex d'un certain pourcentage (pour l'état :hover des boutons). */

@@ -37,6 +37,19 @@ export async function updateLogo(formData: FormData) {
   return { success: true };
 }
 
+export async function removeLogo() {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("club_settings")
+    .update({ logo_url: null, updated_at: new Date().toISOString() })
+    .eq("id", true);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
 export async function updateBrandColor(formData: FormData) {
   const color = String(formData.get("brand_color") || "");
   if (!/^#[0-9a-fA-F]{6}$/.test(color)) return { error: "Couleur invalide." };
@@ -45,6 +58,22 @@ export async function updateBrandColor(formData: FormData) {
   const { error } = await supabase
     .from("club_settings")
     .update({ brand_color: color, updated_at: new Date().toISOString() })
+    .eq("id", true);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/", "layout");
+  return { success: true };
+}
+
+export async function updateBackgroundColor(formData: FormData) {
+  const color = String(formData.get("bg_color") || "");
+  if (!/^#[0-9a-fA-F]{6}$/.test(color)) return { error: "Couleur invalide." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("club_settings")
+    .update({ bg_color: color, updated_at: new Date().toISOString() })
     .eq("id", true);
 
   if (error) return { error: error.message };

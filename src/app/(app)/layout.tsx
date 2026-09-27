@@ -8,6 +8,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const brandVars = {
     "--brand": settings.brand_color,
     "--brand-dark": darkenHex(settings.brand_color),
+    "--bg": settings.bg_color,
+    background: settings.bg_color,
   } as React.CSSProperties;
 
   return (

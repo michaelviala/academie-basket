@@ -106,18 +106,21 @@ export type Database = {
       }
       club_settings: {
         Row: {
+          bg_color: string
           brand_color: string
           id: boolean
           logo_url: string | null
           updated_at: string
         }
         Insert: {
+          bg_color?: string
           brand_color?: string
           id?: boolean
           logo_url?: string | null
           updated_at?: string
         }
         Update: {
+          bg_color?: string
           brand_color?: string
           id?: boolean
           logo_url?: string | null

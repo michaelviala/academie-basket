@@ -27,7 +27,11 @@ export default async function AdministrationPage() {
         </p>
       </div>
 
-      <BrandingForm currentLogoUrl={settings.logo_url} currentColor={settings.brand_color} />
+      <BrandingForm
+        currentLogoUrl={settings.logo_url}
+        currentColor={settings.brand_color}
+        currentBgColor={settings.bg_color}
+      />
 
       <div className="card">
         <h2 className="mb-3 font-semibold">Utilisateurs</h2>
