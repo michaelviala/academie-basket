@@ -152,7 +152,7 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
           <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--text-dim)" }}>
             Moyenne globale
           </p>
-          <p className="display mt-1 text-4xl font-bold" style={{ color: "var(--brand)" }}>
+          <p className="display mt-1 text-4xl font-bold" style={{ color: "var(--text)" }}>
             {globalAverage !== null ? globalAverage.toFixed(1) : "—"}
           </p>
           <p className="mt-1 text-xs" style={{ color: "var(--text-faint)" }}>
