@@ -3,6 +3,10 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile, ROLE_LABELS } from "@/lib/data";
 
+// Note : la création directe de compte coach existe (voir /coachs/nouveau) mais nécessite la clé
+// SUPABASE_SERVICE_ROLE_KEY côté serveur (pas encore configurée) — voir l'issue GitHub "Création
+// directe de compte coach". En attendant, on revient à l'auto-inscription (bouton retiré ci-dessous).
+
 const COACH_ROLES = ["coach", "directeur_sportif", "preparateur_physique"] as const;
 
 export default async function CoachsPage() {
@@ -19,14 +23,11 @@ export default async function CoachsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Coachs</h1>
-          <p className="text-sm" style={{ color: "var(--text-faint)" }}>
-            Fiche, équipes entraînées et créneaux de chaque coach.
-          </p>
-        </div>
-        <Link href="/coachs/nouveau" className="btn-primary">+ Nouveau coach</Link>
+      <div>
+        <h1 className="text-2xl font-bold">Coachs</h1>
+        <p className="text-sm" style={{ color: "var(--text-faint)" }}>
+          Un compte coach est créé via l&apos;inscription (rôle attribué ensuite dans Administration). Cette page réunit leur fiche, leurs équipes et leurs créneaux.
+        </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
