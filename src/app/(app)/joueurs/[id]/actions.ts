@@ -237,6 +237,22 @@ export async function deleteInjury(playerId: string, injuryId: string) {
   return { success: true };
 }
 
+export async function addMeeting(playerId: string, formData: FormData) {
+  const profile = await requireProfile();
+  const supabase = await createClient();
+
+  const { error } = await supabase.from("meetings").insert({
+    player_id: playerId,
+    meeting_date: (formData.get("meeting_date") as string) || new Date().toISOString().slice(0, 10),
+    participants: (formData.get("participants") as string) || null,
+    summary: (formData.get("summary") as string) || null,
+    created_by: profile.id,
+  });
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/joueurs/${playerId}`);
+}
+
 export async function updateGoalStatus(formData: FormData) {
   const supabase = await createClient();
   const goalId = String(formData.get("goal_id"));

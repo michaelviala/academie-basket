@@ -4,6 +4,7 @@ import { calculateAge, requireProfile } from "@/lib/data";
 import {
   addEvaluation,
   addGoal,
+  addMeeting,
   addPhysicalTest,
   addSelfAssessment,
   declareInjury,
@@ -20,6 +21,7 @@ import { DevelopmentPlanForm } from "@/components/development-plan-form";
 import { SelfAssessmentForm } from "@/components/self-assessment-form";
 import { PhysicalTests } from "@/components/physical-tests";
 import { Injuries } from "@/components/injuries";
+import { Meetings } from "@/components/meetings";
 
 const EVAL_TYPE_LABELS: Record<string, string> = {
   technique: "Technique",
@@ -99,6 +101,16 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
         .order("start_date", { ascending: false })
     : { data: null };
 
+  const [{ data: meetings }, { data: lastFeedbackRows }] = await Promise.all([
+    supabase.from("meetings").select("id, meeting_date, participants, summary").eq("player_id", id).order("meeting_date", { ascending: false }),
+    supabase
+      .from("feedbacks")
+      .select("positives, improvements, created_at")
+      .eq("player_id", id)
+      .order("created_at", { ascending: false })
+      .limit(1),
+  ]);
+
   const attendanceTotal = attendance?.length ?? 0;
   const attendancePresent = attendance?.filter((a) => a.status === "present").length ?? 0;
   const attendanceRate = attendanceTotal > 0 ? Math.round((attendancePresent / attendanceTotal) * 100) : null;
@@ -131,6 +143,19 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
   };
   const typeAverages = EVAL_TYPES.map((t) => avgByType(t)).filter((v): v is number => v !== null);
   const globalAverage = typeAverages.length > 0 ? typeAverages.reduce((s, v) => s + v, 0) / typeAverages.length : null;
+
+  // Snapshot pour la réunion de suivi
+  const meetingSnapshot = {
+    typeAverages: EVAL_TYPES.map((t) => ({ label: EVAL_TYPE_LABELS[t], value: avgByType(t) })),
+    attendanceRate,
+    attendancePresent,
+    attendanceTotal,
+    goalsInProgress: goals?.filter((g) => g.status === "en_cours").length ?? 0,
+    goalsAchieved: goals?.filter((g) => g.status === "atteint").length ?? 0,
+    lastFeedback: lastFeedbackRows?.[0]
+      ? [lastFeedbackRows[0].positives, lastFeedbackRows[0].improvements].filter(Boolean).join(" · ") || null
+      : null,
+  };
 
   // Carnet technique : apprentissages (évaluations liées à une compétence) groupés par catégorie
   type LogbookEntry = {
@@ -285,6 +310,15 @@ export default async function JoueurPage({ params }: { params: Promise<{ id: str
           addAction={addPhysicalTest}
           deleteAction={deletePhysicalTest}
         />
+      </section>
+
+      {/* REUNIONS DE SUIVI */}
+      <section className="card">
+        <h2 className="mb-1 font-semibold">Réunion de suivi</h2>
+        <p className="mb-4 text-xs" style={{ color: "var(--text-faint)" }}>
+          Point d&apos;étape avec le joueur, sa famille et le staff : progression, présence, objectifs, compte rendu.
+        </p>
+        <Meetings playerId={player.id} meetings={meetings ?? []} snapshot={meetingSnapshot} action={addMeeting} />
       </section>
 
       {/* BLESSURES (accès restreint) */}
