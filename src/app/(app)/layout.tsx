@@ -1,20 +1,34 @@
-import { requireProfile, ROLE_LABELS } from "@/lib/data";
+import { requireProfile, ROLE_LABELS, getClubSettings, darkenHex } from "@/lib/data";
 import { Nav } from "@/components/nav";
 import { LogoutButton } from "@/components/logout-button";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const profile = await requireProfile();
+  const [profile, settings] = await Promise.all([requireProfile(), getClubSettings()]);
+
+  const brandVars = {
+    "--brand": settings.brand_color,
+    "--brand-dark": darkenHex(settings.brand_color),
+  } as React.CSSProperties;
 
   return (
-    <div className="shell">
+    <div className="shell" style={brandVars}>
       <aside className="side">
         <div className="flex items-center gap-3 px-4 py-5">
-          <div
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-white"
-            style={{ background: "var(--brand)" }}
-          >
-            🏀
-          </div>
+          {settings.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={settings.logo_url}
+              alt="Logo du club"
+              className="h-9 w-9 rounded-lg object-cover"
+            />
+          ) : (
+            <div
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-lg text-white"
+              style={{ background: "var(--brand)" }}
+            >
+              🏀
+            </div>
+          )}
           <div className="min-w-0">
             <p className="display text-sm font-bold leading-none tracking-wide">ACADÉMIE BASKET</p>
             <p className="text-xs" style={{ color: "var(--text-faint)" }}>
