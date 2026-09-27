@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Profile } from "@/lib/data";
 
-type IconName = "home" | "users" | "trophy" | "video" | "clip" | "whistle" | "file" | "settings";
+type IconName = "home" | "users" | "trophy" | "video" | "clip" | "bell" | "whistle" | "file" | "settings";
 
 function Icon({ name }: { name: IconName }) {
   const common = {
@@ -60,6 +60,13 @@ function Icon({ name }: { name: IconName }) {
           <path d="M10 8.5v7l6-3.5-6-3.5Z" />
         </svg>
       );
+    case "bell":
+      return (
+        <svg {...common}>
+          <path d="M6 17V11a6 6 0 1 1 12 0v6l1.5 2.5h-15L6 17Z" />
+          <path d="M10 20a2 2 0 0 0 4 0" />
+        </svg>
+      );
     case "whistle":
       return (
         <svg {...common}>
@@ -93,12 +100,13 @@ const ALL_ITEMS: { href: string; label: string; icon: IconName; roles?: Profile[
   { href: "/equipes", label: "Équipes", icon: "trophy", roles: ["admin", "directeur_sportif", "coach"] },
   { href: "/entrainements", label: "Entraînements", icon: "video" },
   { href: "/videos", label: "Vidéos", icon: "clip" },
+  { href: "/notifications", label: "Notifications", icon: "bell" },
   { href: "/coachs", label: "Coachs", icon: "whistle", roles: ["admin", "directeur_sportif"] },
   { href: "/rapports", label: "Rapports", icon: "file", roles: ["admin", "directeur_sportif", "coach"] },
   { href: "/administration", label: "Administration", icon: "settings", roles: ["admin"] },
 ];
 
-export function Nav({ role }: { role: Profile["role"] }) {
+export function Nav({ role, unreadNotifications = 0 }: { role: Profile["role"]; unreadNotifications?: number }) {
   const pathname = usePathname();
   const items = ALL_ITEMS.filter((item) => !item.roles || item.roles.includes(role));
 
@@ -109,7 +117,15 @@ export function Nav({ role }: { role: Profile["role"] }) {
         return (
           <Link key={item.href} href={item.href} className={`nav-link ${active ? "active" : ""}`}>
             <Icon name={item.icon} />
-            <span>{item.label}</span>
+            <span className="flex-1">{item.label}</span>
+            {item.icon === "bell" && unreadNotifications > 0 && (
+              <span
+                className="flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold text-white"
+                style={{ background: "var(--brand)" }}
+              >
+                {unreadNotifications > 9 ? "9+" : unreadNotifications}
+              </span>
+            )}
           </Link>
         );
       })}

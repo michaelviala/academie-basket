@@ -1,9 +1,17 @@
 import { requireProfile, ROLE_LABELS, getClubSettings, darkenHex } from "@/lib/data";
+import { createClient } from "@/lib/supabase/server";
 import { Nav } from "@/components/nav";
 import { LogoutButton } from "@/components/logout-button";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const [profile, settings] = await Promise.all([requireProfile(), getClubSettings()]);
+
+  const supabase = await createClient();
+  const { count: unreadNotifications } = await supabase
+    .from("notifications")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", profile.id)
+    .eq("is_read", false);
 
   const brandVars = {
     "--brand": settings.brand_color,
@@ -39,7 +47,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </p>
           </div>
         </div>
-        <Nav role={profile.role} />
+        <Nav role={profile.role} unreadNotifications={unreadNotifications ?? 0} />
         <div className="mt-auto border-t px-4 py-4" style={{ borderColor: "var(--border)" }}>
           <p className="truncate text-sm font-medium">{profile.full_name}</p>
           <div className="mt-2">
