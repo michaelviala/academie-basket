@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { deleteFeedback, upsertFeedback } from "@/app/(app)/entrainements/[id]/actions";
+import { deleteFeedback, upsertFeedback } from "@/app/(app)/seances/[id]/actions";
 
 const PRIORITY_LABELS: Record<string, string> = {
   haute: "Haute",
