@@ -1679,6 +1679,63 @@ export type Database = {
           },
         ]
       }
+      whiteboards: {
+        Row: {
+          court: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          pages: Json
+          shared: boolean
+          team_id: string | null
+          theme: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          court?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          pages?: Json
+          shared?: boolean
+          team_id?: string | null
+          theme?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          court?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          pages?: Json
+          shared?: boolean
+          team_id?: string | null
+          theme?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whiteboards_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whiteboards_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
