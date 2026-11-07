@@ -232,7 +232,7 @@ export function TrainingCalendar({
                 {items.slice(0, 3).map((t) => (
                   <Link
                     key={t.id}
-                    href={`/entrainements/${t.id}`}
+                    href={`/seances/${t.id}`}
                     className="block truncate rounded px-1.5 py-0.5 text-[11px] leading-tight"
                     style={{
                       background: `${teamColor.get(t.team_id ?? "") ?? "var(--brand)"}22`,

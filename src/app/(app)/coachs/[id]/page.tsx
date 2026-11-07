@@ -139,7 +139,7 @@ export default async function CoachPage({
           {upcoming.map((t) => (
             <Link
               key={t.id}
-              href={`/entrainements/${t.id}`}
+              href={`/seances/${t.id}`}
               className="flex items-center justify-between rounded-lg px-3 py-2 text-sm"
               style={{ background: "var(--surf-2)" }}
             >

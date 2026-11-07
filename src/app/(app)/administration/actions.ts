@@ -94,7 +94,7 @@ export async function createGym(formData: FormData) {
 
   if (error) return { error: error.message };
   revalidatePath("/administration");
-  revalidatePath("/entrainements");
+  revalidatePath("/seances");
   return { success: true };
 }
 
@@ -103,7 +103,7 @@ export async function deleteGym(gymId: string) {
   const { error } = await supabase.from("gyms").delete().eq("id", gymId);
   if (error) return { error: error.message };
   revalidatePath("/administration");
-  revalidatePath("/entrainements");
+  revalidatePath("/seances");
   return { success: true };
 }
 

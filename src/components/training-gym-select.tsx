@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { updateTrainingGym } from "@/app/(app)/entrainements/actions";
+import { updateTrainingGym } from "@/app/(app)/seances/actions";
 
 export function TrainingGymSelect({
   trainingId,
