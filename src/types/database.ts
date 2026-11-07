@@ -1293,6 +1293,7 @@ export type Database = {
           mime_type: string | null
           start_seconds: number | null
           tags: string[]
+          thumbnail_path: string | null
           title: string
           video_url: string | null
         }
@@ -1309,6 +1310,7 @@ export type Database = {
           mime_type?: string | null
           start_seconds?: number | null
           tags?: string[]
+          thumbnail_path?: string | null
           title: string
           video_url?: string | null
         }
@@ -1325,6 +1327,7 @@ export type Database = {
           mime_type?: string | null
           start_seconds?: number | null
           tags?: string[]
+          thumbnail_path?: string | null
           title?: string
           video_url?: string | null
         }

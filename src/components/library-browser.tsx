@@ -1,20 +1,23 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   addLibraryItem,
   deleteLibraryItem,
+  setLibraryThumbnail,
   updateLibraryTags,
 } from "@/app/(app)/bibliotheque/actions";
+import { makeThumbnail } from "@/lib/library-thumbnail";
 import {
   MAX_FILE_BYTES,
   fileKind,
   formatSize,
   formatTimecode,
   normalize,
+  parseTimecode,
   videoSource,
   withFragment,
   type LibraryItem,
@@ -103,6 +106,51 @@ export function LibraryBrowser({
       return tokens.every((t) => hay.includes(t));
     });
   }, [items, q, kind, activeTags]);
+
+  // Vignettes générées à la volée pour les anciens éléments (aperçu immédiat, enregistrées pour la suite)
+  const [localThumbs, setLocalThumbs] = useState<Record<string, string>>({});
+  const attempted = useRef<Set<string>>(new Set());
+  const busy = useRef(false);
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (busy.current) return;
+    const todo = items.find(
+      (i) =>
+        !i.hasStoredThumb &&
+        !i.thumbUrl &&
+        i.canDelete &&
+        i.signedUrl &&
+        !attempted.current.has(i.id) &&
+        (i.kind === "video" || fileKind(i.mime_type, i.file_name) !== "other"),
+    );
+    if (!todo || !todo.signedUrl) return;
+    attempted.current.add(todo.id);
+    busy.current = true;
+    (async () => {
+      try {
+        const blob = await makeThumbnail(
+          todo.signedUrl!,
+          todo.mime_type,
+          todo.file_name,
+          todo.start_seconds ?? 1,
+        );
+        if (!blob) return;
+        const path = `thumbs/${crypto.randomUUID()}.jpg`;
+        const { error } = await createClient()
+          .storage.from("library")
+          .upload(path, blob, { contentType: "image/jpeg" });
+        if (error) return;
+        await setLibraryThumbnail(todo.id, path);
+        setLocalThumbs((cur) => ({
+          ...cur,
+          [todo.id]: URL.createObjectURL(blob),
+        }));
+      } finally {
+        busy.current = false;
+        setTick((t) => t + 1);
+      }
+    })();
+  }, [items, tick]);
 
   const opened = openId ? (items.find((i) => i.id === openId) ?? null) : null;
   const toggleTag = (t: string) =>
@@ -227,6 +275,7 @@ export function LibraryBrowser({
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {shown.map((i) => {
             const st = styleOf(i);
+            const thumb = localThumbs[i.id] ?? i.thumbUrl;
             return (
               <div
                 key={i.id}
@@ -237,13 +286,48 @@ export function LibraryBrowser({
                 tabIndex={0}
                 onKeyDown={(e) => e.key === "Enter" && setOpenId(i.id)}
               >
-                <div className="flex items-start gap-3">
+                {thumb && (
                   <div
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xs font-bold"
-                    style={{ background: tint(st.color, 18), color: st.color }}
+                    className="relative aspect-[16/10] overflow-hidden rounded-lg"
+                    style={{ background: "var(--surf-2)" }}
                   >
-                    {st.icon}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={thumb}
+                      alt=""
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                    {i.kind === "video" && (
+                      <span className="absolute inset-0 flex items-center justify-center">
+                        <span
+                          className="flex h-12 w-12 items-center justify-center rounded-full text-lg text-white"
+                          style={{ background: "rgba(0,0,0,0.6)" }}
+                        >
+                          ▶
+                        </span>
+                      </span>
+                    )}
+                    <span
+                      className="absolute left-2 top-2 rounded-md px-1.5 py-0.5 text-[10px] font-bold"
+                      style={{ background: st.color, color: "#fff" }}
+                    >
+                      {st.icon}
+                    </span>
                   </div>
+                )}
+                <div className="flex items-start gap-3">
+                  {!thumb && (
+                    <div
+                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xs font-bold"
+                      style={{
+                        background: tint(st.color, 18),
+                        color: st.color,
+                      }}
+                    >
+                      {st.icon}
+                    </div>
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold" title={i.title}>
                       {i.title}
@@ -679,10 +763,25 @@ function AddModal({
       fd.set("mime_type", file.type);
     }
 
+    let thumbPath: string | null = null;
+    if (file) {
+      const start = parseTimecode(String(fd.get("start") ?? ""));
+      const blob = await makeThumbnail(file, file.type, file.name, start ?? 1);
+      if (blob) {
+        const tp = `thumbs/${crypto.randomUUID()}.jpg`;
+        const { error: thErr } = await supabase.storage
+          .from("library")
+          .upload(tp, blob, { contentType: "image/jpeg" });
+        if (!thErr) thumbPath = tp;
+      }
+    }
+    if (thumbPath) fd.set("thumbnail_path", thumbPath);
+
     const r = await addLibraryItem(fd);
     if (r.error) {
-      if (uploadedPath)
-        await supabase.storage.from("library").remove([uploadedPath]);
+      const orphans = [uploadedPath, thumbPath].filter((p): p is string => !!p);
+      if (orphans.length > 0)
+        await supabase.storage.from("library").remove(orphans);
       setBusy(false);
       return setError(r.error);
     }
