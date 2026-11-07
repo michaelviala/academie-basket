@@ -16,7 +16,7 @@ function CourtLines() {
     stroke: "#fff",
     fill: "none",
     vectorEffect: "non-scaling-stroke" as const,
-    strokeWidth: 1.6,
+    strokeWidth: 1.1,
   };
   return (
     <svg
@@ -30,8 +30,8 @@ function CourtLines() {
       <g {...line}>
         <rect x="0.5" y="0.5" width="99" height="99" />
         <rect x="33.7" y="0" width="32.6" height="41.4" />
-        <path d="M38 41.4 A12 12.9 0 0 1 62 41.4" />
-        <path d="M38 41.4 A12 12.9 0 0 0 62 41.4" strokeDasharray="3 3" />
+        <path d="M38 41.4 A12 12.9 0 0 1 62 41.4" strokeDasharray="3 3" />
+        <path d="M38 41.4 A12 12.9 0 0 0 62 41.4" />
         <path d="M6 0 L6 21.4 A45 48.2 0 0 0 94 21.4 L94 0" />
         <path d="M41.7 11.25 A8.3 8.9 0 0 0 58.3 11.25" />
         <path d="M38 100 A12 12.9 0 0 1 62 100" />
