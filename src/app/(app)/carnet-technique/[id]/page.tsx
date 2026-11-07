@@ -62,8 +62,8 @@ export default async function CarnetTechniquePlayerPage({ params }: { params: Pr
 
   return (
     <div className="space-y-6">
-      <Link href="/carnet-technique" className="text-xs" style={{ color: "var(--text-faint)" }}>
-        ← Retour au carnet technique
+      <Link href="/carnet-technique/joueurs" className="text-xs" style={{ color: "var(--text-faint)" }}>
+        ← Retour aux carnets des joueurs
       </Link>
 
       <div className="flex flex-wrap items-center justify-between gap-3">

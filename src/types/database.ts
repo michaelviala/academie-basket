@@ -1135,6 +1135,35 @@ export type Database = {
           },
         ]
       }
+      technical_guide: {
+        Row: {
+          content: Json
+          id: boolean
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          content: Json
+          id?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          content?: Json
+          id?: boolean
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "technical_guide_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_exercises: {
         Row: {
           block_type: string
