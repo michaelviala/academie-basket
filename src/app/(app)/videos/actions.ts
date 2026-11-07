@@ -31,6 +31,7 @@ function readClip(formData: FormData) {
       note: String(formData.get("note") ?? "").trim().slice(0, 1000) || null,
       tags: parseTags(String(formData.get("tags") ?? "")),
       player_id: String(formData.get("player_id") ?? "") || null,
+      system_id: String(formData.get("system_id") ?? "") || null,
     },
   };
 }

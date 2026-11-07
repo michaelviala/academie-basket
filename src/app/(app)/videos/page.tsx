@@ -27,7 +27,7 @@ export default async function VideosPage({
   const canEdit = VIDEO_EDIT_ROLES.includes(profile.role);
   const isDirection = ["admin", "directeur_sportif"].includes(profile.role);
 
-  const [{ data: items }, { data: clipRows }, { data: players }, { data: montages }, { data: mcRows }] =
+  const [{ data: items }, { data: clipRows }, { data: players }, { data: systemsList }, { data: montages }, { data: mcRows }] =
     await Promise.all([
       supabase
         .from("library_items")
@@ -36,9 +36,10 @@ export default async function VideosPage({
         .order("created_at", { ascending: false }),
       supabase
         .from("video_clips")
-        .select("id, title, source_id, start_seconds, end_seconds, note, tags, player_id, created_by, created_at")
+        .select("id, title, source_id, start_seconds, end_seconds, note, tags, player_id, system_id, created_by, created_at")
         .order("created_at", { ascending: false }),
       supabase.from("players").select("id, first_name, last_name").order("last_name"),
+      supabase.from("systems").select("id, name").order("name"),
       supabase.from("montages").select("id, title, description, created_by, created_at").order("created_at", { ascending: false }),
       supabase.from("montage_clips").select("montage_id, clip_id, position").order("position"),
     ]);
@@ -95,6 +96,7 @@ export default async function VideosPage({
         note: c.note,
         tags: c.tags ?? [],
         playerId: c.player_id,
+        systemId: c.system_id,
         playerName: c.player_id ? (playerMap.get(c.player_id) ?? null) : null,
         source,
         canEdit: isDirection || c.created_by === profile.id,
@@ -157,6 +159,7 @@ export default async function VideosPage({
           clips={clips}
           sources={sources.filter((s) => s.kind !== "other")}
           players={players ?? []}
+          systems={systemsList ?? []}
           canEdit={canEdit}
         />
       ) : (

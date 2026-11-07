@@ -11,11 +11,13 @@ export function ClipsBrowser({
   clips,
   sources,
   players,
+  systems,
   canEdit,
 }: {
   clips: ClipView[];
   sources: VideoSourceInfo[];
   players: { id: string; first_name: string; last_name: string }[];
+  systems: { id: string; name: string }[];
   canEdit: boolean;
 }) {
   const [q, setQ] = useState("");
@@ -129,6 +131,7 @@ export function ClipsBrowser({
         <ClipModal
           sources={sources}
           players={players}
+          systems={systems}
           initial={editing === "new" ? undefined : editing}
           onClose={() => setEditing(null)}
         />

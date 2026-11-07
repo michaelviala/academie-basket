@@ -9,11 +9,13 @@ import { createClip, updateClip } from "@/app/(app)/videos/actions";
 export function ClipModal({
   sources,
   players,
+  systems,
   initial,
   onClose,
 }: {
   sources: VideoSourceInfo[];
   players: { id: string; first_name: string; last_name: string }[];
+  systems: { id: string; name: string }[];
   initial?: ClipView;
   onClose: () => void;
 }) {
@@ -131,6 +133,14 @@ export function ClipModal({
                 ))}
               </select>
             </div>
+            <select className="input" name="system_id" defaultValue={initial?.systemId ?? ""}>
+              <option value="">Aucun système de jeu lié</option>
+              {systems.map((s) => (
+                <option key={s.id} value={s.id}>
+                  Système : {s.name}
+                </option>
+              ))}
+            </select>
           </>
         )}
 
