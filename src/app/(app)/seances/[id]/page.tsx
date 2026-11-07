@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/data";
 import { formatDateLong } from "@/lib/sessions";
+import { focusColor, focusLabel } from "@/lib/blocks";
 import { SessionBlocks } from "@/components/session-blocks";
 import { TrainingFeedback } from "@/components/training-feedback";
 
@@ -84,6 +85,14 @@ export default async function SeancePage({
             </span>
             {training.gyms?.name && (
               <span className="badge">{training.gyms.name}</span>
+            )}
+            {training.focus && (
+              <span
+                className="badge"
+                style={{ color: focusColor(training.focus) }}
+              >
+                Travail : {focusLabel(training.focus)}
+              </span>
             )}
             {training.intensity && (
               <span className="badge">Intensité {training.intensity}</span>

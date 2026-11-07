@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { FOCUSES } from "@/lib/blocks";
 import { requireProfile } from "@/lib/data";
 import { getSessionFormData } from "@/lib/sessions-data";
 import {
@@ -12,11 +13,11 @@ import { SessionEditor } from "@/components/session-editor";
 export default async function NouvelleSeancePage({
   searchParams,
 }: {
-  searchParams: Promise<{ date?: string }>;
+  searchParams: Promise<{ date?: string; focus?: string }>;
 }) {
   const profile = await requireProfile();
   if (!SESSION_EDIT_ROLES.includes(profile.role)) redirect("/seances");
-  const { date } = await searchParams;
+  const { date, focus } = await searchParams;
   const day =
     date && /^\d{4}-\d{2}-\d{2}$/.test(date)
       ? date
@@ -56,6 +57,7 @@ export default async function NouvelleSeancePage({
           gym_id: "",
           coach_id: "",
           intensity: "",
+          focus: focus && FOCUSES.some((f) => f.value === focus) ? focus : "",
           blocks: defaults.map((b) => ({
             name: b.label,
             block_type: b.value,

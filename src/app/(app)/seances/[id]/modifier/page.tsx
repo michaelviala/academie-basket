@@ -62,6 +62,7 @@ export default async function ModifierSeancePage({
           gym_id: training.gym_id ?? "",
           coach_id: training.coach_id ?? "",
           intensity: training.intensity ?? "",
+          focus: training.focus ?? "",
           blocks: (blocks ?? []).map((b) => ({
             name: b.name,
             block_type: b.block_type,

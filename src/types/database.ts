@@ -1017,6 +1017,39 @@ export type Database = {
         }
         Relationships: []
       }
+      season_blocks: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          major_axis: string | null
+          name: string
+          planned_sessions: number
+          position: number
+          start_date: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          major_axis?: string | null
+          name: string
+          planned_sessions?: number
+          position?: number
+          start_date: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          major_axis?: string | null
+          name?: string
+          planned_sessions?: number
+          position?: number
+          start_date?: string
+        }
+        Relationships: []
+      }
       seasons: {
         Row: {
           created_at: string
@@ -1354,6 +1387,7 @@ export type Database = {
           created_at: string
           date: string
           duration_minutes: number | null
+          focus: string | null
           gym_id: string | null
           id: string
           intensity: string | null
@@ -1367,6 +1401,7 @@ export type Database = {
           created_at?: string
           date: string
           duration_minutes?: number | null
+          focus?: string | null
           gym_id?: string | null
           id?: string
           intensity?: string | null
@@ -1380,6 +1415,7 @@ export type Database = {
           created_at?: string
           date?: string
           duration_minutes?: number | null
+          focus?: string | null
           gym_id?: string | null
           id?: string
           intensity?: string | null
