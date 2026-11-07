@@ -163,7 +163,15 @@ export function Whiteboard({ board, teams, canEdit }: { board: WbBoard; teams: {
 
   useEffect(() => {
     if (!full) return;
-    const k = (e: KeyboardEvent) => e.key === "Escape" && setFull(false);
+    const last = pages.length - 1;
+    const k = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setFull(false); return; }
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
+      // flèches (et PageHaut/PageBas) : page précédente / suivante
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp" || e.key === "PageUp") { e.preventDefault(); setPi((p) => Math.max(0, p - 1)); }
+      else if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === "PageDown") { e.preventDefault(); setPi((p) => Math.min(last, p + 1)); }
+    };
     window.addEventListener("keydown", k);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -171,7 +179,7 @@ export function Whiteboard({ board, teams, canEdit }: { board: WbBoard; teams: {
       window.removeEventListener("keydown", k);
       document.body.style.overflow = prev;
     };
-  }, [full]);
+  }, [full, pages.length]);
 
   function toPt(e: React.PointerEvent): Pt {
     const svg = svgRef.current!;
@@ -394,12 +402,12 @@ export function Whiteboard({ board, teams, canEdit }: { board: WbBoard; teams: {
       <div className="fixed inset-0 z-[100] flex flex-col gap-2 p-3" style={{ background: dark ? "#0f1015" : "#111" }}>
         <div className="flex items-center gap-2 text-white">
           <b className="display text-xl">{title}</b>
-          <span className="text-sm opacity-80">{page.title}</span>
+          <span className="text-sm opacity-80">{page.title}{pages.length > 1 ? ` · ${Math.min(pi, pages.length - 1) + 1}/${pages.length}` : ""}</span>
           <div className="flex-1" />
           {pages.length > 1 && (
             <>
-              <button type="button" className="btn-secondary" disabled={pi === 0} onClick={() => setPi(pi - 1)} aria-label="Page précédente">←</button>
-              <button type="button" className="btn-secondary" disabled={pi >= pages.length - 1} onClick={() => setPi(pi + 1)} aria-label="Page suivante">→</button>
+              <button type="button" className="btn-secondary" disabled={pi === 0} onClick={() => setPi(pi - 1)} aria-label="Page précédente" title="Page précédente (←)">←</button>
+              <button type="button" className="btn-secondary" disabled={pi >= pages.length - 1} onClick={() => setPi(pi + 1)} aria-label="Page suivante" title="Page suivante (→)">→</button>
             </>
           )}
           <button type="button" className="btn-secondary" onClick={() => setFull(false)}>✕ Quitter</button>
