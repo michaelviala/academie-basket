@@ -214,12 +214,51 @@ export function ClipViewer({
       /* ignore */
     }
   }
+  // Plein écran : vrai plein écran si le navigateur le permet, sinon (iPhone…) plein écran « maison » qui couvre la page.
+  const [full, setFull] = useState(false);
   function fullscreen() {
-    const el = box.current;
+    const el = box.current as (HTMLDivElement & { webkitRequestFullscreen?: () => void }) | null;
+    const d = document as Document & { webkitFullscreenElement?: Element; webkitExitFullscreen?: () => void };
     if (!el) return;
-    if (document.fullscreenElement) void document.exitFullscreen();
-    else el.requestFullscreen?.().catch(() => setMsg("Plein écran indisponible ici."));
+    if (full) {
+      setFull(false);
+      if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
+      else if (d.webkitFullscreenElement) d.webkitExitFullscreen?.();
+      return;
+    }
+    setFull(true);
+    try {
+      if (el.requestFullscreen) void el.requestFullscreen().catch(() => {});
+      else el.webkitRequestFullscreen?.();
+    } catch {
+      /* plein écran maison conservé */
+    }
   }
+  useEffect(() => {
+    const onExit = () => {
+      const d = document as Document & { webkitFullscreenElement?: Element };
+      if (!document.fullscreenElement && !d.webkitFullscreenElement) setTimeout(() => setFull(false), 0);
+    };
+    document.addEventListener("fullscreenchange", onExit);
+    document.addEventListener("webkitfullscreenchange", onExit);
+    return () => {
+      document.removeEventListener("fullscreenchange", onExit);
+      document.removeEventListener("webkitfullscreenchange", onExit);
+    };
+  }, []);
+  useEffect(() => {
+    if (!full) return;
+    const k = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !document.fullscreenElement) setFull(false);
+    };
+    window.addEventListener("keydown", k);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", k);
+      document.body.style.overflow = prev;
+    };
+  }, [full]);
   function scrub(e: React.PointerEvent<HTMLDivElement>) {
     const r = e.currentTarget.getBoundingClientRect();
     const go = (x: number) => seek(start + clamp((x - r.left) / r.width, 0, 1) * dur);
@@ -294,7 +333,8 @@ export function ClipViewer({
   return (
     <div className={`grid gap-4 ${system ? "xl:grid-cols-[minmax(0,1fr)_420px]" : ""}`}>
       <div className="min-w-0 space-y-3">
-        <div ref={box} className="relative bg-black">
+        <div ref={box} className={full ? "fixed inset-0 z-[100] flex items-center justify-center bg-black" : "relative bg-black"}>
+         <div className="relative" style={full ? { width: "min(100vw, calc(100vh * 16 / 9))" } : { width: "100%" }}>
           <VideoStage key={source.id} source={source} start={start} controls={false} apiRef={api} />
           {source.kind === "file" && (
             <button
@@ -311,6 +351,16 @@ export function ClipViewer({
                 <b className="mr-2 text-[10px] uppercase tracking-wider" style={{ color: "var(--brand)" }}>Coach</b>
                 {caption.text}
               </span>
+            </div>
+          )}
+         </div>
+          {full && (
+            <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-black/60 p-2 text-white">
+              <button className={btn} onClick={togglePlay} aria-label="Lecture / pause">{paused ? "▶" : "⏸"}</button>
+              <div className="relative h-2 flex-1 cursor-pointer touch-none rounded" style={{ background: "var(--border)" }} onPointerDown={scrub}>
+                <i className="absolute inset-y-0 left-0 rounded" style={{ width: `${f * 100}%`, background: "var(--brand)" }} />
+              </div>
+              <button className={btn} onClick={fullscreen} aria-label="Quitter le plein écran">✕</button>
             </div>
           )}
         </div>
