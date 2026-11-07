@@ -196,7 +196,7 @@ export function TrainingFeedback({
                 </select>
                 <input className="input" name="next_session_goal" placeholder="Objectif prochaine séance" />
                 <label className="text-xs sm:col-span-2" style={{ color: "var(--text-faint)" }}>
-                  🎥 Vidéo de l&apos;exercice (optionnel, mp4 · 50 Mo max)
+                  🎥 Vidéo de l&apos;exercice (optionnel, 50 Mo max, compressée automatiquement)
                   <input
                     className="input mt-1 w-full"
                     type="file"

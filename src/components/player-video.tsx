@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { discardUpload, uploadVideo } from "@/lib/player-video";
+import { discardUpload, uploadVideo, type UploadStage } from "@/lib/player-video";
 import { useDictation } from "@/lib/dictation";
 import { addPlayerVideo, deletePlayerVideo } from "@/app/(app)/videos/player-video";
 
@@ -41,6 +41,7 @@ export function AddPlayerVideo({
   const [note, setNote] = useState("");
   const [training, setTraining] = useState<string>(trainingId ?? "");
   const [busy, setBusy] = useState(false);
+  const [stage, setStage] = useState<UploadStage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [doneId, setDoneId] = useState<{ clip: string; source: string } | null>(null);
   const noteRef = useRef("");
@@ -73,7 +74,8 @@ export function AddPlayerVideo({
     dictation.stop();
     setError(null);
     setBusy(true);
-    const up = await uploadVideo(file);
+    const up = await uploadVideo(file, setStage);
+    setStage(null);
     if ("error" in up) {
       setBusy(false);
       return setError(up.error);
@@ -150,7 +152,7 @@ export function AddPlayerVideo({
                 <p className="text-xs" style={{ color: "var(--text-faint)" }}>
                   {file
                     ? `${file.name} · ${(file.size / 1048576).toFixed(1)} Mo`
-                    : "mp4 (H.264), 50 Mo max : une vidéo de quelques dizaines de secondes."}
+                    : "Tous formats (iPhone compris), 50 Mo max : filme quelques dizaines de secondes. Elle est compressée automatiquement."}
                 </p>
                 <label className="label">
                   Titre <span style={{ color: "var(--text-faint)" }}>(nom du joueur ajouté automatiquement : complète avec l&apos;exercice)</span>
@@ -197,11 +199,16 @@ export function AddPlayerVideo({
                     </select>
                   </label>
                 )}
+                {busy && stage && (
+                  <p className="text-xs" style={{ color: "var(--text-faint)" }} aria-live="polite">
+                    {stage === "envoi" ? "Envoi de la vidéo…" : "Compression de la vidéo (format lisible partout)… cela peut prendre jusqu'à une minute, ne ferme pas la page."}
+                  </p>
+                )}
                 {error && <p className="text-xs" style={{ color: "#f87171" }}>{error}</p>}
                 <div className="flex justify-end gap-2">
                   <button type="button" className="btn-secondary" onClick={close} disabled={busy}>Annuler</button>
                   <button className="btn-primary" disabled={busy || !file}>
-                    {busy ? "Envoi en cours…" : "Ajouter la vidéo"}
+                    {busy ? (stage === "compression" ? "Compression…" : "Envoi en cours…") : "Ajouter la vidéo"}
                   </button>
                 </div>
               </form>

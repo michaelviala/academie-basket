@@ -49,20 +49,15 @@ export type UploadedVideo = {
   duration: number;
 };
 
-/** Contrôle puis envoie une vidéo dans la bibliothèque. Retourne une erreur lisible sinon. */
-export async function uploadVideo(file: File): Promise<{ error: string } | { ok: UploadedVideo }> {
+export type UploadStage = "envoi" | "compression";
+
+/** Envoie la vidéo puis la fait compresser en H.264 par le serveur (lisible partout, plus légère). */
+export async function uploadVideo(
+  file: File,
+  onStage?: (s: UploadStage) => void,
+): Promise<{ error: string } | { ok: UploadedVideo }> {
   if (file.size > MAX_VIDEO_BYTES)
-    return { error: "Vidéo trop lourde (50 Mo max). Filme plus court ou réduis la qualité." };
-  const codec = await sniffCodec(file);
-  if (codec === "hevc" || codec === "prores")
-    return {
-      error:
-        "Format vidéo non lisible dans le navigateur (" +
-        (codec === "hevc" ? "HEVC / H.265" : "ProRes") +
-        "). iPhone : Réglages → Appareil photo → Formats → « Le plus compatible ». Android : désactive la vidéo HEVC. Sinon convertis-la en H.264 (HandBrake).",
-    };
-  const duration = await videoDuration(file);
-  if (!duration || duration <= 0) return { error: "Impossible de lire cette vidéo. Essaie un fichier mp4 (H.264)." };
+    return { error: "Vidéo trop lourde (50 Mo max). Filme plus court (moins de 30 secondes)." };
 
   const supabase = createClient();
   const safe = file.name
@@ -70,20 +65,58 @@ export async function uploadVideo(file: File): Promise<{ error: string } | { ok:
     .replace(/[̀-ͯ]/g, "")
     .replace(/[^\w.\-]+/g, "_")
     .slice(-80);
-  const filePath = `${crypto.randomUUID()}/${safe || "video.mp4"}`;
+  const original = `${crypto.randomUUID()}/${safe || "video.mp4"}`;
+  onStage?.("envoi");
   const { error } = await supabase.storage
     .from("library")
-    .upload(filePath, file, { contentType: file.type || "video/mp4" });
+    .upload(original, file, { contentType: file.type || "video/mp4" });
   if (error) return { error: `Envoi impossible : ${error.message}` };
 
-  let thumbPath: string | null = null;
-  const blob = await makeThumbnail(file, file.type || "video/mp4", file.name, Math.min(1, duration / 2));
-  if (blob) {
-    const tp = `thumbs/${crypto.randomUUID()}.jpg`;
-    const { error: thErr } = await supabase.storage.from("library").upload(tp, blob, { contentType: "image/jpeg" });
-    if (!thErr) thumbPath = tp;
+  onStage?.("compression");
+  type Conv = { ok?: { filePath: string; thumbPath: string | null; duration: number; size: number }; error?: string; code?: string };
+  let conv: Conv | null = null;
+  try {
+    const res = await fetch("/api/convert-video", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: original }),
+    });
+    const text = (await res.text()).trim();
+    conv = text ? (JSON.parse(text) as Conv) : { error: "Réponse vide du serveur." };
+  } catch {
+    conv = { error: "Compression interrompue (connexion perdue ?). Réessaie." };
   }
-  return { ok: { filePath, thumbPath, fileName: file.name, fileSize: file.size, mime: file.type || "video/mp4", duration } };
+
+  if (conv.ok) {
+    return {
+      ok: {
+        filePath: conv.ok.filePath,
+        thumbPath: conv.ok.thumbPath,
+        fileName: file.name.replace(/\.[^.]+$/, "") + ".mp4",
+        fileSize: conv.ok.size,
+        mime: "video/mp4",
+        duration: conv.ok.duration,
+      },
+    };
+  }
+
+  // Compression indisponible : on garde l'original seulement s'il est lisible dans le navigateur
+  if (conv.code === "no_ffmpeg") {
+    const codec = await sniffCodec(file);
+    const duration = await videoDuration(file);
+    if (codec !== "hevc" && codec !== "prores" && duration) {
+      let thumbPath: string | null = null;
+      const blob = await makeThumbnail(file, file.type || "video/mp4", file.name, Math.min(1, duration / 2));
+      if (blob) {
+        const tp = `thumbs/${crypto.randomUUID()}.jpg`;
+        const { error: thErr } = await supabase.storage.from("library").upload(tp, blob, { contentType: "image/jpeg" });
+        if (!thErr) thumbPath = tp;
+      }
+      return { ok: { filePath: original, thumbPath, fileName: file.name, fileSize: file.size, mime: file.type || "video/mp4", duration } };
+    }
+  }
+  await supabase.storage.from("library").remove([original]);
+  return { error: conv.error ?? "Compression impossible." };
 }
 
 export async function discardUpload(u: UploadedVideo) {
