@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/data";
 import { getCategoryColors } from "@/lib/technical-guide-data";
 import { SESSION_EDIT_ROLES } from "@/lib/sessions";
+import { BLOCK_EDIT_ROLES } from "@/lib/blocks";
 import { SeancesHeader } from "@/components/seances-tabs";
 import {
   SessionsBrowser,
@@ -12,11 +13,11 @@ export default async function SeancesPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
 
-  const [{ data: trainings }, { data: exercises }, colors] = await Promise.all([
+  const [{ data: trainings }, { data: exercises }, colors, { data: blocks }, { data: coachRows }] = await Promise.all([
     supabase
       .from("trainings")
       .select(
-        "id, objective, date, start_time, duration_minutes, intensity, teams(name, category), gyms(name)",
+        "id, objective, date, start_time, duration_minutes, intensity, focus, coach_id, teams(name, category), gyms(name)",
       )
       .order("date", { ascending: false })
       .limit(500),
@@ -26,7 +27,10 @@ export default async function SeancesPage() {
       .order("position")
       .limit(5000),
     getCategoryColors(),
+    supabase.from("season_blocks").select("*").order("start_date"),
+    supabase.from("profiles").select("id, full_name").in("role", ["coach", "directeur_sportif", "preparateur_physique", "admin"]),
   ]);
+  const coachName = new Map((coachRows ?? []).map((c) => [c.id, c.full_name]));
 
   const blocksBy = new Map<string, SessionCard["blocks"]>();
   exercises?.forEach((e) =>
@@ -48,6 +52,8 @@ export default async function SeancesPage() {
     gym: t.gyms?.name ?? null,
     intensity: t.intensity,
     blocks: blocksBy.get(t.id) ?? [],
+    focus: t.focus,
+    coachName: t.coach_id ? (coachName.get(t.coach_id) ?? null) : null,
   }));
 
   return (
@@ -58,6 +64,9 @@ export default async function SeancesPage() {
       />
       <SessionsBrowser
         sessions={sessions}
+        seasonBlocks={blocks ?? []}
+        canManageBlocks={BLOCK_EDIT_ROLES.includes(profile.role)}
+        canCreate={SESSION_EDIT_ROLES.includes(profile.role)}
         todayKey={new Date().toISOString().slice(0, 10)}
       />
     </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { FOCUSES } from "@/lib/blocks";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
@@ -28,6 +29,7 @@ export type SessionInitial = {
   gym_id: string;
   coach_id: string;
   intensity: string;
+  focus: string;
   blocks: Omit<BlockDraft, "key">[];
 };
 
@@ -61,6 +63,7 @@ export function SessionEditor({
   const [teamId, setTeamId] = useState(initial.team_id);
   const [gymId, setGymId] = useState(initial.gym_id);
   const [coachId, setCoachId] = useState(initial.coach_id);
+  const [focus, setFocus] = useState(initial.focus);
   const [intensity, setIntensity] = useState(initial.intensity);
   const [blocks, setBlocks] = useState<BlockDraft[]>(() =>
     initial.blocks.map((b) => ({ ...b, key: newKey() })),
@@ -106,6 +109,7 @@ export function SessionEditor({
       team_id: teamId,
       gym_id: gymId,
       coach_id: coachId,
+      focus,
       intensity,
       blocks: blocks.map((b) => ({
         name: b.name,
@@ -227,6 +231,21 @@ export function SessionEditor({
             {coaches.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.full_name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="label">
+          Travail de la séance
+          <select
+            className="input mt-1 w-full"
+            value={focus}
+            onChange={(e) => setFocus(e.target.value)}
+          >
+            <option value="">Non précisé</option>
+            {FOCUSES.map((f) => (
+              <option key={f.value} value={f.value}>
+                {f.label}
               </option>
             ))}
           </select>

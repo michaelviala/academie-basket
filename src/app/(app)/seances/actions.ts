@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { FOCUSES } from "@/lib/blocks";
 import { requireProfile } from "@/lib/data";
 import { BLOCK_TYPES, SESSION_EDIT_ROLES, totalMinutes } from "@/lib/sessions";
 
@@ -13,6 +14,7 @@ export type SessionPayload = {
   gym_id: string;
   coach_id: string;
   intensity: string;
+  focus?: string;
   blocks: {
     name: string;
     block_type: string;
@@ -25,6 +27,7 @@ export type SessionPayload = {
 
 type Result = { error?: string; id?: string };
 
+const FOCUS_VALUES: string[] = FOCUSES.map((f) => f.value);
 const BLOCK_VALUES: string[] = BLOCK_TYPES.map((b) => b.value);
 
 function validate(p: SessionPayload): string | null {
@@ -76,6 +79,7 @@ function trainingFields(p: SessionPayload, fallbackCoach: string) {
     gym_id: p.gym_id || null,
     coach_id: p.coach_id || fallbackCoach,
     intensity: p.intensity || null,
+    focus: FOCUS_VALUES.includes(p.focus ?? "") ? p.focus : null,
     duration_minutes: total > 0 ? total : null,
   };
 }
