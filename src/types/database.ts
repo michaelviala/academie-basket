@@ -1279,6 +1279,57 @@ export type Database = {
           },
         ]
       }
+      library_items: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_seconds: number | null
+          file_name: string | null
+          file_path: string | null
+          file_size: number | null
+          id: string
+          kind: string
+          mime_type: string | null
+          start_seconds: number | null
+          tags: string[]
+          title: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_seconds?: number | null
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          kind: string
+          mime_type?: string | null
+          start_seconds?: number | null
+          tags?: string[]
+          title: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_seconds?: number | null
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          kind?: string
+          mime_type?: string | null
+          start_seconds?: number | null
+          tags?: string[]
+          title?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
       videos: {
         Row: {
           comment: string | null

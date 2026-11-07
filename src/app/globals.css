@@ -67,8 +67,7 @@ h1, h2, h3, .display {
 /* --- Mobile : barre du haut, tiroir, barre du bas --- */
 .topbar,
 .bottombar,
-.side-overlay,
-.side-close {
+.side-overlay {
   display: none;
 }
 .topbar-btn {
@@ -79,6 +78,9 @@ h1, h2, h3, .display {
   height: 40px;
   border-radius: 10px;
   color: var(--text);
+}
+.side-close.topbar-btn {
+  display: none;
 }
 @media (max-width: 767px) {
   .shell {
@@ -116,7 +118,8 @@ h1, h2, h3, .display {
     z-index: 55;
     background: rgba(0, 0, 0, 0.6);
   }
-  .side-close {
+  .side-close.topbar-btn {
+    display: inline-flex;
     position: absolute;
     top: 0.6rem;
     right: 0.6rem;
