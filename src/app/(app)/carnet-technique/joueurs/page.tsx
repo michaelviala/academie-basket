@@ -62,7 +62,7 @@ export default async function CarnetsJoueursPage({
             <div className="min-w-0 flex-1">
               <p className="truncate font-semibold">{p.first_name} {p.last_name}</p>
               <p className="truncate text-xs" style={{ color: "var(--text-faint)" }}>
-                {p.teams?.name ?? "Sans équipe"} · {calculateAge(p.birth_date)} ans
+                {p.teams?.name ?? "Sans catégorie"} · {calculateAge(p.birth_date)} ans
               </p>
             </div>
           </Link>

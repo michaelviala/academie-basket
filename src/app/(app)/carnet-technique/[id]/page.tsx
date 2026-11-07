@@ -84,7 +84,7 @@ export default async function CarnetTechniquePlayerPage({ params }: { params: Pr
           </div>
           <div>
             <h1 className="display text-2xl font-bold">Carnet technique — {player.first_name} {player.last_name}</h1>
-            <p className="text-sm" style={{ color: "var(--text-faint)" }}>{player.teams?.name ?? "Sans équipe"}</p>
+            <p className="text-sm" style={{ color: "var(--text-faint)" }}>{player.teams?.name ?? "Sans catégorie"}</p>
           </div>
         </div>
         <Link href={`/joueurs/${player.id}`} className="btn-secondary">Voir la fiche complète</Link>

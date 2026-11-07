@@ -21,7 +21,7 @@ export default async function RapportsPage() {
         {players?.map((p) => (
           <Link key={p.id} href={`/joueurs/${p.id}`} className="card hover:border-orange-300">
             <p className="font-semibold">{p.first_name} {p.last_name}</p>
-            <p className="text-xs text-slate-400">{p.teams?.name ?? "Sans équipe"} · Voir la fiche complète →</p>
+            <p className="text-xs text-slate-400">{p.teams?.name ?? "Sans catégorie"} · Voir la fiche complète →</p>
           </Link>
         ))}
         {(!players || players.length === 0) && <p className="text-sm text-slate-400">Aucun joueur.</p>}
