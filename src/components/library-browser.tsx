@@ -784,15 +784,17 @@ function TagField({
   );
 }
 
-function AddModal({
+export function AddModal({
   knownTags,
   onClose,
+  lockVideo = false,
 }: {
   knownTags: string[];
   onClose: () => void;
+  lockVideo?: boolean;
 }) {
   const router = useRouter();
-  const [kind, setKind] = useState<"document" | "video">("document");
+  const [kind, setKind] = useState<"document" | "video">(lockVideo ? "video" : "document");
   const [file, setFile] = useState<File | null>(null);
   const [tags, setTags] = useState("");
   const [busy, setBusy] = useState(false);
@@ -867,7 +869,7 @@ function AddModal({
     <Overlay onClose={busy ? () => {} : onClose}>
       <div className="flex items-center justify-between">
         <h3 className="display text-2xl font-bold uppercase">
-          Ajouter à la bibliothèque
+          {lockVideo ? "Importer une vidéo" : "Ajouter à la bibliothèque"}
         </h3>
         <button
           type="button"
@@ -881,7 +883,7 @@ function AddModal({
         </button>
       </div>
 
-      <div className="seg mt-4">
+      <div className="seg mt-4" style={lockVideo ? { display: "none" } : undefined}>
         {(
           [
             ["document", "Document"],
