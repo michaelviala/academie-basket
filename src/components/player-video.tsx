@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { discardUpload, uploadVideo, type UploadStage } from "@/lib/player-video";
+import { discardUpload, uploadVideo, FEEDBACK_MAX_SECONDS, videoDuration, type UploadStage } from "@/lib/player-video";
+import { VideoRecorder } from "@/components/video-recorder";
 import { DictationField } from "@/components/dictation-field";
 import { addPlayerVideo, deletePlayerVideo } from "@/app/(app)/videos/player-video";
 
@@ -44,6 +45,7 @@ export function AddPlayerVideo({
   const [stage, setStage] = useState<UploadStage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [doneId, setDoneId] = useState<{ clip: string; source: string } | null>(null);
+  const [filming, setFilming] = useState(false);
   const filmRef = useRef<HTMLInputElement>(null);
   const pickRef = useRef<HTMLInputElement>(null);
 
@@ -54,6 +56,16 @@ export function AddPlayerVideo({
     setError(null);
     setDoneId(null);
     setTraining(trainingId ?? "");
+  }
+  async function choose(f: File | null) {
+    setError(null);
+    if (!f) return setFile(null);
+    const d = await videoDuration(f);
+    if (d && d > FEEDBACK_MAX_SECONDS + 0.7) {
+      setFile(null);
+      return setError(`Vidéo de ${Math.round(d)} s : ${FEEDBACK_MAX_SECONDS} secondes maximum. Filme plus court ou choisis un extrait.`);
+    }
+    setFile(f);
   }
   function close() {
     if (busy) return;
@@ -66,7 +78,7 @@ export function AddPlayerVideo({
     if (!file) return setError("Filme ou choisis une vidéo.");
     setError(null);
     setBusy(true);
-    const up = await uploadVideo(file, setStage);
+    const up = await uploadVideo(file, setStage, FEEDBACK_MAX_SECONDS);
     setStage(null);
     if ("error" in up) {
       setBusy(false);
@@ -103,6 +115,14 @@ export function AddPlayerVideo({
       >
         🎥 + Vidéo
       </button>
+      {open && filming && (
+        <VideoRecorder
+          maxSeconds={FEEDBACK_MAX_SECONDS}
+          onCancel={() => setFilming(false)}
+          onRecorded={(f) => { setFilming(false); void choose(f); }}
+          onUnavailable={(why) => { setFilming(false); setError(`${why} L'appareil photo du téléphone va s'ouvrir.`); setTimeout(() => filmRef.current?.click(), 0); }}
+        />
+      )}
       {open && (
         <div
           className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto p-0 sm:items-center sm:p-4"
@@ -132,19 +152,19 @@ export function AddPlayerVideo({
             ) : (
               <form onSubmit={submit} className="space-y-3">
                 <div className="flex flex-wrap gap-2">
-                  <button type="button" className="btn-primary" onClick={() => filmRef.current?.click()} disabled={busy}>
+                  <button type="button" className="btn-primary" onClick={() => setFilming(true)} disabled={busy}>
                     📹 Filmer
                   </button>
                   <button type="button" className="btn-secondary" onClick={() => pickRef.current?.click()} disabled={busy}>
                     Choisir un fichier
                   </button>
-                  <input ref={filmRef} type="file" accept="video/*" capture="environment" hidden onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-                  <input ref={pickRef} type="file" accept="video/*" hidden onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+                  <input ref={filmRef} type="file" accept="video/*" capture="environment" hidden onChange={(e) => void choose(e.target.files?.[0] ?? null)} />
+                  <input ref={pickRef} type="file" accept="video/*" hidden onChange={(e) => void choose(e.target.files?.[0] ?? null)} />
                 </div>
                 <p className="text-xs" style={{ color: "var(--text-faint)" }}>
                   {file
                     ? `${file.name} · ${(file.size / 1048576).toFixed(1)} Mo`
-                    : "Tous formats (iPhone compris), 50 Mo max : filme quelques dizaines de secondes. Elle est compressée automatiquement."}
+                    : `${FEEDBACK_MAX_SECONDS} secondes maximum, tous formats (iPhone compris). Elle est compressée automatiquement.`}
                 </p>
                 <label className="label">
                   Titre <span style={{ color: "var(--text-faint)" }}>(nom du joueur ajouté automatiquement : complète avec l&apos;exercice)</span>

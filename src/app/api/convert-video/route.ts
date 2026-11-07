@@ -25,7 +25,7 @@ function exclusive<T>(fn: () => Promise<T>): Promise<T> {
 
 type Done = { filePath: string; thumbPath: string | null; duration: number; size: number };
 
-async function convert(supabase: Awaited<ReturnType<typeof createClient>>, path: string): Promise<{ ok: Done } | { error: string; code?: string }> {
+async function convert(supabase: Awaited<ReturnType<typeof createClient>>, path: string, maxSeconds: number): Promise<{ ok: Done } | { error: string; code?: string }> {
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return { error: "Non connecté." };
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", auth.user.id).maybeSingle();
@@ -42,7 +42,7 @@ async function convert(supabase: Awaited<ReturnType<typeof createClient>>, path:
 
     const info = await probe(input);
     if (!info) return { error: "Cette vidéo est illisible (format non reconnu)." };
-    if (info.duration > MAX_SECONDS) return { error: `Vidéo trop longue (${Math.round(info.duration)} s, ${MAX_SECONDS} s max) : filme plus court.` };
+    if (info.duration > maxSeconds + 0.7) return { error: `Vidéo trop longue (${Math.round(info.duration)} s, ${maxSeconds} s max) : filme plus court.` };
 
     const out = join(dir, "out.mp4");
     await toH264(input, out, info.hdr);
@@ -71,8 +71,10 @@ async function convert(supabase: Awaited<ReturnType<typeof createClient>>, path:
 
 /** Réponse en flux : des espaces toutes les 10 s empêchent le proxy de couper une compression longue. */
 export async function POST(request: Request) {
-  const body = (await request.json().catch(() => null)) as { path?: string } | null;
+  const body = (await request.json().catch(() => null)) as { path?: string; maxSeconds?: number } | null;
   const path = body?.path ?? "";
+  const asked = Number(body?.maxSeconds);
+  const maxSeconds = Number.isFinite(asked) && asked > 0 ? Math.min(asked, MAX_SECONDS) : MAX_SECONDS;
   if (waiting >= 3) return Response.json({ error: "Plusieurs compressions en cours : réessaie dans une minute." }, { status: 429 });
 
   const enc = new TextEncoder();
@@ -81,7 +83,7 @@ export async function POST(request: Request) {
       const beat = setInterval(() => controller.enqueue(enc.encode(" ")), 10000);
       try {
         const supabase = await createClient();
-        const res = await exclusive(() => convert(supabase, path));
+        const res = await exclusive(() => convert(supabase, path, maxSeconds));
         controller.enqueue(enc.encode(JSON.stringify(res)));
       } catch (e) {
         controller.enqueue(enc.encode(JSON.stringify({ error: e instanceof Error ? e.message : "Erreur." })));

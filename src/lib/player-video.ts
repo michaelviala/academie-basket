@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/client";
 import { makeThumbnail } from "@/lib/library-thumbnail";
 
 export const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+/** Durée maximale d'une vidéo de feedback (exercice d'un joueur). */
+export const FEEDBACK_MAX_SECONDS = 12;
 
 /** Lit l'en-tête du fichier pour repérer un format que le navigateur ne sait pas afficher. */
 export async function sniffCodec(file: Blob): Promise<"hevc" | "prores" | "av1" | "h264" | null> {
@@ -55,10 +57,15 @@ export type UploadStage = "envoi" | "compression";
 export async function uploadVideo(
   file: File,
   onStage?: (s: UploadStage) => void,
+  maxSeconds?: number,
 ): Promise<{ error: string } | { ok: UploadedVideo }> {
   if (file.size > MAX_VIDEO_BYTES)
-    return { error: "Vidéo trop lourde (50 Mo max). Filme plus court (moins de 30 secondes)." };
+    return { error: "Vidéo trop lourde (50 Mo max). Filme plus court." };
 
+  if (maxSeconds) {
+    const d = await videoDuration(file);
+    if (d && d > maxSeconds + 0.7) return { error: `Vidéo trop longue (${Math.round(d)} s) : ${maxSeconds} secondes maximum.` };
+  }
   const supabase = createClient();
   const safe = file.name
     .normalize("NFD")
@@ -79,7 +86,7 @@ export async function uploadVideo(
     const res = await fetch("/api/convert-video", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path: original }),
+      body: JSON.stringify({ path: original, maxSeconds }),
     });
     const text = (await res.text()).trim();
     conv = text ? (JSON.parse(text) as Conv) : { error: "Réponse vide du serveur." };
