@@ -66,7 +66,7 @@ export function ClipsBrowser({
       {filtered.length === 0 ? (
         <div className="empty">
           {clips.length === 0
-            ? "Aucun clip. Choisis une vidéo de la bibliothèque, marque le début et la fin, et enregistre."
+            ? "Aucun clip. Importe d'abord une vidéo (onglet Vidéos), puis marque le début et la fin."
             : "Aucun clip ne correspond."}
         </div>
       ) : (
@@ -133,7 +133,8 @@ export function ClipsBrowser({
             </div>
             {sources.length === 0 ? (
               <p className="text-sm" style={{ color: "var(--text-faint)" }}>
-                Aucune vidéo dans la bibliothèque. Ajoute d&apos;abord un fichier ou un lien YouTube.
+                Aucune vidéo pour l&apos;instant.{" "}
+                <Link href="/videos?vue=videos" style={{ color: "var(--brand)" }}>Importer une vidéo →</Link>
               </p>
             ) : (
               <ul className="max-h-80 space-y-1.5 overflow-y-auto">

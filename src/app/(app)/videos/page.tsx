@@ -12,6 +12,7 @@ import {
 } from "@/lib/videos";
 import { ClipsBrowser } from "@/components/clips-browser";
 import { MontageEditor } from "@/components/montage-editor";
+import { VideoSources } from "@/components/video-sources";
 import { createMontage } from "./actions";
 
 export default async function VideosPage({
@@ -134,18 +135,23 @@ export default async function VideosPage({
     );
   }
 
-  const tab = vue === "montages" ? "montages" : "clips";
+  const tab = vue === "montages" ? "montages" : vue === "videos" ? "videos" : "clips";
+  const clipCounts: Record<string, number> = {};
+  for (const c of clips) clipCounts[c.source.id] = (clipCounts[c.source.id] ?? 0) + 1;
 
   return (
     <div className="space-y-5">
       <div>
         <h1 className="display text-2xl font-bold sm:text-3xl">Vidéos</h1>
         <p className="text-sm" style={{ color: "var(--text-faint)" }}>
-          Découpe les vidéos de la bibliothèque en clips, puis assemble-les en montages.
+          Importe tes vidéos, découpe-les en clips, puis assemble-les en montages.
         </p>
       </div>
 
       <div className="seg">
+        <Link href="/videos?vue=videos" className={tab === "videos" ? "active" : ""}>
+          Vidéos ({sources.length})
+        </Link>
         <Link href="/videos" className={tab === "clips" ? "active" : ""}>
           Clips ({clips.length})
         </Link>
@@ -154,7 +160,9 @@ export default async function VideosPage({
         </Link>
       </div>
 
-      {tab === "clips" ? (
+      {tab === "videos" ? (
+        <VideoSources sources={sources} clipCounts={clipCounts} canEdit={canEdit} />
+      ) : tab === "clips" ? (
         <ClipsBrowser
           clips={clips}
           sources={sources.filter((s) => s.kind !== "other")}
