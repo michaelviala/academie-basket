@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isHex } from "@/lib/category-color";
 import { sanitizeGuide, type TechnicalGuide } from "@/lib/technical-guide";
 
 /** Lit le cahier technique du club (une seule ligne, id = true). */
@@ -24,16 +25,25 @@ export async function getTechnicalGuide(): Promise<{
     updatedBy = author?.full_name ?? null;
   }
 
+  const colors = await getCategoryColors();
+  const guide = sanitizeGuide(data?.content);
+  guide.categories = guide.categories.map((c) => ({ ...c, color: colors[c.code] ?? c.color }));
+
   return {
-    guide: sanitizeGuide(data?.content),
+    guide,
     updatedAt: data?.updated_at ?? null,
     updatedBy,
   };
 }
 
-/** Couleur de chaque catégorie (code → #rrggbb), d'après le cahier technique. */
+/** Couleur de chaque catégorie (code → #rrggbb) : celle définie dans Administration, sinon celle du carnet. */
 export async function getCategoryColors(): Promise<Record<string, string>> {
   const supabase = await createClient();
-  const { data } = await supabase.from("technical_guide").select("content").eq("id", true).maybeSingle();
-  return Object.fromEntries(sanitizeGuide(data?.content).categories.map((c) => [c.code, c.color]));
+  const [{ data }, { data: teams }] = await Promise.all([
+    supabase.from("technical_guide").select("content").eq("id", true).maybeSingle(),
+    supabase.from("teams").select("category, color"),
+  ]);
+  const map: Record<string, string> = Object.fromEntries(sanitizeGuide(data?.content).categories.map((c) => [c.code, c.color]));
+  for (const t of teams ?? []) if (isHex(t.color)) map[t.category] = t.color;
+  return map;
 }

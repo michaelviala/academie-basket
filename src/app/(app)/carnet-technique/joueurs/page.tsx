@@ -25,7 +25,7 @@ export default async function CarnetsJoueursPage({
     <div className="space-y-6">
       <div>
         <Link href="/carnet-technique" className="text-xs" style={{ color: "var(--text-faint)" }}>
-          ← Retour au cahier technique
+          ← Retour aux carnets techniques
         </Link>
         <h1 className="display text-2xl font-bold">Carnets des joueurs</h1>
         <p className="text-sm" style={{ color: "var(--text-faint)" }}>

@@ -1327,6 +1327,7 @@ export type Database = {
       teams: {
         Row: {
           category: string
+          color: string | null
           created_at: string
           id: string
           name: string
@@ -1334,6 +1335,7 @@ export type Database = {
         }
         Insert: {
           category: string
+          color?: string | null
           created_at?: string
           id?: string
           name: string
@@ -1341,6 +1343,7 @@ export type Database = {
         }
         Update: {
           category?: string
+          color?: string | null
           created_at?: string
           id?: string
           name?: string

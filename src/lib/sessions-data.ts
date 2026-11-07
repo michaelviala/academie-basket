@@ -11,7 +11,7 @@ export async function getSessionFormData() {
   const supabase = await createClient();
   const [{ data: teams }, { data: gyms }, { data: coaches }, { data: skills }, { data: systems }] =
     await Promise.all([
-      supabase.from("teams").select("id, name").order("name"),
+      supabase.from("teams").select("id, name, category, color").order("name"),
       supabase.from("gyms").select("id, name, courts").order("name"),
       supabase
         .from("profiles")

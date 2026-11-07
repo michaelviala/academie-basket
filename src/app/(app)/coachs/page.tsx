@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { teamColor } from "@/lib/category-color";
 import { requireProfile, ROLE_LABELS } from "@/lib/data";
 
 // Note : la création directe de compte coach existe (voir /coachs/nouveau) mais nécessite la clé
@@ -17,7 +18,7 @@ export default async function CoachsPage() {
 
   const { data: coaches } = await supabase
     .from("profiles")
-    .select("id, full_name, email, phone, avatar_url, role, team_coaches(teams(name))")
+    .select("id, full_name, email, phone, avatar_url, role, team_coaches(teams(name, category, color))")
     .in("role", COACH_ROLES)
     .order("full_name");
 
@@ -49,6 +50,11 @@ export default async function CoachsPage() {
               <p className="truncate text-xs" style={{ color: "var(--text-faint)" }}>
                 {ROLE_LABELS[c.role]} · {c.team_coaches?.length ?? 0} catégorie(s)
               </p>
+              <div className="mt-1 flex flex-wrap gap-1">
+                {c.team_coaches?.map((tc, i) => tc.teams && (
+                  <span key={i} className="chip" style={{ color: teamColor(tc.teams), borderColor: teamColor(tc.teams) }}>{tc.teams.category}</span>
+                ))}
+              </div>
             </div>
           </Link>
         ))}

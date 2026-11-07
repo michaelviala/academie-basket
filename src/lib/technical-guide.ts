@@ -104,7 +104,7 @@ export function sanitizeGuide(input: unknown): TechnicalGuide {
 
   return {
     header: {
-      title: str(header.title, 120) || "Cahier technique",
+      title: str(header.title, 120) || "Carnets techniques",
       subtitle: str(header.subtitle, 300),
       tags: list(header.tags, 8).map((t) => str(t, 60)).filter(Boolean),
     },

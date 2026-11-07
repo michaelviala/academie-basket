@@ -88,7 +88,7 @@ export function AppShell({
           return (
             <Link key={item.href} href={item.href} className={`bottom-link ${active ? "active" : ""}`}>
               <Icon name={item.icon} />
-              <span>{item.label === "Tableau de bord" ? "Accueil" : item.label === "Séances" ? "Séances" : item.label === "Carnet technique" ? "Carnet" : item.label}</span>
+              <span>{item.label === "Tableau de bord" ? "Accueil" : item.label === "Séances" ? "Séances" : item.label === "Carnets techniques" ? "Carnets" : item.label}</span>
             </Link>
           );
         })}

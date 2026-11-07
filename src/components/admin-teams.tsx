@@ -2,12 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { DEFAULT_CATEGORY_COLORS, teamColor } from "@/lib/category-color";
 import { saveTeam, deleteTeam, movePlayer } from "@/app/(app)/administration/teams";
 
 export type AdminTeam = {
   id: string;
   name: string;
   category: string;
+  color: string | null;
   seasonId: string;
   coaches: string[];
   players: { id: string; name: string }[];
@@ -17,6 +19,7 @@ type Season = { id: string; label: string; is_active: boolean };
 function TeamForm({ team, seasons, categories, onDone, onError }: { team?: AdminTeam; seasons: Season[]; categories: string[]; onDone: () => void; onError: (m: string) => void }) {
   const [pending, start] = useTransition();
   const router = useRouter();
+  const [color, setColor] = useState(team?.color ?? DEFAULT_CATEGORY_COLORS[0]);
   const active = seasons.find((s) => s.is_active)?.id ?? seasons[0]?.id ?? "";
   return (
     <form
@@ -41,6 +44,17 @@ function TeamForm({ team, seasons, categories, onDone, onError }: { team?: Admin
         <select className="input" name="season_id" defaultValue={team?.seasonId ?? active}>
           {seasons.map((s) => <option key={s.id} value={s.id}>{s.label}{s.is_active ? " (active)" : ""}</option>)}
         </select>
+      </div>
+      <div className="sm:col-span-3">
+        <label className="label">Couleur de la catégorie (la même partout : carnets techniques, planning, calendrier…)</label>
+        <div className="flex flex-wrap items-center gap-2">
+          {DEFAULT_CATEGORY_COLORS.map((c) => (
+            <button type="button" key={c} onClick={() => setColor(c)} aria-label={c}
+              style={{ width: 26, height: 26, borderRadius: 999, background: c, border: color === c ? "3px solid #fff" : "2px solid transparent" }} />
+          ))}
+          <input type="color" value={color} onChange={(e) => setColor(e.target.value)} aria-label="Autre couleur" style={{ width: 34, height: 28, background: "none", border: 0 }} />
+          <input type="hidden" name="color" value={color} />
+        </div>
       </div>
       <div className="flex gap-2 sm:col-span-3">
         <button className="btn-primary" disabled={pending}>{team ? "Enregistrer" : "Créer la catégorie"}</button>
@@ -92,7 +106,10 @@ export function AdminTeams({ teams, seasons, unassigned }: { teams: AdminTeam[];
             <div key={t.id} className="card space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <p className="font-semibold">{t.name} <span className="badge">{t.category}</span></p>
+                  <p className="font-semibold">
+                    <span aria-hidden style={{ display: "inline-block", width: 10, height: 10, borderRadius: 999, background: teamColor(t), marginRight: 8 }} />
+                    {t.name} <span className="badge" style={{ borderColor: teamColor(t), color: teamColor(t) }}>{t.category}</span>
+                  </p>
                   <p className="text-xs text-faint">
                     {t.coaches.length ? `Coach : ${t.coaches.join(", ")}` : "Aucun coach affecté"} · {seasons.find((s) => s.id === t.seasonId)?.label ?? "—"}
                   </p>

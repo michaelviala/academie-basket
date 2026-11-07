@@ -1,5 +1,6 @@
 "use client";
 
+import { teamColor } from "@/lib/category-color";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -11,7 +12,7 @@ export type AdminCoach = {
   email: string;
   phone: string | null;
   roleLabel: string;
-  teams: { id: string; name: string; category: string }[];
+  teams: { id: string; name: string; category: string; color?: string | null }[];
 };
 type Team = { id: string; name: string; category: string };
 
@@ -72,7 +73,7 @@ export function AdminCoaches({ coaches, teams, canCreate }: { coaches: AdminCoac
               </div>
               <div className="flex flex-wrap gap-2">
                 {c.teams.map((t) => (
-                  <span key={t.id} className="chip">
+                  <span key={t.id} className="chip" style={{ color: teamColor(t), borderColor: teamColor(t) }}>
                     {t.name}
                     <button type="button" disabled={pending} onClick={() => remove(c.id, t.id)} aria-label={`Retirer ${t.name}`} className="ml-1">×</button>
                   </span>

@@ -132,7 +132,7 @@ export const NAV_GROUPS: Record<NavGroup, string> = { suivi: "Suivi", outils: "V
 export const ALL_ITEMS: { href: string; label: string; icon: IconName; roles?: Profile["role"][]; group: NavGroup }[] = [
   { href: "/dashboard", label: "Tableau de bord", icon: "home", group: "suivi" },
   { href: "/joueurs", label: "Joueurs", icon: "users", group: "suivi" },
-  { href: "/carnet-technique", label: "Carnet technique", icon: "notebook", group: "suivi" },
+  { href: "/carnet-technique", label: "Carnets techniques", icon: "notebook", group: "suivi" },
   { href: "/seances", label: "Séances", icon: "video", group: "suivi" },
   { href: "/notifications", label: "Notifications", icon: "bell", group: "suivi" },
   { href: "/bibliotheque", label: "Bibliothèque", icon: "library", roles: ["admin", "directeur_sportif", "coach", "preparateur_physique"], group: "outils" },

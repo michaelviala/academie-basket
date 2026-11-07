@@ -198,7 +198,7 @@ export function GuideEditor({ initial }: { initial: TechnicalGuide }) {
     setMsg(null);
     startTransition(async () => {
       const res = await saveTechnicalGuide(g);
-      setMsg(res.error ? { ok: false, text: res.error } : { ok: true, text: "Cahier technique enregistré." });
+      setMsg(res.error ? { ok: false, text: res.error } : { ok: true, text: "Carnets techniques enregistrés." });
     });
   }
 
@@ -234,7 +234,7 @@ export function GuideEditor({ initial }: { initial: TechnicalGuide }) {
         style={{ background: "var(--surf)", border: "1px solid var(--border)" }}
       >
         <div>
-          <h1 className="display text-2xl font-bold uppercase">Modifier le cahier technique</h1>
+          <h1 className="display text-2xl font-bold uppercase">Modifier les carnets techniques</h1>
           <p className="text-xs" style={{ color: "var(--text-faint)" }}>
             Les changements ne sont visibles par les autres qu&apos;après enregistrement.
           </p>
@@ -246,7 +246,7 @@ export function GuideEditor({ initial }: { initial: TechnicalGuide }) {
             </span>
           )}
           <Link href="/carnet-technique" className="btn-secondary">
-            Retour au cahier
+            Retour aux carnets
           </Link>
           <button type="button" className="btn-primary disabled:opacity-60" onClick={save} disabled={pending}>
             {pending ? "Enregistrement…" : "Enregistrer"}
@@ -287,7 +287,7 @@ export function GuideEditor({ initial }: { initial: TechnicalGuide }) {
               <Field label="Titre" value={c.title} onChange={(v) => api.set(["categories", ci, "title"], v)} />
               <Field label="Sous-titre (niveaux)" value={c.subtitle} onChange={(v) => api.set(["categories", ci, "subtitle"], v)} />
               <Field label="Étiquette" value={c.badge} onChange={(v) => api.set(["categories", ci, "badge"], v)} />
-              <ColorField value={c.color} onChange={(v) => api.set(["categories", ci, "color"], v)} />
+              <p className="self-end pb-2 text-[11px]" style={{ color: "var(--text-faint)" }}>Couleur : Administration › Catégories</p>
             </div>
             <div className="grid gap-3 md:grid-cols-3">
               <Field label="Priorité tactique" value={c.tactical} onChange={(v) => api.set(["categories", ci, "tactical"], v)} area />

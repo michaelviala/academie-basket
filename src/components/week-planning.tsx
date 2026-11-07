@@ -21,7 +21,7 @@ const DAYS = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 const HOUR_H = 52;
 
 type Mode = "equipe" | "salle" | "coach";
-type Item = { id: string; name: string; courts?: number };
+type Item = { id: string; name: string; courts?: number; color?: string | null };
 
 function key(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -66,7 +66,7 @@ export function WeekPlanning({
     const list: string[] =
       mode === "equipe" ? teams.map((t) => t.id) : mode === "salle" ? gyms.map((g) => g.id) : coaches.map((c) => c.id);
     const map = new Map<string, string>();
-    list.forEach((id, i) => map.set(id, PALETTE[i % PALETTE.length]));
+    list.forEach((id, i) => map.set(id, (mode === "equipe" ? teams.find((t) => t.id === id)?.color : null) || PALETTE[i % PALETTE.length]));
     return (t: PlanningTraining) =>
       map.get((mode === "equipe" ? t.team_id : mode === "salle" ? t.gym_id : t.coach_id) ?? "") ?? "#94a3b8";
   }, [mode, teams, gyms, coaches]);

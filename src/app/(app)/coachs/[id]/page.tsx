@@ -24,7 +24,7 @@ export default async function CoachPage({
 
   const { data: coach } = await supabase
     .from("profiles")
-    .select("*, team_coaches(teams(id, name, category))")
+    .select("*, team_coaches(teams(id, name, category, color))")
     .eq("id", id)
     .maybeSingle();
 
@@ -53,7 +53,7 @@ export default async function CoachPage({
   const assignableTeams = (allTeams ?? []).filter((t) => !assignedTeamIds.includes(t.id));
   const assignedTeams = (coach.team_coaches ?? [])
     .map((tc) => tc.teams)
-    .filter((t): t is { id: string; name: string; category: string } => !!t);
+    .filter((t): t is { id: string; name: string; category: string; color: string | null } => !!t);
 
   return (
     <div className="space-y-6">

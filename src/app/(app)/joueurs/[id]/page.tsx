@@ -418,7 +418,7 @@ export default async function JoueurPage({
                 href={player.teams?.category ? `/carnet-technique?cat=${encodeURIComponent(player.teams.category)}` : "/carnet-technique"}
                 className="btn-secondary"
               >
-                Cahier technique{player.teams?.category ? ` ${player.teams.category}` : ""}
+                Carnet technique{player.teams?.category ? ` ${player.teams.category}` : ""}
               </Link>
               <Link href={`/joueurs/${player.id}/rapport`} className="btn-secondary">
                 Rapport PDF

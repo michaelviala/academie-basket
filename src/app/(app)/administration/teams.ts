@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { isHex } from "@/lib/category-color";
 import { requireProfile } from "@/lib/data";
 
 const ROLES = ["admin", "directeur_sportif"];
@@ -25,16 +26,21 @@ export async function saveTeam(teamId: string | null, formData: FormData): Promi
   const category = String(formData.get("category") ?? "").trim();
   const seasonId = String(formData.get("season_id") ?? "");
   if (!name || !category) return { error: "Le nom et la catégorie sont requis." };
+  const rawColor = String(formData.get("color") ?? "");
+  const color = isHex(rawColor) ? rawColor : null;
   const supabase = await createClient();
   if (teamId) {
-    const { error } = await supabase.from("teams").update({ name, category, ...(seasonId ? { season_id: seasonId } : {}) }).eq("id", teamId);
+    const { error } = await supabase.from("teams").update({ name, category, ...(color ? { color } : {}), ...(seasonId ? { season_id: seasonId } : {}) }).eq("id", teamId);
     if (error) return { error: error.message };
   } else {
     if (!seasonId) return { error: "Choisis une saison." };
-    const { error } = await supabase.from("teams").insert({ name, category, season_id: seasonId });
+    const { error } = await supabase.from("teams").insert({ name, category, color, season_id: seasonId });
     if (error) return { error: error.message };
   }
+  // Un seul code couleur par catégorie : on l'applique à toutes les catégories de même code.
+  if (color) await supabase.from("teams").update({ color }).eq("category", category);
   refresh();
+  revalidatePath("/carnet-technique");
   return {};
 }
 

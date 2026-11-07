@@ -105,10 +105,10 @@ export default async function AdministrationPage({ searchParams }: { searchParam
     const [{ data: rows }, { data: teams }] = await Promise.all([
       supabase
         .from("profiles")
-        .select("id, full_name, email, phone, role, team_coaches(teams(id, name, category))")
+        .select("id, full_name, email, phone, role, team_coaches(teams(id, name, category, color))")
         .in("role", ["coach", "directeur_sportif", "preparateur_physique"])
         .order("full_name"),
-      supabase.from("teams").select("id, name, category").order("name"),
+      supabase.from("teams").select("id, name, category, color").order("name"),
     ]);
     const coaches: AdminCoach[] = (rows ?? []).map((c) => ({
       id: c.id,
@@ -116,14 +116,14 @@ export default async function AdministrationPage({ searchParams }: { searchParam
       email: c.email,
       phone: c.phone,
       roleLabel: ROLE_LABELS[c.role] ?? c.role,
-      teams: (c.team_coaches ?? []).map((tc) => tc.teams).filter((t): t is { id: string; name: string; category: string } => !!t),
+      teams: (c.team_coaches ?? []).map((tc) => tc.teams).filter((t): t is { id: string; name: string; category: string; color: string | null } => !!t),
     }));
     return <AdminCoaches coaches={coaches} teams={teams ?? []} canCreate={!!process.env.SUPABASE_SERVICE_ROLE_KEY} />;
   }
 
   async function TeamsTab() {
     const [{ data: teams }, { data: seasons }, { data: players }, { data: tc }] = await Promise.all([
-      supabase.from("teams").select("id, name, category, season_id").order("category").order("name"),
+      supabase.from("teams").select("id, name, category, color, season_id").order("category").order("name"),
       supabase.from("seasons").select("id, label, is_active").order("start_date", { ascending: false }),
       supabase.from("players").select("id, first_name, last_name, team_id").order("last_name"),
       supabase.from("team_coaches").select("team_id, profiles(full_name)"),
@@ -132,6 +132,7 @@ export default async function AdministrationPage({ searchParams }: { searchParam
       id: t.id,
       name: t.name,
       category: t.category,
+      color: t.color,
       seasonId: t.season_id,
       coaches: (tc ?? []).filter((r) => r.team_id === t.id).map((r) => (r.profiles as { full_name: string } | null)?.full_name ?? "").filter(Boolean),
       players: (players ?? []).filter((p) => p.team_id === t.id).map((p) => ({ id: p.id, name: `${p.first_name} ${p.last_name}` })),

@@ -9,7 +9,7 @@ import type { Json } from "@/types/database";
 export async function saveTechnicalGuide(raw: unknown): Promise<{ success?: true; error?: string }> {
   const profile = await requireProfile();
   if (!(GUIDE_EDIT_ROLES as readonly string[]).includes(profile.role)) {
-    return { error: "Seuls les administrateurs, directeurs sportifs et coachs peuvent modifier le cahier technique." };
+    return { error: "Seuls les administrateurs, directeurs sportifs et coachs peuvent modifier les carnets techniques." };
   }
 
   const content = sanitizeGuide(raw);

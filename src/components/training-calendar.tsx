@@ -46,7 +46,7 @@ export function TrainingCalendar({
   gyms,
 }: {
   trainings: CalendarTraining[];
-  teams: { id: string; name: string }[];
+  teams: { id: string; name: string; color?: string | null }[];
   coaches: { id: string; full_name: string }[];
   gyms: { id: string; name: string; courts?: number }[];
 }) {
@@ -59,7 +59,7 @@ export function TrainingCalendar({
 
   const teamColor = useMemo(() => {
     const map = new Map<string, string>();
-    teams.forEach((t, i) => map.set(t.id, TEAM_COLORS[i % TEAM_COLORS.length]));
+    teams.forEach((t, i) => map.set(t.id, t.color || TEAM_COLORS[i % TEAM_COLORS.length]));
     return map;
   }, [teams]);
 

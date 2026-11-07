@@ -383,7 +383,7 @@ export function GuideView({
           </Link>
           {canEdit && (
             <Link href="/carnet-technique/modifier" className="btn-primary">
-              Modifier le cahier
+              Modifier les carnets
             </Link>
           )}
         </div>
@@ -391,8 +391,8 @@ export function GuideView({
 
       {!active ? (
         <div className="card text-sm" style={{ color: "var(--text-dim)" }}>
-          Le cahier technique est vide pour l&apos;instant.
-          {canEdit ? " Utilise « Modifier le cahier » pour ajouter une première catégorie." : ""}
+          Les carnets techniques sont vides pour l&apos;instant.
+          {canEdit ? " Utilise « Modifier les carnets » pour ajouter une première catégorie." : ""}
         </div>
       ) : (
         <>

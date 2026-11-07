@@ -3,7 +3,9 @@
 import { useTransition } from "react";
 import { unassignTeam } from "@/app/(app)/coachs/[id]/actions";
 
-type Team = { id: string; name: string; category: string };
+import { teamColor } from "@/lib/category-color";
+
+type Team = { id: string; name: string; category: string; color?: string | null };
 
 export function CoachTeamsManager({ coachId, teams }: { coachId: string; teams: Team[] }) {
   const [isPending, startTransition] = useTransition();
@@ -17,7 +19,7 @@ export function CoachTeamsManager({ coachId, teams }: { coachId: string; teams: 
   return (
     <div className="space-y-2">
       {teams.map((t) => (
-        <div key={t.id} className="flex items-center justify-between rounded-lg px-3 py-2 text-sm" style={{ background: "var(--surf-2)" }}>
+        <div key={t.id} className="flex items-center justify-between rounded-lg px-3 py-2 text-sm" style={{ background: "var(--surf-2)", borderLeft: `4px solid ${teamColor(t)}` }}>
           <span>
             {t.name} <span style={{ color: "var(--text-faint)" }}>({t.category})</span>
           </span>
