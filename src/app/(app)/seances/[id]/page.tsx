@@ -6,6 +6,8 @@ import { formatDateLong } from "@/lib/sessions";
 import { focusColor, focusLabel } from "@/lib/blocks";
 import { SessionBlocks } from "@/components/session-blocks";
 import { TrainingFeedback } from "@/components/training-feedback";
+import { loadPlayerClips } from "@/lib/player-clips";
+import type { PlayerClip } from "@/components/player-video";
 
 export default async function SeancePage({
   params,
@@ -46,6 +48,10 @@ export default async function SeancePage({
         .eq("training_id", id)
         .order("created_at", { ascending: false }),
     ]);
+
+  const sessionClips = await loadPlayerClips(supabase, { trainingId: id });
+  const videosByPlayer: Record<string, PlayerClip[]> = {};
+  for (const c of sessionClips) for (const pid of c.playerIds) (videosByPlayer[pid] ??= []).push(c);
 
   type FeedbackRow = NonNullable<typeof feedbacks>[number];
   const feedbacksByPlayer: Record<string, FeedbackRow[]> = {};
@@ -124,6 +130,7 @@ export default async function SeancePage({
           trainingId={training.id}
           players={players ?? []}
           feedbacksByPlayer={feedbacksByPlayer}
+          videosByPlayer={videosByPlayer}
           canManage={canManage}
         />
       </div>
