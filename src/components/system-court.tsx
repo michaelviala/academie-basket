@@ -48,6 +48,7 @@ export function SystemCourt({
   positions,
   ball,
   previous,
+  segment,
   pass,
   curve = true,
   mode = "none",
@@ -63,6 +64,8 @@ export function SystemCourt({
   ball?: Pt | null;
   /** Séquence précédente : dessine les flèches de déplacement. */
   previous?: TokenPosition[] | null;
+  /** Transition en cours de lecture : trajectoires pleines + cercles fantômes aux arrivées. */
+  segment?: { from: TokenPosition[]; to: TokenPosition[] } | null;
   /** Passe à matérialiser (de l'ancien porteur au nouveau). */
   pass?: { from: Pt; to: Pt } | null;
   curve?: boolean;
@@ -88,11 +91,27 @@ export function SystemCourt({
   }
 
   const ballPt = ball === undefined ? holderBall(positions) : ball;
-  const prevMap = new Map((previous ?? []).map((p) => [p.label, p]));
-  const arrows = positions.filter((p) => {
+  const trailFrom = segment?.from ?? previous ?? null;
+  const trailTo = segment?.to ?? positions;
+  const prevMap = new Map((trailFrom ?? []).map((p) => [p.label, p]));
+  const arrows = trailTo.filter((p) => {
     const a = prevMap.get(p.label);
     return a && Math.hypot(a.x - p.x, a.y - p.y) > 2;
   });
+  const screens = positions.filter((p) => p.screen);
+  const screenMark = (p: TokenPosition) => {
+    const a = prevMap.get(p.label);
+    let dx = 0;
+    let dy = 1;
+    if (a && Math.hypot(p.x - a.x, p.y - a.y) > 2) {
+      const len = Math.hypot(p.x - a.x, p.y - a.y);
+      dx = (p.x - a.x) / len;
+      dy = (p.y - a.y) / len;
+    }
+    const s0 = { x: p.x + dx * SIZE * 0.5, y: p.y + dy * SIZE * 0.5 };
+    const s1 = { x: p.x + dx * (SIZE * 0.5 + 4.5), y: p.y + dy * (SIZE * 0.5 + 4.5) };
+    return { s0, s1, bar: { x: -dy * 3.6, y: dx * 3.6 } };
+  };
   const shorten = (a: Pt, b: Pt): Pt => {
     const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
     const k = Math.max(0, (len - SIZE * 0.55) / len);
@@ -114,7 +133,7 @@ export function SystemCourt({
     >
       <CourtLines />
 
-      {!mini && (arrows.length > 0 || pass) && (
+      {!mini && (arrows.length > 0 || pass || screens.length > 0) && (
         <svg
           viewBox="0 0 100 100"
           preserveAspectRatio="none"
@@ -141,11 +160,9 @@ export function SystemCourt({
                 d={d}
                 fill="none"
                 stroke="#14171c"
-                strokeWidth={1.8}
-                strokeDasharray="4 3"
+                strokeWidth={2}
                 vectorEffect="non-scaling-stroke"
                 markerEnd={`url(#${markerId})`}
-                opacity={0.8}
               />
             );
           })}
@@ -155,16 +172,43 @@ export function SystemCourt({
               y1={pass.from.y}
               x2={shorten(pass.from, pass.to).x}
               y2={shorten(pass.from, pass.to).y}
-              stroke="#ff7a3d"
-              strokeWidth={2.2}
-              strokeDasharray="1 3.5"
-              strokeLinecap="round"
+              stroke="#14171c"
+              strokeWidth={2}
+              strokeDasharray="5 4"
               vectorEffect="non-scaling-stroke"
-              markerEnd={`url(#${markerId}p)`}
+              markerEnd={`url(#${markerId})`}
             />
           )}
+          {screens.map((p) => {
+            const m = screenMark(p);
+            return (
+              <g key={`s-${p.label}`} stroke="#14171c" strokeWidth={2.6} strokeLinecap="round" vectorEffect="non-scaling-stroke">
+                <line x1={m.s0.x} y1={m.s0.y} x2={m.s1.x} y2={m.s1.y} vectorEffect="non-scaling-stroke" />
+                <line x1={m.s1.x - m.bar.x} y1={m.s1.y - m.bar.y} x2={m.s1.x + m.bar.x} y2={m.s1.y + m.bar.y} vectorEffect="non-scaling-stroke" />
+              </g>
+            );
+          })}
         </svg>
       )}
+
+      {!mini &&
+        segment &&
+        arrows.map((p) => (
+          <div
+            key={`g-${p.label}`}
+            aria-hidden
+            className="pointer-events-none absolute rounded-full"
+            style={{
+              left: `${p.x}%`,
+              top: `${p.y}%`,
+              width: `${SIZE}%`,
+              aspectRatio: "1",
+              transform: "translate(-50%, -50%)",
+              border: "0.35cqw dashed #14171c",
+              zIndex: 2,
+            }}
+          />
+        ))}
 
       {positions.map((p) => {
         const kind = tokenKind(p.label);
@@ -210,19 +254,6 @@ export function SystemCourt({
             }}
           >
             {p.label}
-            {p.screen && (
-              <span
-                aria-hidden
-                className="absolute rounded-full"
-                style={{
-                  left: "-18%",
-                  right: "-18%",
-                  bottom: "-34%",
-                  height: "13%",
-                  background: "#14171c",
-                }}
-              />
-            )}
           </div>
         );
       })}

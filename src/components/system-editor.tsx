@@ -120,8 +120,9 @@ export function SystemEditor({
     ? ballBetween(seqs[i0].positions, seqs[i0 + 1].positions, f, curve)
     : holderBall(cur?.positions ?? []);
   const previous = atRest && idx > 0 ? seqs[idx - 1].positions : null;
-  const prevHolder = previous ? holder(previous) : null;
-  const curHolder = cur ? holder(cur.positions) : null;
+  const segment = moving ? { from: seqs[i0].positions, to: seqs[i0 + 1].positions } : null;
+  const prevHolder = segment ? holder(segment.from) : previous ? holder(previous) : null;
+  const curHolder = segment ? holder(segment.to) : cur ? holder(cur.positions) : null;
   const pass =
     prevHolder && curHolder && prevHolder.label !== curHolder.label
       ? { from: { x: prevHolder.x, y: prevHolder.y }, to: { x: curHolder.x, y: curHolder.y } }
@@ -316,6 +317,7 @@ export function SystemEditor({
               positions={shown}
               ball={ball}
               previous={previous}
+              segment={segment}
               pass={pass}
               curve={curve}
               mode={editing ? (tool === "move" ? "move" : "tap") : "none"}
@@ -374,7 +376,9 @@ export function SystemEditor({
 
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs" style={{ color: "var(--text-faint)" }}>
             <span className="font-mono">
-              Séquence {idx + 1}/{n} · {cur?.label}
+              {moving
+                ? `Séquence ${i0 + 1} → ${i0 + 2}`
+                : `Séquence ${idx + 1}/${n} · ${cur?.label}`}
             </span>
             <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold" style={{ color: "var(--text)" }}>
               Trajectoires fluidifiées
