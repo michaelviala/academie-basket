@@ -49,6 +49,7 @@ export function TrainingFeedback({
   const [error, setError] = useState<string | null>(null);
   const [video, setVideo] = useState<File | null>(null);
   const [filming, setFilming] = useState(false);
+  const [camFail, setCamFail] = useState<string | null>(null);
   const nativeFilm = useRef<HTMLInputElement>(null);
 
   async function chooseVideo(f: File | null) {
@@ -125,7 +126,7 @@ export function TrainingFeedback({
           maxSeconds={FEEDBACK_MAX_SECONDS}
           onCancel={() => setFilming(false)}
           onRecorded={(f) => { setFilming(false); void chooseVideo(f); }}
-          onUnavailable={(why) => { setFilming(false); setError(`${why} L'appareil photo du téléphone va s'ouvrir (sans décompte : 12 s max).`); setTimeout(() => nativeFilm.current?.click(), 0); }}
+          onUnavailable={(why) => { setFilming(false); setCamFail(why); }}
         />
       )}
       <input ref={nativeFilm} type="file" accept="video/*" capture="environment" hidden onChange={(e) => void chooseVideo(e.target.files?.[0] ?? null)} />
@@ -224,7 +225,7 @@ export function TrainingFeedback({
                     🎥 Vidéo de l&apos;exercice (optionnel, {FEEDBACK_MAX_SECONDS} secondes maximum)
                   </p>
                   <div className="flex flex-wrap items-center gap-2">
-                    <button type="button" className="btn-secondary" onClick={() => setFilming(true)} disabled={isPending}>
+                    <button type="button" className="btn-secondary" onClick={() => { setCamFail(null); setFilming(true); }} disabled={isPending}>
                       📹 Filmer
                     </button>
                     <label className="btn-secondary cursor-pointer">
@@ -247,6 +248,14 @@ export function TrainingFeedback({
                       </span>
                     )}
                   </div>
+                  {camFail && (
+                    <p className="rounded border p-2 text-xs" style={{ borderColor: "#f87171", color: "#f87171" }}>
+                      Caméra intégrée impossible : {camFail}{" "}
+                      <button type="button" className="underline" onClick={() => nativeFilm.current?.click()}>
+                        Ouvrir l&apos;appareil photo du téléphone (sans décompte, 12 s max)
+                      </button>
+                    </p>
+                  )}
                 </div>
                 <button className="btn-primary sm:col-span-2" type="submit" disabled={isPending}>
                   Enregistrer le feedback

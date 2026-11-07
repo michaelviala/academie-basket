@@ -34,7 +34,7 @@ export function VideoRecorder({
     let cancelled = false;
     async function open() {
       if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
-        cb.current.onUnavailable("Caméra intégrée indisponible sur ce navigateur.");
+        cb.current.onUnavailable(window.isSecureContext ? "ce navigateur ne permet pas l'enregistrement vidéo." : "la page n'est pas en HTTPS.");
         return;
       }
       try {
@@ -54,8 +54,8 @@ export function VideoRecorder({
         if (!cancelled)
           cb.current.onUnavailable(
             e instanceof DOMException && e.name === "NotAllowedError"
-              ? "Accès à la caméra refusé : autorise-le dans le navigateur."
-              : "Caméra introuvable.",
+              ? "accès refusé. Autorise la caméra et le micro pour ce site (icône à gauche de l'adresse → Autorisations)."
+              : `${e instanceof DOMException ? e.name : "erreur"} : ${e instanceof Error ? e.message : "caméra introuvable"}.`,
           );
       }
     }
