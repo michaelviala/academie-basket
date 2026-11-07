@@ -30,3 +30,10 @@ export async function getTechnicalGuide(): Promise<{
     updatedBy,
   };
 }
+
+/** Couleur de chaque catégorie (code → #rrggbb), d'après le cahier technique. */
+export async function getCategoryColors(): Promise<Record<string, string>> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("technical_guide").select("content").eq("id", true).maybeSingle();
+  return Object.fromEntries(sanitizeGuide(data?.content).categories.map((c) => [c.code, c.color]));
+}
