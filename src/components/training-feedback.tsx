@@ -3,6 +3,9 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { deleteFeedback, upsertFeedback } from "@/app/(app)/seances/[id]/actions";
+import { AddPlayerVideo, PlayerClipList, type PlayerClip } from "@/components/player-video";
+import { discardUpload, uploadVideo } from "@/lib/player-video";
+import { addPlayerVideo } from "@/app/(app)/videos/player-video";
 
 const PRIORITY_LABELS: Record<string, string> = {
   haute: "Haute",
@@ -30,22 +33,55 @@ export function TrainingFeedback({
   trainingId,
   players,
   feedbacksByPlayer,
+  videosByPlayer,
   canManage,
 }: {
   trainingId: string;
   players: Player[];
   feedbacksByPlayer: Record<string, Feedback[]>;
+  videosByPlayer: Record<string, PlayerClip[]>;
   canManage: boolean;
 }) {
   const [openPlayerId, setOpenPlayerId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [video, setVideo] = useState<File | null>(null);
 
-  function handleSubmit(playerId: string, formData: FormData) {
+  function handleSubmit(player: Player, formData: FormData) {
     setError(null);
+    const file = video;
     startTransition(async () => {
       try {
-        await upsertFeedback(trainingId, playerId, formData);
+        let up: Awaited<ReturnType<typeof uploadVideo>> | null = null;
+        if (file) {
+          up = await uploadVideo(file);
+          if ("error" in up) throw new Error(up.error);
+        }
+        try {
+          await upsertFeedback(trainingId, player.id, formData);
+        } catch (e) {
+          if (up && "ok" in up) await discardUpload(up.ok);
+          throw e;
+        }
+        if (up && "ok" in up) {
+          const res = await addPlayerVideo({
+            playerId: player.id,
+            trainingId,
+            title: `${player.first_name} ${player.last_name} · exercice`,
+            note: String(formData.get("positives") ?? "") || String(formData.get("improvements") ?? ""),
+            filePath: up.ok.filePath,
+            thumbPath: up.ok.thumbPath,
+            fileName: up.ok.fileName,
+            fileSize: up.ok.fileSize,
+            mime: up.ok.mime,
+            duration: up.ok.duration,
+          });
+          if (res.error) {
+            await discardUpload(up.ok);
+            throw new Error(`Feedback enregistré, mais la vidéo a échoué : ${res.error}`);
+          }
+        }
+        setVideo(null);
         setOpenPlayerId(null);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Erreur lors de l'enregistrement.");
@@ -96,11 +132,19 @@ export function TrainingFeedback({
                   {history.length} feedback{history.length > 1 ? "s" : ""}
                 </span>
                 {canManage && (
+                  <AddPlayerVideo
+                    small
+                    playerId={p.id}
+                    playerName={`${p.first_name} ${p.last_name}`}
+                    trainingId={trainingId}
+                  />
+                )}
+                {canManage && (
                   <button
                     type="button"
                     className="btn-secondary"
                     style={{ fontSize: 11, padding: "5px 10px" }}
-                    onClick={() => setOpenPlayerId(isOpen ? null : p.id)}
+                    onClick={() => { setVideo(null); setOpenPlayerId(isOpen ? null : p.id); }}
                   >
                     {isOpen ? "Annuler" : "+ Feedback"}
                   </button>
@@ -130,9 +174,15 @@ export function TrainingFeedback({
               </div>
             )}
 
+            {(videosByPlayer[p.id] ?? []).length > 0 && (
+              <div className="mt-2">
+                <PlayerClipList clips={videosByPlayer[p.id]} canManage={canManage} />
+              </div>
+            )}
+
             {isOpen && (
               <form
-                action={(fd) => handleSubmit(p.id, fd)}
+                action={(fd) => handleSubmit(p, fd)}
                 className="mt-3 grid grid-cols-1 gap-2 border-t pt-3 sm:grid-cols-2"
                 style={{ borderColor: "var(--border)" }}
               >
@@ -145,6 +195,15 @@ export function TrainingFeedback({
                   <option value="basse">Basse</option>
                 </select>
                 <input className="input" name="next_session_goal" placeholder="Objectif prochaine séance" />
+                <label className="text-xs sm:col-span-2" style={{ color: "var(--text-faint)" }}>
+                  🎥 Vidéo de l&apos;exercice (optionnel, mp4 · 50 Mo max)
+                  <input
+                    className="input mt-1 w-full"
+                    type="file"
+                    accept="video/*"
+                    onChange={(e) => setVideo(e.target.files?.[0] ?? null)}
+                  />
+                </label>
                 <button className="btn-primary sm:col-span-2" type="submit" disabled={isPending}>
                   Enregistrer le feedback
                 </button>

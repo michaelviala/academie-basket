@@ -1467,6 +1467,7 @@ export type Database = {
           system_step: number
           tags: string[]
           title: string
+          training_id: string | null
         }
         Insert: {
           comments?: Json
@@ -1487,6 +1488,7 @@ export type Database = {
           system_step?: number
           tags?: string[]
           title: string
+          training_id?: string | null
         }
         Update: {
           comments?: Json
@@ -1507,6 +1509,7 @@ export type Database = {
           system_step?: number
           tags?: string[]
           title?: string
+          training_id?: string | null
         }
         Relationships: [
           {
@@ -1528,6 +1531,13 @@ export type Database = {
             columns: ["system_id"]
             isOneToOne: false
             referencedRelation: "systems"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_clips_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
             referencedColumns: ["id"]
           },
         ]

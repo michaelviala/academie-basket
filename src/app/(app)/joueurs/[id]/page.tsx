@@ -33,6 +33,8 @@ import {
 } from "./actions";
 import { GoalStatusForm } from "@/components/goal-status-form";
 import { PlayerPhoto } from "@/components/player-photo";
+import { AddPlayerVideo, PlayerClipList, type TrainingOption } from "@/components/player-video";
+import { loadPlayerClips } from "@/lib/player-clips";
 import { PlayerEvaluations } from "@/components/player-evaluations";
 import { PlayerRadar } from "@/components/player-radar";
 import { EvaluationForm } from "@/components/evaluation-form";
@@ -235,6 +237,23 @@ export default async function JoueurPage({
     getClubSettings(),
     getCategoryColors(),
   ]);
+
+  const canManageVideos = ["admin", "directeur_sportif", "coach"].includes(profile.role);
+  const canSeeVideos = canManageVideos || profile.role === "preparateur_physique";
+  const playerClips = canSeeVideos ? await loadPlayerClips(supabase, { playerId: id }) : [];
+  let trainingOptions: TrainingOption[] = [];
+  if (canManageVideos && player.team_id) {
+    const { data: tr } = await supabase
+      .from("trainings")
+      .select("id, date")
+      .eq("team_id", player.team_id)
+      .order("date", { ascending: false })
+      .limit(15);
+    trainingOptions = (tr ?? []).map((t) => ({
+      id: t.id,
+      label: `Séance du ${new Date(t.date).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })}`,
+    }));
+  }
 
   const { data: injuries } = canSeeInjuries
     ? await supabase
@@ -725,6 +744,28 @@ export default async function JoueurPage({
               )}
             </div>
           </section>
+
+          {canSeeVideos && (
+            <section className="card">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <SectionTitle hint="Vidéos de l'exercice filmées à l'entraînement (aussi depuis le feedback d'une séance).">Vidéos</SectionTitle>
+                {canManageVideos && (
+                  <AddPlayerVideo
+                    playerId={player.id}
+                    playerName={`${player.first_name} ${player.last_name}`}
+                    trainings={trainingOptions}
+                  />
+                )}
+              </div>
+              {playerClips.length > 0 ? (
+                <PlayerClipList clips={playerClips} canManage={canManageVideos} showTraining />
+              ) : (
+                <p className="text-sm" style={{ color: "var(--text-faint)" }}>
+                  Aucune vidéo pour l&apos;instant.
+                </p>
+              )}
+            </section>
+          )}
 
           <section className="card">
             <SectionTitle hint="À remplir par le joueur lui-même, régulièrement.">Auto-évaluation</SectionTitle>
