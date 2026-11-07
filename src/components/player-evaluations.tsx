@@ -23,17 +23,19 @@ type Evaluation = {
 };
 
 export function PlayerEvaluations({
+  initialType = "technique",
   evaluations,
   attendanceRate,
   attendancePresent,
   attendanceTotal,
 }: {
+  initialType?: EvalType;
   evaluations: Evaluation[];
   attendanceRate: number | null;
   attendancePresent: number;
   attendanceTotal: number;
 }) {
-  const [active, setActive] = useState<EvalType>("technique");
+  const [active, setActive] = useState<EvalType>(initialType);
 
   const byType = (type: EvalType) => evaluations.filter((e) => e.evaluation_type === type);
 

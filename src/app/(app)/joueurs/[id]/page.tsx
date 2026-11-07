@@ -116,9 +116,9 @@ function TrendBadge({ delta }: { delta: number | null }) {
   );
 }
 
-function IndexTile({ label, value, delta, count, color }: { label: string; value: number | null; delta: number | null; count: number; color: string }) {
+function IndexTile({ label, value, delta, count, color, href }: { label: string; value: number | null; delta: number | null; count: number; color: string; href: string }) {
   return (
-    <div className="rounded-xl p-4" style={{ background: "var(--surf)", border: "1px solid var(--border)", borderTop: `3px solid ${color}` }}>
+    <Link href={href} scroll={false} title={`Voir les évaluations ${label.toLowerCase()}`} className="block rounded-xl p-4 transition-transform hover:-translate-y-0.5" style={{ background: "var(--surf)", border: "1px solid var(--border)", borderTop: `3px solid ${color}` }}>
       <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "var(--text-dim)" }}>
         {label}
       </p>
@@ -134,10 +134,10 @@ function IndexTile({ label, value, delta, count, color }: { label: string; value
       <div className="mt-2 flex flex-wrap items-center justify-between gap-1">
         <TrendBadge delta={delta} />
         <span className="text-[11px]" style={{ color: "var(--text-faint)" }}>
-          {count} éval.
+          {count} éval. →
         </span>
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -184,10 +184,11 @@ export default async function JoueurPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; type?: string }>;
 }) {
   const { id } = await params;
-  const { tab } = await searchParams;
+  const { tab, type } = await searchParams;
+  const initialType = EVAL_TYPES.find((t) => t === type) ?? "technique";
   const profile = await requireProfile();
   const supabase = await createClient();
   const canSeeInjuries = ["admin", "directeur_sportif", "preparateur_physique"].includes(profile.role);
@@ -467,6 +468,7 @@ export default async function JoueurPage({
                   delta={trend(ev, t)}
                   count={ev.filter((e) => e.evaluation_type === t).length}
                   color={EVAL_COLORS[t]}
+                  href={`/joueurs/${player.id}?tab=evaluations&type=${t}`}
                 />
               ))}
               <div className="rounded-xl p-4" style={{ background: "var(--surf)", border: "1px solid var(--border)", borderTop: "3px solid var(--green)" }}>
@@ -609,7 +611,7 @@ export default async function JoueurPage({
       {/* ===== ÉVALUATIONS ===== */}
       {activeTab === "evaluations" && (
         <div className="space-y-6">
-          <PlayerEvaluations evaluations={ev} attendanceRate={attendanceRate} attendancePresent={attendancePresent} attendanceTotal={attendanceTotal} />
+          <PlayerEvaluations key={initialType} initialType={initialType} evaluations={ev} attendanceRate={attendanceRate} attendancePresent={attendancePresent} attendanceTotal={attendanceTotal} />
           <section id="nouvelle-evaluation" className="card scroll-mt-4">
             <SectionTitle hint="Choisis une rubrique, une compétence et une note sur 10.">Nouvelle évaluation</SectionTitle>
             <EvaluationForm skills={skills ?? []} action={addEvaluation.bind(null, player.id)} />
