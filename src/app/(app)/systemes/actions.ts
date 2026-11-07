@@ -8,7 +8,7 @@ import { requireProfile } from "@/lib/data";
 import { SYSTEM_EDIT_ROLES, type TokenPosition } from "@/lib/systems";
 
 const DEFAULT_POSITIONS: TokenPosition[] = [
-  { label: "1", x: 50, y: 92 },
+  { label: "1", x: 50, y: 82, ball: true },
   { label: "2", x: 15, y: 28 },
   { label: "3", x: 85, y: 28 },
   { label: "4", x: 32, y: 58 },

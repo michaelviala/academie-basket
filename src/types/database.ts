@@ -1421,6 +1421,7 @@ export type Database = {
           player_id: string | null
           source_id: string
           start_seconds: number
+          system_id: string | null
           tags: string[]
           title: string
         }
@@ -1433,6 +1434,7 @@ export type Database = {
           player_id?: string | null
           source_id: string
           start_seconds?: number
+          system_id?: string | null
           tags?: string[]
           title: string
         }
@@ -1445,6 +1447,7 @@ export type Database = {
           player_id?: string | null
           source_id?: string
           start_seconds?: number
+          system_id?: string | null
           tags?: string[]
           title?: string
         }
@@ -1461,6 +1464,13 @@ export type Database = {
             columns: ["source_id"]
             isOneToOne: false
             referencedRelation: "library_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_clips_system_id_fkey"
+            columns: ["system_id"]
+            isOneToOne: false
+            referencedRelation: "systems"
             referencedColumns: ["id"]
           },
         ]

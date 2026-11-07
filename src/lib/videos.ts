@@ -21,6 +21,7 @@ export type ClipView = {
   tags: string[];
   playerId: string | null;
   playerName: string | null;
+  systemId: string | null;
   source: VideoSourceInfo;
   canEdit: boolean;
 };
