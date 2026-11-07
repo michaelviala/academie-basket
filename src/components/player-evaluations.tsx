@@ -28,6 +28,19 @@ type Evaluation = {
   video_url?: string | null;
 };
 
+const CAT_LABELS: Record<string, string> = {
+  tir: "Tir",
+  dribble: "Dribble",
+  finition: "Finition",
+  passe: "Passe",
+  defense: "Défense",
+  rebond: "Rebond",
+  tactique: "Tactique",
+  physique: "Physique",
+  mental: "Mental",
+};
+const catLabel = (c: string | undefined | null) => (c ? (CAT_LABELS[c] ?? c.charAt(0).toUpperCase() + c.slice(1)) : "Autre");
+
 const fmtDate = (d: string) =>
   new Date(`${d.slice(0, 10)}T00:00:00`).toLocaleDateString("fr-FR", {
     weekday: "long",
@@ -70,7 +83,25 @@ export function PlayerEvaluations({
     ).toFixed(1);
   };
 
-  const activeRows = byType(active);
+  const [cat, setCat] = useState<string>("");
+  const typeRows = byType(active);
+  const activeRows = cat ? typeRows.filter((e) => (e.skills?.category ?? "") === cat) : typeRows;
+
+  // Types de compétence (tir, dribble, passe…) présents dans la rubrique active
+  const groups = (() => {
+    const map = new Map<string, Evaluation[]>();
+    for (const e of activeRows) {
+      const k = e.skills?.category ?? "";
+      map.set(k, [...(map.get(k) ?? []), e]);
+    }
+    return [...map.entries()].sort((a, b) => catLabel(a[0]).localeCompare(catLabel(b[0])));
+  })();
+  const catCounts = (() => {
+    const map = new Map<string, number>();
+    for (const e of typeRows) map.set(e.skills?.category ?? "", (map.get(e.skills?.category ?? "") ?? 0) + 1);
+    return [...map.entries()].sort((a, b) => catLabel(a[0]).localeCompare(catLabel(b[0])));
+  })();
+  const avgOf = (rows: Evaluation[]) => (rows.reduce((s, r) => s + Number(r.score), 0) / rows.length).toFixed(1);
   const [openId, setOpenId] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -134,7 +165,7 @@ export function PlayerEvaluations({
             <button
               key={t}
               type="button"
-              onClick={() => setActive(t)}
+              onClick={() => { setActive(t); setCat(""); }}
               className="rounded-xl px-4 py-4 text-center transition-colors"
               style={{
                 background: "var(--surf)",
@@ -235,42 +266,66 @@ export function PlayerEvaluations({
             évaluation{activeRows.length > 1 ? "s" : ""}
           </span>
         </div>
-        <div className="max-h-72 space-y-2 overflow-y-auto">
-          {activeRows.map((e) => (
-            <button
-              type="button"
-              key={e.id}
-              onClick={() => setOpenId(e.id)}
-              className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors hover:brightness-125"
-              style={{ background: "var(--surf-2)" }}
-              title="Ouvrir l'évaluation"
-            >
-              <div className="min-w-0">
-                <p className="font-medium">
-                  {e.skills?.name ?? EVAL_TYPE_LABELS[active]}
-                </p>
-                <p
-                  className="truncate text-xs"
-                  style={{ color: "var(--text-faint)" }}
-                >
-                  {e.evaluated_at}
-                  {e.comment ? ` · ${e.comment}` : ""}
-                </p>
-              </div>
-              <span className="flex items-center gap-2">
-                <span
-                  className="badge"
-                  style={{
-                    background: "rgba(255,106,31,0.14)",
-                    color: "var(--text)",
-                    borderColor: "transparent",
-                  }}
-                >
-                  {e.score}
-                </span>
-                <span style={{ color: "var(--text-faint)" }}>›</span>
-              </span>
+        {catCounts.length > 1 && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            <button type="button" onClick={() => setCat("")} className="chip" style={!cat ? { borderColor: "var(--brand)", color: "var(--text)" } : undefined}>
+              Tous ({typeRows.length})
             </button>
+            {catCounts.map(([k, n]) => (
+              <button key={k || "autre"} type="button" onClick={() => setCat(k)} className="chip" style={cat === k ? { borderColor: "var(--brand)", color: "var(--text)" } : undefined}>
+                {catLabel(k)} ({n})
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="max-h-[32rem] space-y-4 overflow-y-auto">
+          {groups.map(([k, rows]) => (
+            <div key={k || "autre"} className="space-y-2">
+              <div className="flex items-baseline justify-between border-b pb-1" style={{ borderColor: "var(--border)" }}>
+                <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--text-dim)" }}>
+                  {EVAL_TYPE_LABELS[active]} · {catLabel(k)}
+                </p>
+                <span className="text-xs" style={{ color: "var(--text-faint)" }}>
+                  Moyenne {avgOf(rows)} / 10 · {rows.length} évaluation{rows.length > 1 ? "s" : ""}
+                </span>
+              </div>
+              {rows.map((e) => (
+              <button
+                type="button"
+                key={e.id}
+                onClick={() => setOpenId(e.id)}
+                className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors hover:brightness-125"
+                style={{ background: "var(--surf-2)" }}
+                title="Ouvrir l'évaluation"
+              >
+                <div className="min-w-0">
+                  <p className="font-medium">
+                    {e.skills?.name ?? EVAL_TYPE_LABELS[active]}
+                  </p>
+                  <p
+                    className="truncate text-xs"
+                    style={{ color: "var(--text-faint)" }}
+                  >
+                    {e.evaluated_at}
+                    {e.comment ? ` · ${e.comment}` : ""}
+                  </p>
+                </div>
+                <span className="flex items-center gap-2">
+                  <span
+                    className="badge"
+                    style={{
+                      background: "rgba(255,106,31,0.14)",
+                      color: "var(--text)",
+                      borderColor: "transparent",
+                    }}
+                  >
+                    {e.score}
+                  </span>
+                  <span style={{ color: "var(--text-faint)" }}>›</span>
+                </span>
+              </button>
+              ))}
+            </div>
           ))}
           {activeRows.length === 0 && (
             <p className="text-sm" style={{ color: "var(--text-faint)" }}>
