@@ -1449,41 +1449,62 @@ export type Database = {
       }
       video_clips: {
         Row: {
+          comments: Json
           created_at: string
           created_by: string | null
           end_seconds: number | null
           id: string
           note: string | null
+          phase: string
           player_id: string | null
+          player_ids: string[]
+          result: string | null
+          shared: boolean
+          shot: Json | null
           source_id: string
           start_seconds: number
           system_id: string | null
+          system_step: number
           tags: string[]
           title: string
         }
         Insert: {
+          comments?: Json
           created_at?: string
           created_by?: string | null
           end_seconds?: number | null
           id?: string
           note?: string | null
+          phase?: string
           player_id?: string | null
+          player_ids?: string[]
+          result?: string | null
+          shared?: boolean
+          shot?: Json | null
           source_id: string
           start_seconds?: number
           system_id?: string | null
+          system_step?: number
           tags?: string[]
           title: string
         }
         Update: {
+          comments?: Json
           created_at?: string
           created_by?: string | null
           end_seconds?: number | null
           id?: string
           note?: string | null
+          phase?: string
           player_id?: string | null
+          player_ids?: string[]
+          result?: string | null
+          shared?: boolean
+          shot?: Json | null
           source_id?: string
           start_seconds?: number
           system_id?: string | null
+          system_step?: number
           tags?: string[]
           title?: string
         }
@@ -1507,6 +1528,38 @@ export type Database = {
             columns: ["system_id"]
             isOneToOne: false
             referencedRelation: "systems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_quarters: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          source_id: string
+          t: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          source_id: string
+          t: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          source_id?: string
+          t?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_quarters_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "library_items"
             referencedColumns: ["id"]
           },
         ]
