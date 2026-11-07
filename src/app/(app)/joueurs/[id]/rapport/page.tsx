@@ -61,6 +61,14 @@ export default async function RapportJoueurPage({ params }: { params: Promise<{ 
               // eslint-disable-next-line @next/next/no-img-element
               <img src={settings.logo_url} alt="" style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 8 }} />
             )}
+            {player.photo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={player.photo_url} alt="" style={{ width: 84, height: 84, objectFit: "cover", borderRadius: 12, border: "2px solid #ddd" }} />
+            ) : (
+              <div style={{ width: 84, height: 84, borderRadius: 12, border: "2px solid #ddd", background: "#f1f1f4", color: "#888", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 800 }}>
+                {`${player.first_name[0] ?? ""}${player.last_name[0] ?? ""}`.toUpperCase()}
+              </div>
+            )}
             <div>
               <p style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 2, color: "#777" }}>Académie Basket · Bilan joueur</p>
               <h1 style={{ fontSize: 26, fontWeight: 800 }}>{player.first_name} {player.last_name}</h1>
