@@ -46,6 +46,7 @@ export function AddPlayerVideo({
   const [error, setError] = useState<string | null>(null);
   const [doneId, setDoneId] = useState<{ clip: string; source: string } | null>(null);
   const [filming, setFilming] = useState(false);
+  const [camFail, setCamFail] = useState<string | null>(null);
   const filmRef = useRef<HTMLInputElement>(null);
   const pickRef = useRef<HTMLInputElement>(null);
 
@@ -120,7 +121,7 @@ export function AddPlayerVideo({
           maxSeconds={FEEDBACK_MAX_SECONDS}
           onCancel={() => setFilming(false)}
           onRecorded={(f) => { setFilming(false); void choose(f); }}
-          onUnavailable={(why) => { setFilming(false); setError(`${why} L'appareil photo du téléphone va s'ouvrir.`); setTimeout(() => filmRef.current?.click(), 0); }}
+          onUnavailable={(why) => { setFilming(false); setCamFail(why); }}
         />
       )}
       {open && (
@@ -152,7 +153,7 @@ export function AddPlayerVideo({
             ) : (
               <form onSubmit={submit} className="space-y-3">
                 <div className="flex flex-wrap gap-2">
-                  <button type="button" className="btn-primary" onClick={() => setFilming(true)} disabled={busy}>
+                  <button type="button" className="btn-primary" onClick={() => { setCamFail(null); setFilming(true); }} disabled={busy}>
                     📹 Filmer
                   </button>
                   <button type="button" className="btn-secondary" onClick={() => pickRef.current?.click()} disabled={busy}>
@@ -161,6 +162,14 @@ export function AddPlayerVideo({
                   <input ref={filmRef} type="file" accept="video/*" capture="environment" hidden onChange={(e) => void choose(e.target.files?.[0] ?? null)} />
                   <input ref={pickRef} type="file" accept="video/*" hidden onChange={(e) => void choose(e.target.files?.[0] ?? null)} />
                 </div>
+                {camFail && (
+                  <p className="rounded border p-2 text-xs" style={{ borderColor: "#f87171", color: "#f87171" }}>
+                    Caméra intégrée impossible : {camFail}{" "}
+                    <button type="button" className="underline" onClick={() => filmRef.current?.click()}>
+                      Ouvrir l&apos;appareil photo du téléphone (sans décompte, 12 s max)
+                    </button>
+                  </p>
+                )}
                 <p className="text-xs" style={{ color: "var(--text-faint)" }}>
                   {file
                     ? `${file.name} · ${(file.size / 1048576).toFixed(1)} Mo`
