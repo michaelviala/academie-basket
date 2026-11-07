@@ -439,6 +439,41 @@ function ItemModal({
   const [tagText, setTagText] = useState(item.tags.join(", "));
   const st = styleOf(item);
 
+  // Plein écran : natif quand le navigateur le permet, sinon (iPhone…) plein cadre du site
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [full, setFull] = useState(false);
+  function enterFull() {
+    setFull(true);
+    const el = stageRef.current as
+      (HTMLDivElement & { webkitRequestFullscreen?: () => void }) | null;
+    try {
+      if (el?.requestFullscreen) void el.requestFullscreen().catch(() => {});
+      else el?.webkitRequestFullscreen?.();
+    } catch {
+      /* le mode plein cadre du site prend le relais */
+    }
+  }
+  function exitFull() {
+    setFull(false);
+    if (document.fullscreenElement)
+      void document.exitFullscreen().catch(() => {});
+  }
+  useEffect(() => {
+    if (!full) return;
+    const onChange = () => {
+      if (!document.fullscreenElement) setFull(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFull(false);
+    };
+    document.addEventListener("fullscreenchange", onChange);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("fullscreenchange", onChange);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [full]);
+
   const media = (() => {
     if (item.kind === "video") {
       if (item.signedUrl)
@@ -516,47 +551,86 @@ function ItemModal({
       </div>
 
       <div className="mt-4">
-        {media?.type === "embed" && (
-          <div className="aspect-video overflow-hidden rounded-lg bg-black">
-            <iframe
-              src={media.src}
-              className="h-full w-full"
-              allow="accelerometer; encrypted-media; picture-in-picture; fullscreen"
-              allowFullScreen
-              title={item.title}
-            />
+        {media && media.type !== "link" && !full && (
+          <div className="mb-2 flex justify-end">
+            <button
+              type="button"
+              className="btn-secondary"
+              style={{ padding: "4px 12px", fontSize: 12 }}
+              onClick={enterFull}
+            >
+              ⛶ Plein écran
+            </button>
           </div>
         )}
-        {media?.type === "file" && (
-          <video
-            src={media.src}
-            controls
-            playsInline
-            preload="metadata"
-            className="aspect-video w-full rounded-lg bg-black"
-          />
-        )}
-        {media?.type === "pdf" && (
-          <PdfViewer url={media.src} title={item.title} />
-        )}
-        {media?.type === "image" && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={media.src}
-            alt={item.title}
-            className="max-h-[60vh] w-full rounded-lg object-contain"
-            style={{ background: "var(--surf-2)" }}
-          />
-        )}
-        {(media?.type === "link" || !media) && (
-          <div
-            className="rounded-lg p-4 text-sm"
-            style={{ background: "var(--surf-2)", color: "var(--text-dim)" }}
-          >
-            Aperçu indisponible pour ce format : utilise le bouton ci-dessous
-            pour ouvrir le fichier.
+        <div
+          ref={stageRef}
+          className={
+            full ? "fixed inset-0 z-[80] flex flex-col bg-black p-2 sm:p-4" : ""
+          }
+        >
+          {full && (
+            <div className="mb-2 flex items-center justify-between gap-3 text-white">
+              <p className="truncate text-sm font-semibold">{item.title}</p>
+              <button
+                type="button"
+                className="rounded-lg px-3 py-1.5 text-sm font-semibold"
+                style={{ background: "rgba(255,255,255,0.15)" }}
+                onClick={exitFull}
+              >
+                ✕ Quitter le plein écran
+              </button>
+            </div>
+          )}
+          <div className={full ? "min-h-0 flex-1" : ""}>
+            {media?.type === "embed" && (
+              <div
+                className={`overflow-hidden rounded-lg bg-black ${full ? "h-full" : "aspect-video"}`}
+              >
+                <iframe
+                  src={media.src}
+                  className="h-full w-full"
+                  allow="accelerometer; encrypted-media; picture-in-picture; fullscreen"
+                  allowFullScreen
+                  title={item.title}
+                />
+              </div>
+            )}
+            {media?.type === "file" && (
+              <video
+                src={media.src}
+                controls
+                playsInline
+                preload="metadata"
+                className={`w-full rounded-lg bg-black ${full ? "h-full" : "aspect-video"}`}
+              />
+            )}
+            {media?.type === "pdf" && (
+              <PdfViewer url={media.src} title={item.title} fullscreen={full} />
+            )}
+            {media?.type === "image" && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={media.src}
+                alt={item.title}
+                className={`w-full rounded-lg object-contain ${full ? "h-full" : "max-h-[60vh]"}`}
+                style={{ background: full ? "transparent" : "var(--surf-2)" }}
+              />
+            )}
+            {(media?.type === "link" || !media) && (
+              <div
+                className="rounded-lg p-4 text-sm"
+                style={{
+                  background: "var(--surf-2)",
+                  color: "var(--text-dim)",
+                }}
+              >
+                Aperçu indisponible pour ce format : utilise le bouton
+                ci-dessous pour ouvrir le fichier.
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {item.kind === "video" &&

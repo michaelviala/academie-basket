@@ -13,9 +13,11 @@ import type {
 export default function PdfViewer({
   url,
   title,
+  fullscreen = false,
 }: {
   url: string;
   title: string;
+  fullscreen?: boolean;
 }) {
   const boxRef = useRef<HTMLDivElement>(null);
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null);
@@ -67,10 +69,13 @@ export default function PdfViewer({
   }, []);
 
   return (
-    <div className="rounded-lg" style={{ background: "var(--surf-2)" }}>
+    <div
+      className={`rounded-lg ${fullscreen ? "flex h-full flex-col" : ""}`}
+      style={{ background: "var(--surf-2)" }}
+    >
       <div
         ref={boxRef}
-        className="max-h-[70vh] overflow-y-auto overflow-x-hidden rounded-lg p-2"
+        className={`overflow-y-auto overflow-x-hidden rounded-lg p-2 ${fullscreen ? "min-h-0 flex-1" : "max-h-[70vh]"}`}
       >
         {error && (
           <p
