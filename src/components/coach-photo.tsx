@@ -69,6 +69,15 @@ export function CoachPhoto({
           {isPending ? "…" : "Changer"}
         </span>
       </button>
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        disabled={isPending}
+        className="text-[11px] font-semibold"
+        style={{ color: "var(--brand)" }}
+      >
+        {isPending ? "Envoi…" : photoUrl ? "Changer la photo" : "📷 Ajouter une photo"}
+      </button>
       {photoUrl && (
         <button
           type="button"

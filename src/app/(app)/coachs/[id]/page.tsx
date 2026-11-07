@@ -3,9 +3,10 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile, ROLE_LABELS } from "@/lib/data";
 import { CoachPhoto } from "@/components/coach-photo";
+import { CoachParcoursForm } from "@/components/coach-parcours-form";
 import { CoachContactForm } from "@/components/coach-contact-form";
 import { CoachTeamsManager } from "@/components/coach-teams-manager";
-import { updateCoachContact, assignTeam } from "./actions";
+import { updateCoachContact, updateCoachParcours, assignTeam } from "./actions";
 
 export default async function CoachPage({
   params,
@@ -131,6 +132,12 @@ export default async function CoachPage({
           )}
         </section>
       </div>
+
+      {/* PARCOURS */}
+      <section className="card space-y-3">
+        <h2 className="font-semibold">Parcours</h2>
+        <CoachParcoursForm coachId={coach.id} initialParcours={coach.parcours ?? ""} action={updateCoachParcours} />
+      </section>
 
       {/* CRENEAUX */}
       <section className="card">

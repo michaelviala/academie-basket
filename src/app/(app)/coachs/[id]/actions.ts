@@ -19,6 +19,16 @@ export async function updateCoachContact(coachId: string, formData: FormData) {
   revalidatePath("/administration");
 }
 
+export async function updateCoachParcours(coachId: string, formData: FormData) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update({ parcours: String(formData.get("parcours") ?? "").trim() || null, updated_at: new Date().toISOString() })
+    .eq("id", coachId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/coachs/${coachId}`);
+}
+
 const PHOTO_BUCKET = "coach-photos";
 
 export async function uploadCoachPhoto(coachId: string, formData: FormData) {
