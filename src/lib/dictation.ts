@@ -25,13 +25,51 @@ export function useDictation(getText: () => string, setText: (t: string) => void
   const supported = useSyncExternalStore(() => () => {}, () => !!ctor(), () => false);
   const [listening, setListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [level, setLevel] = useState(0);
+  const [heard, setHeard] = useState(false);
+  const meter = useRef<{ stream: MediaStream; ctx: AudioContext; raf: number } | null>(null);
   const rec = useRef<Rec | null>(null);
   const active = useRef(false);
   const base = useRef("");
   const finals = useRef("");
 
+  const stopMeter = useCallback(() => {
+    const m = meter.current;
+    if (!m) return;
+    cancelAnimationFrame(m.raf);
+    m.stream.getTracks().forEach((t) => t.stop());
+    void m.ctx.close().catch(() => {});
+    meter.current = null;
+    setLevel(0);
+  }, []);
+
+  const startMeter = useCallback(async () => {
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) return;
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const ctx = new AudioContext();
+      const an = ctx.createAnalyser();
+      an.fftSize = 512;
+      ctx.createMediaStreamSource(stream).connect(an);
+      const buf = new Uint8Array(an.fftSize);
+      const m = { stream, ctx, raf: 0 };
+      const tick = () => {
+        an.getByteTimeDomainData(buf);
+        let peak = 0;
+        for (const v of buf) peak = Math.max(peak, Math.abs(v - 128));
+        setLevel(Math.min(1, peak / 64));
+        m.raf = requestAnimationFrame(tick);
+      };
+      m.raf = requestAnimationFrame(tick);
+      meter.current = m;
+    } catch {
+      setError("Aucun micro accessible : vérifie l'autorisation et le micro choisi dans Chrome.");
+    }
+  }, []);
+
   const stop = useCallback(() => {
     active.current = false;
+    stopMeter();
     setListening(false);
     try {
       rec.current?.stop();
@@ -39,12 +77,14 @@ export function useDictation(getText: () => string, setText: (t: string) => void
       /* ignore */
     }
     rec.current = null;
-  }, []);
+  }, [stopMeter]);
 
   const start = useCallback(() => {
     const C = ctor();
     if (!C) return;
     setError(null);
+    setHeard(false);
+    void startMeter();
     const r = new C();
     r.lang = "fr-FR";
     r.continuous = true;
@@ -61,13 +101,21 @@ export function useDictation(getText: () => string, setText: (t: string) => void
         else inter += x[0].transcript;
       }
       finals.current = fin;
+      setHeard(true);
+      setError(null);
       setText(join(base.current, fin, inter));
     };
     r.onerror = (e) => {
-      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
-        denied = true;
-        setError("Micro refusé : autorise l'accès au micro dans le navigateur.");
-      } else if (e.error === "network") setError("Dictée indisponible (connexion).");
+      const msgs: Record<string, string> = {
+        "not-allowed": "Micro refusé : autorise l'accès au micro dans le navigateur.",
+        "service-not-allowed": "Reconnaissance vocale bloquée par le navigateur ou le réseau.",
+        network: "Le service de reconnaissance vocale du navigateur est injoignable (réseau ou pare-feu).",
+        "audio-capture": "Aucun micro détecté.",
+        "language-not-supported": "Le français n'est pas disponible pour la dictée sur ce navigateur.",
+        "no-speech": "Aucune voix détectée : vérifie que le bon micro est choisi (icône à gauche de l'adresse) et parle plus près.",
+      };
+      if (e.error === "not-allowed" || e.error === "service-not-allowed" || e.error === "language-not-supported") denied = true;
+      if (e.error !== "aborted") setError(msgs[e.error] ?? `Dictée interrompue (${e.error}).`);
     };
     r.onend = () => {
       if (active.current && !denied) {
@@ -88,8 +136,8 @@ export function useDictation(getText: () => string, setText: (t: string) => void
     } catch {
       setError("Impossible de démarrer la dictée.");
     }
-  }, [getText, setText, stop]);
+  }, [getText, setText, stop, startMeter]);
 
   useEffect(() => stop, [stop]);
-  return { supported, listening, error, start, stop };
+  return { supported, listening, error, level, heard, start, stop };
 }
