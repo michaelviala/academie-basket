@@ -5,10 +5,27 @@ import { VideoStage, type StageApi } from "@/components/video-stage";
 import { PHASES, RESULTS, phaseOf, resultsFor, resultOk, type ClipComment } from "@/lib/clip-tags";
 import { fmtT, parseT, type VideoSourceInfo } from "@/lib/videos";
 import {
+  COLORS,
+  HOLDS,
+  TOOLS,
+  activeDrawing,
+  drawShapes,
+  handleAt,
+  hitShape,
+  imageRect,
+  normPoint,
+  resizeShape,
+  type Drawing,
+  type Shape,
+  type ShapeKind,
+} from "@/lib/drawings";
+import {
   addQuarter,
   deleteClip,
+  deleteDrawing,
   deleteQuarter,
   saveClip,
+  saveDrawing,
   type ClipInput,
 } from "@/app/(app)/videos/actions";
 
@@ -29,6 +46,7 @@ export type EditorClip = {
 };
 
 type Draft = Omit<EditorClip, "id" | "canDelete"> & { id: string | null; canDelete: boolean };
+type Draw = { id: string | null; t: number; dur: number; hold: number; shapes: Shape[] };
 type Player = { id: string; first_name: string; last_name: string };
 type SystemOpt = { id: string; name: string; steps: string[] };
 type Quarter = { id: string; t: number };
@@ -45,6 +63,7 @@ export function VideoEditor({
   source,
   initialClips,
   initialQuarters,
+  initialDrawings,
   players,
   systems,
   canEdit,
@@ -53,6 +72,7 @@ export function VideoEditor({
   source: VideoSourceInfo;
   initialClips: EditorClip[];
   initialQuarters: Quarter[];
+  initialDrawings: Drawing[];
   players: Player[];
   systems: SystemOpt[];
   canEdit: boolean;
@@ -78,16 +98,36 @@ export function VideoEditor({
   const [msg, setMsg] = useState<string | null>(null);
   const [cmText, setCmText] = useState("");
   const [, startTransition] = useTransition();
+  const [drawings, setDrawings] = useState<Drawing[]>(initialDrawings);
+  const [dEdit, setDEdit] = useState<Draw | null>(null);
+  const [tool, setTool] = useState<ShapeKind | "move">("arrow");
+  const [color, setColor] = useState("#FFD23F");
+  const [sel, setSel] = useState<number | null>(null);
+  const [cur, setCur] = useState<Shape | null>(null);
+  const [textAt, setTextAt] = useState<[number, number] | null>(null);
+  const [textVal, setTextVal] = useState("");
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const redrawRef = useRef<() => void>(() => {});
+  const drawingsRef = useRef<Drawing[]>(initialDrawings);
+  const editingRef = useRef(false);
+  const prevT = useRef<number | null>(null);
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stopAt = useRef<number | null>(null);
   const dragging = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const win = useRef({ a: 0, b: 1 });
+  const closeRef = useRef<() => void>(() => {});
+  const undoRef = useRef<() => void>(() => {});
+  const delRef = useRef<() => void>(() => {});
+  const openRef = useRef<() => void>(() => {});
 
   const span = ZOOMS[zoom] && ZOOMS[zoom] < dur ? ZOOMS[zoom] : dur || 1;
   const a = span >= (dur || 1) ? 0 : clamp(v0, 0, Math.max(0, dur - span));
   const b = a + span;
   useEffect(() => {
     win.current = { a, b };
+    drawingsRef.current = drawings;
+    editingRef.current = dEdit !== null;
   });
 
   /* ---------- lecteur : sondage régulier ---------- */
@@ -101,6 +141,24 @@ export function VideoEditor({
         h.seek(stopAt.current);
         stopAt.current = null;
       }
+      if (!editingRef.current && !holdTimer.current && !h.paused()) {
+        const prev = prevT.current;
+        const hit =
+          prev !== null && t - prev < 2
+            ? drawingsRef.current.find((x) => x.t > prev && x.t <= t + 0.001 && x.hold !== 0)
+            : undefined;
+        if (hit) {
+          h.pause();
+          h.seek(hit.t);
+          prevT.current = hit.t;
+          if (hit.hold > 0) {
+            holdTimer.current = setTimeout(() => {
+              holdTimer.current = null;
+              if (api.current?.paused()) api.current.play();
+            }, hit.hold * 1000);
+          }
+        } else prevT.current = t;
+      } else prevT.current = t;
       setTime(t);
       const d = h.duration();
       if (d) setDur((old) => (Math.abs(old - d) > 0.05 ? d : old));
@@ -131,6 +189,11 @@ export function VideoEditor({
     const h = api.current;
     if (!h) return;
     stopAt.current = null;
+    if (holdTimer.current) {
+      clearTimeout(holdTimer.current);
+      holdTimer.current = null;
+    }
+    prevT.current = null;
     h.seek(clamp(t, 0, h.duration() || t));
     setTime(clamp(t, 0, h.duration() || t));
   }, []);
@@ -138,6 +201,10 @@ export function VideoEditor({
   const togglePlay = useCallback(() => {
     const h = api.current;
     if (!h) return;
+    if (holdTimer.current) {
+      clearTimeout(holdTimer.current);
+      holdTimer.current = null;
+    }
     if (h.paused()) h.play();
     else h.pause();
   }, []);
@@ -198,6 +265,12 @@ export function VideoEditor({
       if ((e.target as HTMLElement).closest("input,textarea,select,[contenteditable]")) return;
       const k = e.key.toLowerCase();
       const cur = api.current?.getTime() ?? 0;
+      if (editingRef.current) {
+        if (k === "escape") { e.preventDefault(); closeRef.current(); return; }
+        if ((e.ctrlKey || e.metaKey) && k === "z") { e.preventDefault(); undoRef.current(); return; }
+        if (k === "delete" || k === "backspace") { e.preventDefault(); delRef.current(); return; }
+      }
+      if (k === "d" && canEdit) { e.preventDefault(); openRef.current(); return; }
       if (k === " ") { e.preventDefault(); togglePlay(); }
       else if (k === "arrowleft") { e.preventDefault(); seek(cur - (e.shiftKey ? 1 : 5)); }
       else if (k === "arrowright") { e.preventDefault(); seek(cur + (e.shiftKey ? 1 : 5)); }
@@ -305,6 +378,238 @@ export function VideoEditor({
     });
   }
 
+  /* ---------- dessins sur la vidéo ---------- */
+  const aspectNow = () => api.current?.aspect() ?? 16 / 9;
+  const shown = dEdit ? null : activeDrawing(drawings, time, paused);
+
+  useEffect(() => {
+    redrawRef.current = () => {
+      const c = canvasRef.current;
+      if (!c) return;
+      const shapes = dEdit ? [...dEdit.shapes, ...(cur ? [cur] : [])] : (shown?.shapes ?? null);
+      drawShapes(c, aspectNow(), shapes, dEdit ? sel : null);
+    };
+    redrawRef.current();
+  });
+  useEffect(() => {
+    const c = canvasRef.current;
+    if (!c || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => redrawRef.current());
+    ro.observe(c);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    closeRef.current = closeDrawing;
+    undoRef.current = undoShape;
+    delRef.current = deleteSel;
+    openRef.current = () => openDrawing();
+  });
+
+  function openDrawing(d?: Drawing) {
+    const h = api.current;
+    if (!h || !canEdit) return;
+    h.pause();
+    if (holdTimer.current) {
+      clearTimeout(holdTimer.current);
+      holdTimer.current = null;
+    }
+    if (d) {
+      h.seek(d.t);
+      setTime(d.t);
+    }
+    const t = d ? d.t : h.getTime();
+    setDEdit({
+      id: d?.id ?? null,
+      t,
+      dur: d?.dur ?? 2,
+      hold: d?.hold ?? 3,
+      shapes: d ? d.shapes.map((x) => ({ ...x, p: x.p.map((q) => [...q] as [number, number]) })) : [],
+    });
+    setTool(d ? "move" : "arrow");
+    setSel(null);
+    setCur(null);
+    setTextAt(null);
+    setDraft(null);
+  }
+  function closeDrawing() {
+    setDEdit(null);
+    setSel(null);
+    setCur(null);
+    setTextAt(null);
+    prevT.current = null;
+  }
+  const patchDraw = (p: Partial<Draw>) => setDEdit((d) => (d ? { ...d, ...p } : d));
+  function pickTool(k: ShapeKind | "move") {
+    setTool(k);
+    if (k !== "move") setSel(null);
+    if (k === "cross") setColor("#FF4D4D");
+    setTextAt(null);
+  }
+  function pickColor(c: string) {
+    setColor(c);
+    if (sel !== null && dEdit)
+      patchDraw({ shapes: dEdit.shapes.map((s, i) => (i === sel ? { ...s, c } : s)) });
+  }
+  function deleteSel() {
+    if (!dEdit || sel === null) return;
+    patchDraw({ shapes: dEdit.shapes.filter((_, i) => i !== sel) });
+    setSel(null);
+  }
+  function undoShape() {
+    if (!dEdit) return;
+    patchDraw({ shapes: dEdit.shapes.slice(0, -1) });
+    setSel(null);
+  }
+  function addText() {
+    const txt = textVal.trim();
+    if (txt && textAt && dEdit) {
+      patchDraw({ shapes: [...dEdit.shapes, { k: "text", c: color, p: [textAt], txt: txt.slice(0, 40) }] });
+      setSel(dEdit.shapes.length);
+    }
+    setTextAt(null);
+    setTextVal("");
+  }
+  function saveDraw() {
+    if (!dEdit || dEdit.shapes.length === 0) return;
+    const d = dEdit;
+    startTransition(async () => {
+      const res = await saveDrawing({ id: d.id ?? undefined, sourceId: source.id, t: d.t, dur: d.dur, hold: d.hold, shapes: d.shapes });
+      if (res.error || !res.id) return setMsg(res.error ?? "Enregistrement impossible.");
+      const row: Drawing = { id: res.id, t: d.t, dur: d.dur, hold: d.hold, shapes: d.shapes };
+      setDrawings((all) => [...all.filter((x) => x.id !== row.id), row].sort((x, y) => x.t - y.t));
+      setMsg(d.id ? "Dessin mis à jour." : `Dessin enregistré à ${fmtT(d.t)}.`);
+      closeDrawing();
+    });
+  }
+  function removeDrawing() {
+    if (!dEdit?.id || !confirm("Supprimer ce dessin ?")) return;
+    const id = dEdit.id;
+    startTransition(async () => {
+      const res = await deleteDrawing(id);
+      if (res.error) return setMsg(res.error);
+      setDrawings((all) => all.filter((x) => x.id !== id));
+      closeDrawing();
+    });
+  }
+
+  function onCanvasDown(e: React.PointerEvent<HTMLCanvasElement>) {
+    const c = canvasRef.current;
+    if (!c || !dEdit) return;
+    e.preventDefault();
+    const r = imageRect(c, aspectNow());
+    const box = c.getBoundingClientRect();
+    const toPx = (ev: { clientX: number; clientY: number }): [number, number] => [ev.clientX - box.left, ev.clientY - box.top];
+    const toPt = (ev: { clientX: number; clientY: number }) => normPoint(r, ev.clientX - box.left, ev.clientY - box.top);
+    const px0 = toPx(e), p0 = toPt(e);
+    const shapes0 = dEdit.shapes;
+    const drag = (onMove: (ev: PointerEvent) => void, onUp?: () => void) => {
+      const up = () => {
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", up);
+        window.removeEventListener("pointercancel", up);
+        onUp?.();
+      };
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", up);
+      window.addEventListener("pointercancel", up);
+    };
+    const clone = (list: Shape[]) => list.map((x) => ({ ...x, p: x.p.map((q) => [...q] as [number, number]) }));
+
+    // 1. poignée de l'élément sélectionné
+    const selShape = sel !== null ? shapes0[sel] : null;
+    const hid = selShape ? handleAt(selShape, px0, r, c) : null;
+    if (hid && sel !== null) {
+      const o = clone([selShape!])[0];
+      drag((ev) => {
+        const ns = clone(shapes0);
+        resizeShape(ns[sel], o, hid, toPx(ev), r, c);
+        patchDraw({ shapes: ns });
+      });
+      return;
+    }
+    // 2. sélectionner / déplacer
+    const hitI = hitShape(shapes0, px0, r, c);
+    if (tool === "move" || (hitI >= 0 && hitI === sel)) {
+      setSel(hitI >= 0 ? hitI : null);
+      if (hitI < 0) return;
+      const orig = clone([shapes0[hitI]])[0].p;
+      drag((ev) => {
+        const p = toPt(ev);
+        const dx = p[0] - p0[0], dy = p[1] - p0[1];
+        const ns = clone(shapes0);
+        ns[hitI].p = orig.map(([x, y]) => [+clamp(x + dx, 0, 1).toFixed(4), +clamp(y + dy, 0, 1).toFixed(4)] as [number, number]);
+        patchDraw({ shapes: ns });
+      });
+      return;
+    }
+    // 3. texte
+    if (tool === "text") {
+      setTextAt(p0);
+      setTextVal("");
+      return;
+    }
+    // 4. nouveau tracé
+    setSel(null);
+    const k = tool;
+    let s: Shape = { k, c: color, p: [p0, p0] };
+    setCur(s);
+    drag(
+      (ev) => {
+        const p = toPt(ev);
+        s = k === "pen" ? { ...s, p: [...s.p, p] } : { ...s, p: [s.p[0], p] };
+        setCur(s);
+      },
+      () => {
+        setCur(null);
+        const a = s.p[0], b = s.p[s.p.length - 1];
+        const moved = Math.hypot(a[0] - b[0], a[1] - b[1]) > 0.01;
+        if ((k === "arrow" || k === "run" || k === "screen") && !moved) {
+          setMsg(k === "screen" ? "Fais glisser pour tracer l'écran : la barre se place au bout." : "Fais glisser pour tracer la flèche.");
+          return;
+        }
+        if (k === "pen" && s.p.length < 3) return;
+        let fin: Shape = s;
+        if (k === "pen") fin = { ...s, p: s.p.filter((_, i) => i % 2 === 0 || i === s.p.length - 1) };
+        if ((k === "cross" || k === "check") && !moved) fin = { ...s, p: [a] };
+        if (k === "circle") {
+          const rad = Math.max(8, Math.hypot((b[0] - a[0]) * r.w, (b[1] - a[1]) * r.h));
+          fin = { ...s, e: 1, p: [a, normPoint(r, r.x + a[0] * r.w + rad, r.y + a[1] * r.h + rad * 0.62)] };
+        }
+        setDEdit((d) => (d ? { ...d, shapes: [...d.shapes, fin] } : d));
+        setSel(shapes0.length);
+      },
+    );
+  }
+
+  const dragDrawing = (e: React.PointerEvent, d: Drawing, edge: boolean) => {
+    if (!canEdit) return;
+    e.stopPropagation();
+    const r = laneRef.current!.getBoundingClientRect();
+    const x0 = e.clientX;
+    let cur2 = d, moved = false;
+    const mv = (ev: PointerEvent) => {
+      const dt = ((ev.clientX - x0) / r.width) * span;
+      if (Math.abs(ev.clientX - x0) > 3) moved = true;
+      if (!moved) return;
+      cur2 = edge
+        ? { ...d, dur: clamp(Math.round((d.dur + dt) * 10) / 10, 0.5, 120) }
+        : { ...d, t: clamp(Math.round((d.t + dt) * 10) / 10, 0, dur || d.t) };
+      setDrawings((all) => all.map((x) => (x.id === d.id ? cur2 : x)));
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", mv);
+      window.removeEventListener("pointerup", up);
+      if (!moved) return openDrawing(d);
+      startTransition(async () => {
+        const res = await saveDrawing({ id: cur2.id, sourceId: source.id, t: cur2.t, dur: cur2.dur, hold: cur2.hold, shapes: cur2.shapes });
+        if (res.error) setMsg(res.error);
+      });
+    };
+    window.addEventListener("pointermove", mv);
+    window.addEventListener("pointerup", up);
+  };
+
   /* ---------- ligne de temps ---------- */
   const laneRef = useRef<HTMLDivElement>(null);
   const X = (t: number) => ((t - a) / span) * 100;
@@ -371,6 +676,30 @@ export function VideoEditor({
               onClick={togglePlay}
             />
           )}
+          <canvas
+            ref={canvasRef}
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full"
+            style={{ pointerEvents: dEdit ? "auto" : "none", touchAction: "none", cursor: dEdit ? (tool === "move" ? "default" : "crosshair") : undefined }}
+            onPointerDown={onCanvasDown}
+          />
+          {dEdit && textAt && (
+            <form
+              className="absolute inset-x-3 bottom-3 flex gap-2"
+              onSubmit={(e) => { e.preventDefault(); addText(); }}
+            >
+              <input
+                autoFocus
+                className="input min-w-0 flex-1"
+                maxLength={40}
+                value={textVal}
+                placeholder="Texte à poser sur l'image (ex. Trop loin du porteur)"
+                onChange={(e) => setTextVal(e.target.value)}
+              />
+              <button className="btn-primary !px-3 !py-1.5 text-sm">Ajouter</button>
+              <button type="button" className="btn-secondary !px-3 !py-1.5 text-sm" onClick={() => setTextAt(null)}>Annuler</button>
+            </form>
+          )}
           <div className="pointer-events-none absolute right-2 top-2 rounded bg-black/70 px-2 py-0.5 font-mono text-xs text-white">
             {currentQ ? `Q${currentQ} · ` : ""}
             {fmtT(time)}
@@ -405,6 +734,9 @@ export function VideoEditor({
             <>
               <button className={btn} onClick={markIn} title="Début du clip (I)">⟦ Début <kbd className="ml-1.5 opacity-60">I</kbd></button>
               <button className={btn} onClick={markOut} title="Fin du clip (O)">Fin ⟧ <kbd className="ml-1.5 opacity-60">O</kbd></button>
+              <button className={btn} onClick={() => openDrawing()} title="Dessiner sur l'image (D)">
+                ✏ Dessiner<kbd className="ml-1.5 opacity-60">D</kbd>
+              </button>
               <button
                 className="btn-primary !px-3 !py-1.5 text-sm"
                 onClick={newClip}
@@ -415,6 +747,73 @@ export function VideoEditor({
             </>
           )}
         </div>
+        {dEdit && (
+          <div className="card space-y-3 !p-3" role="toolbar" aria-label="Outils de dessin">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {TOOLS.map((t) => (
+                <button
+                  key={t.k}
+                  type="button"
+                  title={t.label}
+                  aria-label={t.label}
+                  aria-pressed={tool === t.k}
+                  onClick={() => pickTool(t.k)}
+                  className="btn-secondary !p-2"
+                  style={tool === t.k ? { background: "var(--brand)", color: "#fff", borderColor: "var(--brand)" } : undefined}
+                >
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray={t.k === "run" ? "3 3" : undefined}>
+                    <path d={t.icon} />
+                  </svg>
+                </button>
+              ))}
+              <span className="mx-1 h-6 w-px" style={{ background: "var(--border)" }} />
+              {COLORS.map(([c, l]) => (
+                <button
+                  key={c}
+                  type="button"
+                  title={l}
+                  aria-label={`Couleur ${l}`}
+                  aria-pressed={color === c}
+                  onClick={() => pickColor(c)}
+                  className="h-6 w-6 rounded-full border-2"
+                  style={{ background: c, borderColor: color === c ? "#fff" : "transparent", outline: color === c ? "1px solid #000" : undefined }}
+                />
+              ))}
+              <span className="mx-1 h-6 w-px" style={{ background: "var(--border)" }} />
+              <button className={btn} onClick={undoShape} disabled={dEdit.shapes.length === 0} title="Annuler le dernier élément (Ctrl+Z)">Annuler</button>
+              {sel !== null && <button className={`${btn} !text-[#ff6b6b]`} onClick={deleteSel}>Effacer l&apos;élément</button>}
+              <button className={btn} onClick={() => { patchDraw({ shapes: [] }); setSel(null); }} disabled={dEdit.shapes.length === 0}>Tout effacer</button>
+            </div>
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="label">
+                Arrêt sur image au début
+                <select className="input mt-1" value={dEdit.hold} onChange={(e) => patchDraw({ hold: Number(e.target.value) })}>
+                  {HOLDS.map(([v, l]) => (
+                    <option key={v} value={v}>{l}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="label">
+                Reste affiché (s)
+                <input
+                  type="number" min={0.5} max={120} step={0.5}
+                  className="input mt-1 w-24"
+                  value={dEdit.dur}
+                  onChange={(e) => patchDraw({ dur: clamp(Number(e.target.value) || 0.5, 0.5, 120) })}
+                />
+              </label>
+              <span className="max-w-xs text-xs leading-snug" style={{ color: "var(--text-faint)" }}>
+                Affiché de {fmtT(dEdit.t)} à {fmtT(dEdit.t + dEdit.dur)}. Tu peux aussi étirer le repère jaune dans la timeline.
+              </span>
+              <span className="flex-1" />
+              {dEdit.id && <button className={`${btn} !text-[#ff6b6b]`} onClick={removeDrawing}>Supprimer</button>}
+              <button className={btn} onClick={closeDrawing}>Fermer</button>
+              <button className="btn-primary !px-3 !py-1.5 text-sm" onClick={saveDraw} disabled={dEdit.shapes.length === 0}>
+                ✓ Enregistrer le dessin
+              </button>
+            </div>
+          </div>
+        )}
         {msg && (
           <p className="text-xs" style={{ color: "var(--text-faint)" }} aria-live="polite">
             {msg}
@@ -445,6 +844,7 @@ export function VideoEditor({
               <div className="h-[18px]" />
               <div className="mt-1.5 flex h-7 items-center">Quart-temps</div>
               <div className="mt-1.5 flex h-7 items-center">Clips</div>
+              <div className="mt-1.5 flex h-7 items-center">Dessins</div>
             </div>
             <div ref={laneRef} className="relative min-w-0 flex-1 cursor-pointer touch-none select-none" onPointerDown={scrub}>
               <div className="relative h-[18px] font-mono text-[10px]" style={{ color: "var(--text-faint)" }}>
@@ -514,6 +914,30 @@ export function VideoEditor({
                     style={{ left: `${X(ioS)}%`, width: `${ioE !== null ? W(ioS, ioE) : 0.3}%`, background: "rgba(255,255,255,.14)" }}
                   />
                 )}
+              </div>
+              <div className="relative mt-1.5 h-7 rounded-md" style={{ background: "var(--surf-2)" }}>
+                {drawings.filter((d) => vis(d.t, d.t + d.dur)).map((d) => (
+                  <div
+                    key={d.id}
+                    data-clip={d.id}
+                    title={`Dessin · ${fmtT(d.t)} · ${d.dur} s (clic : modifier, glisser : déplacer, bord droit : durée)`}
+                    className="absolute inset-y-[3px] min-w-[10px] cursor-pointer rounded"
+                    style={{
+                      left: `${X(d.t)}%`,
+                      width: `${W(d.t, d.t + d.dur)}%`,
+                      background: "#FFD23F",
+                      opacity: dEdit?.id === d.id ? 1 : 0.85,
+                      outline: dEdit?.id === d.id ? "2px solid #fff" : undefined,
+                    }}
+                    onPointerDown={(e) => dragDrawing(e, d, false)}
+                  >
+                    <span
+                      className="absolute inset-y-0 right-0 w-2 cursor-ew-resize rounded-r"
+                      style={{ background: "rgba(0,0,0,.35)" }}
+                      onPointerDown={(e) => dragDrawing(e, d, true)}
+                    />
+                  </div>
+                ))}
               </div>
               {time >= a && time <= b && (
                 <div

@@ -1532,6 +1532,47 @@ export type Database = {
           },
         ]
       }
+      video_drawings: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          dur: number
+          hold: number
+          id: string
+          shapes: Json
+          source_id: string
+          t: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          dur?: number
+          hold?: number
+          id?: string
+          shapes?: Json
+          source_id: string
+          t: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          dur?: number
+          hold?: number
+          id?: string
+          shapes?: Json
+          source_id?: string
+          t?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_drawings_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "library_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       video_quarters: {
         Row: {
           created_at: string
