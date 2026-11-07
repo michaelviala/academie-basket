@@ -27,12 +27,14 @@ export function AddPlayerVideo({
   trainingId = null,
   trainings,
   small = false,
+  label = "🎥 + Vidéo",
 }: {
   playerId: string;
   playerName: string;
   trainingId?: string | null;
   trainings?: TrainingOption[];
   small?: boolean;
+  label?: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -114,7 +116,7 @@ export function AddPlayerVideo({
         style={small ? { fontSize: 11, padding: "5px 10px" } : undefined}
         onClick={() => setOpen(true)}
       >
-        🎥 + Vidéo
+        {label}
       </button>
       {open && filming && (
         <VideoRecorder

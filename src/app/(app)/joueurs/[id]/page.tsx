@@ -401,8 +401,19 @@ export default async function JoueurPage({
               <Link href={`/joueurs/${player.id}?tab=objectifs#nouvel-objectif`} className="btn-secondary">
                 + Objectif
               </Link>
-              <Link href={`/carnet-technique/${player.id}`} className="btn-secondary">
-                Carnet technique
+              {canManageVideos && (
+                <AddPlayerVideo
+                  playerId={player.id}
+                  playerName={`${player.first_name} ${player.last_name}`}
+                  trainings={trainingOptions}
+                  label="+ Feedback vidéo"
+                />
+              )}
+              <Link
+                href={player.teams?.category ? `/carnet-technique?cat=${encodeURIComponent(player.teams.category)}` : "/carnet-technique"}
+                className="btn-secondary"
+              >
+                Cahier technique{player.teams?.category ? ` ${player.teams.category}` : ""}
               </Link>
             </div>
           </div>
