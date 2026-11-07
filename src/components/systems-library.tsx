@@ -83,6 +83,10 @@ export function SystemsLibrary({
         )}
       </div>
 
+      <Link href="/systemes/aide" className="block text-center text-xs underline" style={{ color: "var(--brand)" }}>
+        Comment créer un système ?
+      </Link>
+
       {creating && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3 sm:items-center" onClick={() => setCreating(false)}>
           <form action={createSystem} className="card w-full max-w-md space-y-3" onClick={(e) => e.stopPropagation()}>
