@@ -32,6 +32,7 @@ import {
   updateInjury,
 } from "./actions";
 import { GoalStatusForm } from "@/components/goal-status-form";
+import { MeasurementsHistory } from "@/components/measurements-history";
 import { PlayerFacts } from "@/components/player-facts";
 import { PlayerPhoto } from "@/components/player-photo";
 import { AddPlayerVideo, PlayerClipList, type TrainingOption } from "@/components/player-video";
@@ -207,6 +208,7 @@ export default async function JoueurPage({
     { data: devPlan },
     { data: selfAssessments },
     { data: physicalTests },
+    { data: measurements },
     { data: meetings },
     { data: feedbacks },
     settings,
@@ -228,6 +230,7 @@ export default async function JoueurPage({
       .select("id, test_type, result, unit, test_date, comment")
       .eq("player_id", id)
       .order("test_date", { ascending: false }),
+    supabase.from("player_measurements").select("id, measured_at, height_cm, weight_kg, wingspan_cm").eq("player_id", id).order("measured_at"),
     supabase.from("meetings").select("id, meeting_date, participants, summary").eq("player_id", id).order("meeting_date", { ascending: false }),
     supabase
       .from("feedbacks")
@@ -414,7 +417,7 @@ export default async function JoueurPage({
                 Carnet technique{player.teams?.category ? ` ${player.teams.category}` : ""}
               </Link>
               <Link href={`/joueurs/${player.id}/rapport`} className="btn-secondary">
-                Rapport PDF
+                Bilan PDF
               </Link>
             </div>
           </div>
@@ -734,6 +737,9 @@ export default async function JoueurPage({
       {activeTab === "physique" && (
         <section className="card">
           <SectionTitle hint="Tests physiques (sprint, détente, agilité, endurance...) et suivi de la progression.">Préparation physique</SectionTitle>
+          <h3 className="mb-2 mt-1 text-sm font-semibold">Croissance : taille, poids, envergure</h3>
+          <MeasurementsHistory playerId={player.id} measurements={measurements ?? []} canEdit={staffView} />
+          <h3 className="mb-2 mt-6 text-sm font-semibold">Tests physiques</h3>
           <PhysicalTests playerId={player.id} tests={physicalTests ?? []} addAction={addPhysicalTest} deleteAction={deletePhysicalTest} />
         </section>
       )}

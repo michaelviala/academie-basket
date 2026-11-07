@@ -20,6 +20,7 @@ export function PlayerFacts({ playerId, canEdit, entry, height, weight, wingspan
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const router = useRouter();
+  const today = new Date().toISOString().slice(0, 10);
 
   const facts = [
     { label: "Taille", value: height ? `${height} cm` : "—" },
@@ -33,7 +34,7 @@ export function PlayerFacts({ playerId, canEdit, entry, height, weight, wingspan
   if (editing) {
     return (
       <form
-        className="mt-6 grid grid-cols-2 gap-3 rounded-lg p-3 sm:grid-cols-3 lg:grid-cols-5"
+        className="mt-6 grid grid-cols-2 gap-3 rounded-lg p-3 sm:grid-cols-3 lg:grid-cols-6"
         style={{ background: "var(--surf)", border: "1px solid var(--border)" }}
         action={(fd) =>
           start(async () => {
@@ -43,6 +44,7 @@ export function PlayerFacts({ playerId, canEdit, entry, height, weight, wingspan
           })
         }
       >
+        <div><label className="label">Date de la mesure</label><input className="input" type="date" name="measured_at" defaultValue={today} required /></div>
         <div><label className="label">Taille (cm)</label><input className="input" name="height_cm" inputMode="decimal" defaultValue={height ?? ""} /></div>
         <div><label className="label">Poids (kg)</label><input className="input" name="weight_kg" inputMode="decimal" defaultValue={weight ?? ""} /></div>
         <div><label className="label">Envergure (cm)</label><input className="input" name="wingspan_cm" inputMode="decimal" defaultValue={wingspan ?? ""} /></div>
@@ -77,7 +79,7 @@ export function PlayerFacts({ playerId, canEdit, entry, height, weight, wingspan
       </dl>
       {canEdit && (
         <button type="button" className="mt-2 text-xs font-semibold" style={{ color: "var(--brand)" }} onClick={() => setEditing(true)}>
-          ✎ Mettre à jour taille, poids, envergure…
+          ✎ Enregistrer une nouvelle mesure (taille, poids, envergure)
         </button>
       )}
     </div>

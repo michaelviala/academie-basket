@@ -311,20 +311,54 @@ export async function updatePlayerMeasures(playerId: string, formData: FormData)
   const weight = num("weight_kg", 250);
   const wingspan = num("wingspan_cm", 280);
   if ([height, weight, wingspan].some((v) => Number.isNaN(v))) return { error: "Valeur incorrecte (nombre positif attendu)." };
+  const date = String(formData.get("measured_at") ?? "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "Date de mesure requise." };
   const hand = String(formData.get("dominant_hand") ?? "");
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("players")
-    .update({
-      height_cm: height,
-      weight_kg: weight,
-      wingspan_cm: wingspan,
-      dominant_hand: hand === "droite" || hand === "gauche" || hand === "ambidextre" ? hand : null,
-      previous_club: String(formData.get("previous_club") ?? "").trim() || null,
-    })
-    .eq("id", playerId);
-  if (error) return { error: error.message };
+
+  // Une mesure par date : on remplace celle du même jour si elle existe.
+  if (height !== null || weight !== null || wingspan !== null) {
+    await supabase.from("player_measurements").delete().eq("player_id", playerId).eq("measured_at", date);
+    const { error: mErr } = await supabase
+      .from("player_measurements")
+      .insert({ player_id: playerId, measured_at: date, height_cm: height, weight_kg: weight, wingspan_cm: wingspan });
+    if (mErr) return { error: mErr.message };
+  }
+  const err = await syncCurrentMeasures(playerId, {
+    dominant_hand: hand === "droite" || hand === "gauche" || hand === "ambidextre" ? hand : null,
+    previous_club: String(formData.get("previous_club") ?? "").trim() || null,
+  });
+  if (err) return { error: err };
   revalidatePath(`/joueurs/${playerId}`);
   revalidatePath("/joueurs");
   return {};
+}
+
+export async function deleteMeasurement(playerId: string, measurementId: string): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("player_measurements").delete().eq("id", measurementId).eq("player_id", playerId);
+  if (error) return { error: error.message };
+  const err = await syncCurrentMeasures(playerId, {});
+  if (err) return { error: err };
+  revalidatePath(`/joueurs/${playerId}`);
+  return {};
+}
+
+/** La fiche affiche la dernière valeur connue de chaque mesure (la plus récente non vide). */
+async function syncCurrentMeasures(playerId: string, extra: Record<string, unknown>): Promise<string | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("player_measurements")
+    .select("measured_at, height_cm, weight_kg, wingspan_cm")
+    .eq("player_id", playerId)
+    .order("measured_at", { ascending: false });
+  const last = (k: "height_cm" | "weight_kg" | "wingspan_cm") => {
+    const row = (data ?? []).find((r) => r[k] !== null);
+    return row ? Number(row[k]) : null;
+  };
+  const { error } = await supabase
+    .from("players")
+    .update({ height_cm: last("height_cm"), weight_kg: last("weight_kg"), wingspan_cm: last("wingspan_cm"), ...extra })
+    .eq("id", playerId);
+  return error ? error.message : null;
 }

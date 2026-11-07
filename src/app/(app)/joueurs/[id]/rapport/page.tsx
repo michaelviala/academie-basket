@@ -15,13 +15,14 @@ export default async function RapportJoueurPage({ params }: { params: Promise<{ 
   const { data: player } = await supabase.from("players").select("*, teams(name, category)").eq("id", id).maybeSingle();
   if (!player) notFound();
 
-  const [{ data: evals }, { data: goals }, { data: att }, { data: feedbacks }, { data: teamMates }, settings] = await Promise.all([
+  const [{ data: evals }, { data: goals }, { data: att }, { data: feedbacks }, { data: teamMates }, settings, { data: measures }] = await Promise.all([
     supabase.from("evaluations").select("evaluation_type, score, evaluated_at, skills(name)").eq("player_id", id).order("evaluated_at", { ascending: false }),
     supabase.from("goals").select("title, status, due_date").eq("player_id", id).order("due_date"),
     supabase.from("attendance").select("status").eq("player_id", id),
     supabase.from("feedbacks").select("positives, improvements, next_session_goal, created_at").eq("player_id", id).order("created_at", { ascending: false }).limit(5),
     player.team_id ? supabase.from("players").select("id").eq("team_id", player.team_id) : Promise.resolve({ data: [] }),
     getClubSettings(),
+    supabase.from("player_measurements").select("measured_at, height_cm, weight_kg, wingspan_cm").eq("player_id", id).order("measured_at"),
   ]);
 
   // Moyenne de la catégorie par type d'évaluation (si le profil peut voir les évaluations des coéquipiers)
@@ -93,6 +94,41 @@ export default async function RapportJoueurPage({ params }: { params: Promise<{ 
             )}
           </tbody>
         </table>
+
+        {(measures ?? []).length > 0 && (() => {
+          const rows = measures ?? [];
+          const first = rows[0];
+          const last = rows[rows.length - 1];
+          const delta = (a: number | null, b: number | null, unit: string) =>
+            a !== null && b !== null && rows.length > 1 ? `${b - a >= 0 ? "+" : ""}${Math.round((b - a) * 10) / 10} ${unit}` : "—";
+          const fmt = (d: string) => new Date(d + "T12:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+          return (
+            <>
+              <h2>Croissance (taille, poids, envergure)</h2>
+              <table>
+                <thead><tr><th>Date</th><th>Taille</th><th>Poids</th><th>Envergure</th></tr></thead>
+                <tbody>
+                  {rows.map((m, i) => (
+                    <tr key={i}>
+                      <td>{fmt(m.measured_at)}</td>
+                      <td>{m.height_cm !== null ? `${m.height_cm} cm` : "—"}</td>
+                      <td>{m.weight_kg !== null ? `${m.weight_kg} kg` : "—"}</td>
+                      <td>{m.wingspan_cm !== null ? `${m.wingspan_cm} cm` : "—"}</td>
+                    </tr>
+                  ))}
+                  {rows.length > 1 && (
+                    <tr>
+                      <td><b>Évolution</b></td>
+                      <td><b>{delta(first.height_cm, last.height_cm, "cm")}</b></td>
+                      <td><b>{delta(first.weight_kg, last.weight_kg, "kg")}</b></td>
+                      <td><b>{delta(first.wingspan_cm, last.wingspan_cm, "cm")}</b></td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </>
+          );
+        })()}
 
         <h2>Assiduité</h2>
         <p>

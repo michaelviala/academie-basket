@@ -953,6 +953,47 @@ export type Database = {
           },
         ]
       }
+      player_measurements: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          height_cm: number | null
+          id: string
+          measured_at: string
+          player_id: string
+          weight_kg: number | null
+          wingspan_cm: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          height_cm?: number | null
+          id?: string
+          measured_at?: string
+          player_id: string
+          weight_kg?: number | null
+          wingspan_cm?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          height_cm?: number | null
+          id?: string
+          measured_at?: string
+          player_id?: string
+          weight_kg?: number | null
+          wingspan_cm?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_measurements_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       players: {
         Row: {
           birth_date: string
