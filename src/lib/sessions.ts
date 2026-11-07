@@ -42,6 +42,7 @@ export type BlockDraft = {
   duration_minutes: number | null;
   comment: string;
   skill_id: string;
+  system_id: string;
 };
 
 /** « 18:00 » + 15 min → « 18:15 » (null sans heure de début). */

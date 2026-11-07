@@ -21,7 +21,7 @@ export default async function NouvelleSeancePage({
     date && /^\d{4}-\d{2}-\d{2}$/.test(date)
       ? date
       : new Date().toISOString().slice(0, 10);
-  const { teams, gyms, coaches, skills } = await getSessionFormData();
+  const { teams, gyms, coaches, skills, systems } = await getSessionFormData();
 
   const defaults = BLOCK_TYPES.filter(
     (b) => b.value === "echauffement" || b.value === "technique",
@@ -62,12 +62,14 @@ export default async function NouvelleSeancePage({
             duration_minutes: b.minutes,
             comment: "",
             skill_id: "",
+            system_id: "",
           })),
         }}
         teams={teams.map((t) => ({ id: t.id, name: t.name }))}
         gyms={gyms.map((g) => ({ id: g.id, name: g.name }))}
         coaches={coaches}
         skills={skills}
+        systems={systems}
       />
     </div>
   );

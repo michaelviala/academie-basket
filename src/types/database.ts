@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.18"
   }
   public: {
     Tables: {
@@ -469,6 +469,68 @@ export type Database = {
           },
         ]
       }
+      library_items: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          end_seconds: number | null
+          file_name: string | null
+          file_path: string | null
+          file_size: number | null
+          id: string
+          kind: string
+          mime_type: string | null
+          start_seconds: number | null
+          tags: string[]
+          thumbnail_path: string | null
+          title: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_seconds?: number | null
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          kind: string
+          mime_type?: string | null
+          start_seconds?: number | null
+          tags?: string[]
+          thumbnail_path?: string | null
+          title: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          end_seconds?: number | null
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          kind?: string
+          mime_type?: string | null
+          start_seconds?: number | null
+          tags?: string[]
+          thumbnail_path?: string | null
+          title?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       matches: {
         Row: {
           competition: string | null
@@ -557,6 +619,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      montage_clips: {
+        Row: {
+          clip_id: string
+          id: string
+          montage_id: string
+          position: number
+        }
+        Insert: {
+          clip_id: string
+          id?: string
+          montage_id: string
+          position?: number
+        }
+        Update: {
+          clip_id?: string
+          id?: string
+          montage_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "montage_clips_clip_id_fkey"
+            columns: ["clip_id"]
+            isOneToOne: false
+            referencedRelation: "video_clips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "montage_clips_montage_id_fkey"
+            columns: ["montage_id"]
+            isOneToOne: false
+            referencedRelation: "montages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      montages: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          title?: string
+        }
+        Relationships: []
       }
       notifications: {
         Row: {
@@ -990,6 +1112,41 @@ export type Database = {
         }
         Relationships: []
       }
+      system_sequences: {
+        Row: {
+          id: string
+          label: string
+          notes: string | null
+          position: number
+          positions: Json
+          system_id: string
+        }
+        Insert: {
+          id?: string
+          label?: string
+          notes?: string | null
+          position?: number
+          positions?: Json
+          system_id: string
+        }
+        Update: {
+          id?: string
+          label?: string
+          notes?: string | null
+          position?: number
+          positions?: Json
+          system_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_sequences_system_id_fkey"
+            columns: ["system_id"]
+            isOneToOne: false
+            referencedRelation: "systems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       systems: {
         Row: {
           category: string
@@ -1034,41 +1191,6 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      system_sequences: {
-        Row: {
-          id: string
-          label: string
-          notes: string | null
-          position: number
-          positions: Json
-          system_id: string
-        }
-        Insert: {
-          id?: string
-          label?: string
-          notes?: string | null
-          position?: number
-          positions?: Json
-          system_id: string
-        }
-        Update: {
-          id?: string
-          label?: string
-          notes?: string | null
-          position?: number
-          positions?: Json
-          system_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "system_sequences_system_id_fkey"
-            columns: ["system_id"]
-            isOneToOne: false
-            referencedRelation: "systems"
             referencedColumns: ["id"]
           },
         ]
@@ -1173,6 +1295,7 @@ export type Database = {
           name: string
           position: number
           skill_id: string | null
+          system_id: string | null
           training_id: string
           video_url: string | null
         }
@@ -1184,6 +1307,7 @@ export type Database = {
           name: string
           position?: number
           skill_id?: string | null
+          system_id?: string | null
           training_id: string
           video_url?: string | null
         }
@@ -1195,6 +1319,7 @@ export type Database = {
           name?: string
           position?: number
           skill_id?: string | null
+          system_id?: string | null
           training_id?: string
           video_url?: string | null
         }
@@ -1204,6 +1329,13 @@ export type Database = {
             columns: ["skill_id"]
             isOneToOne: false
             referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_exercises_system_id_fkey"
+            columns: ["system_id"]
+            isOneToOne: false
+            referencedRelation: "systems"
             referencedColumns: ["id"]
           },
           {
@@ -1279,59 +1411,59 @@ export type Database = {
           },
         ]
       }
-      library_items: {
+      video_clips: {
         Row: {
           created_at: string
           created_by: string | null
-          description: string | null
           end_seconds: number | null
-          file_name: string | null
-          file_path: string | null
-          file_size: number | null
           id: string
-          kind: string
-          mime_type: string | null
-          start_seconds: number | null
+          note: string | null
+          player_id: string | null
+          source_id: string
+          start_seconds: number
           tags: string[]
-          thumbnail_path: string | null
           title: string
-          video_url: string | null
         }
         Insert: {
           created_at?: string
           created_by?: string | null
-          description?: string | null
           end_seconds?: number | null
-          file_name?: string | null
-          file_path?: string | null
-          file_size?: number | null
           id?: string
-          kind: string
-          mime_type?: string | null
-          start_seconds?: number | null
+          note?: string | null
+          player_id?: string | null
+          source_id: string
+          start_seconds?: number
           tags?: string[]
-          thumbnail_path?: string | null
           title: string
-          video_url?: string | null
         }
         Update: {
           created_at?: string
           created_by?: string | null
-          description?: string | null
           end_seconds?: number | null
-          file_name?: string | null
-          file_path?: string | null
-          file_size?: number | null
           id?: string
-          kind?: string
-          mime_type?: string | null
-          start_seconds?: number | null
+          note?: string | null
+          player_id?: string | null
+          source_id?: string
+          start_seconds?: number
           tags?: string[]
-          thumbnail_path?: string | null
           title?: string
-          video_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "video_clips_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_clips_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "library_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       videos: {
         Row: {
@@ -1402,14 +1534,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_edit_team_item: { Args: { t_id: string }; Returns: boolean }
+      can_view_player: { Args: { p_id: string }; Returns: boolean }
+      can_view_team: { Args: { t_id: string }; Returns: boolean }
       coaches_player: { Args: { p_id: string }; Returns: boolean }
       coaches_team: { Args: { t_id: string }; Returns: boolean }
       current_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      is_direction: { Args: never; Returns: boolean }
       is_own_player: { Args: { p_id: string }; Returns: boolean }
       is_parent_of: { Args: { p_id: string }; Returns: boolean }
+      is_prep: { Args: never; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
     }
     Enums: {

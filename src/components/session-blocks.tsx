@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useTransition } from "react";
 import { deleteBlock, moveBlock } from "@/app/(app)/seances/[id]/actions";
 import { BLOCK_LABEL as BLOCK_TYPE_LABELS, blockColor } from "@/lib/sessions";
@@ -11,6 +12,7 @@ type Block = {
   duration_minutes: number | null;
   comment: string | null;
   skills: { name: string } | null;
+  systems?: { id: string; name: string } | null;
 };
 
 function formatClock(
@@ -116,6 +118,15 @@ export function SessionBlocks({
                   <span className="badge" style={{ fontSize: 11 }}>
                     {BLOCK_TYPE_LABELS[b.block_type] ?? b.block_type}
                   </span>
+                  {b.systems && (
+                    <Link
+                      href={`/systemes?id=${b.systems.id}`}
+                      className="text-xs underline"
+                      style={{ color: "var(--brand)" }}
+                    >
+                      ▶ Système : {b.systems.name}
+                    </Link>
+                  )}
                   {b.skills && (
                     <span
                       className="text-xs"

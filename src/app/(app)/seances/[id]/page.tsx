@@ -27,7 +27,7 @@ export default async function SeancePage({
     await Promise.all([
       supabase
         .from("training_exercises")
-        .select("*, skills(name)")
+        .select("*, skills(name), systems(id, name)")
         .eq("training_id", id)
         .order("position", { ascending: true }),
       training.team_id
