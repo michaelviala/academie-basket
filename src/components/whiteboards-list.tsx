@@ -20,7 +20,7 @@ export type WbCard = {
   mine: boolean;
 };
 
-export function WhiteboardsList({ cards, canCreate }: { cards: WbCard[]; canCreate: boolean }) {
+export function WhiteboardsList({ cards, canCreate, logoUrl }: { cards: WbCard[]; canCreate: boolean; logoUrl?: string | null }) {
   const router = useRouter();
   const uid = useId().replace(/:/g, "");
   const [open, setOpen] = useState(false);
@@ -75,7 +75,7 @@ export function WhiteboardsList({ cards, canCreate }: { cards: WbCard[]; canCrea
           {cards.map((c) => (
             <Link key={c.id} href={`/tableaux/${c.id}`} className="card block min-w-0 !p-3">
               <div className="overflow-hidden rounded-lg">
-                <WbStatic court={c.court} theme={c.theme} els={c.els} uid={`${uid}${c.id.slice(0, 6)}-`} label={`Aperçu du tableau ${c.title}`} />
+                <WbStatic court={c.court} theme={c.theme} els={c.els} uid={`${uid}${c.id.slice(0, 6)}-`} label={`Aperçu du tableau ${c.title}`} logoUrl={logoUrl} />
               </div>
               <p className="mt-2 truncate font-semibold">{c.title}</p>
               <div className="mt-1 flex flex-wrap gap-1">

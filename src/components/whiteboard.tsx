@@ -32,6 +32,7 @@ export type WbBoard = {
   shared: boolean;
   pages: WbPage[];
   authorName: string | null;
+  logoUrl?: string | null;
 };
 
 const TOOL_GROUPS: { label: string; tools: Tool[] }[] = [
@@ -383,7 +384,7 @@ export function Whiteboard({ board, teams, canEdit }: { board: WbBoard; teams: {
       >
         <rect x={-6} y={-6} width={w + 12} height={h + 12} fill={THEMES[theme].out} />
         <ArrowDefs uid={uid} />
-        <CourtLines court={court} theme={theme} />
+        <CourtLines court={court} theme={theme} logoUrl={board.logoUrl} uid={uid} />
         {page.els.map((e) => renderElement(e, theme, uid, e.id === sel))}
         {draft && renderElement(draft, theme, uid)}
         {laserActive && (

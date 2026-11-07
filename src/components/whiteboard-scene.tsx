@@ -1,7 +1,7 @@
 import { COLORS, DIMS, THEMES, type Court, type Theme, type WbEl } from "@/lib/whiteboard";
 
 /** Lignes du terrain (FIBA), dans le repère du terrain : 1 unité = 10 cm. */
-export function CourtLines({ court, theme }: { court: Court; theme: Theme }) {
+export function CourtLines({ court, theme, logoUrl, uid = "wb-" }: { court: Court; theme: Theme; logoUrl?: string | null; uid?: string }) {
   const t = THEMES[theme];
   const { w, h } = DIMS[court];
   const s = { stroke: t.line, fill: "none", strokeWidth: 0.7 };
@@ -35,6 +35,16 @@ export function CourtLines({ court, theme }: { court: Court; theme: Theme }) {
       <rect x={0} y={0} width={w} height={h} fill={t.floor} stroke={t.line} strokeWidth={0.7} />
       <path d="M140 0 V150" {...s} />
       <circle cx={140} cy={75} r={18} {...s} />
+      {logoUrl && (
+        <g>
+          <defs>
+            <clipPath id={`${uid}logo`}>
+              <circle cx={140} cy={75} r={16.5} />
+            </clipPath>
+          </defs>
+          <image href={logoUrl} x={123.5} y={58.5} width={33} height={33} preserveAspectRatio="xMidYMid meet" clipPath={`url(#${uid}logo)`} opacity={0.92} />
+        </g>
+      )}
       {side}
       <g transform="translate(280 0) scale(-1 1)">{side}</g>
     </g>
@@ -167,13 +177,13 @@ export function renderElement(e: WbEl, theme: Theme, uid: string, selected = fal
 }
 
 /** Aperçu non interactif (liste des tableaux, lecture seule). */
-export function WbStatic({ court, theme, els, uid, label }: { court: Court; theme: Theme; els: WbEl[]; uid: string; label: string }) {
+export function WbStatic({ court, theme, els, uid, label, logoUrl }: { court: Court; theme: Theme; els: WbEl[]; uid: string; label: string; logoUrl?: string | null }) {
   const { w, h } = DIMS[court];
   return (
     <svg viewBox={`-6 -6 ${w + 12} ${h + 12}`} style={{ display: "block", width: "100%", height: "auto" }} role="img" aria-label={label}>
       <rect x={-6} y={-6} width={w + 12} height={h + 12} fill={THEMES[theme].out} />
       <ArrowDefs uid={uid} />
-      <CourtLines court={court} theme={theme} />
+      <CourtLines court={court} theme={theme} logoUrl={logoUrl} uid={uid} />
       {els.map((e) => renderElement(e, theme, uid))}
     </svg>
   );

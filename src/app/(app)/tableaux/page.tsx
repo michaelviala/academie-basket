@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile } from "@/lib/data";
+import { getClubSettings, requireProfile } from "@/lib/data";
 import { WB_EDIT_ROLES, parsePages } from "@/lib/whiteboard";
 import { WhiteboardsList, type WbCard } from "@/components/whiteboards-list";
 
@@ -54,7 +54,7 @@ export default async function TableauxPage() {
             : "Les exercices et les explications partagés par tes coachs."}
         </p>
       </div>
-      <WhiteboardsList cards={cards} canCreate={canCreate} />
+      <WhiteboardsList cards={cards} canCreate={canCreate} logoUrl={(await getClubSettings()).logo_url} />
     </div>
   );
 }
