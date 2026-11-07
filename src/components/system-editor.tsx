@@ -307,7 +307,7 @@ export function SystemEditor({
             ) : (
               <span />
             )}
-            <span className="text-xs" style={{ color: "var(--text-faint)" }}>
+            <span className="min-h-4 text-xs" style={{ color: "var(--text-faint)" }}>
               {canEdit ? (tool === "move" ? "Glisse les joueurs" : tool === "ball" ? "Touche le porteur du ballon" : "Touche le joueur qui pose l'écran") : ""}
             </span>
           </div>
@@ -385,11 +385,13 @@ export function SystemEditor({
               <input type="checkbox" className="accent-[var(--brand)]" checked={curve} onChange={(e) => setCurve(e.target.checked)} />
             </label>
           </div>
-          {(msg || pending) && (
-            <p className="text-xs" style={{ color: msg ? "#ff6b6b" : "var(--text-faint)" }}>
-              {msg ?? "Enregistrement…"}
-            </p>
-          )}
+          <p
+            className="min-h-5 text-xs"
+            style={{ color: msg ? "#ff6b6b" : "var(--text-faint)" }}
+            aria-live="polite"
+          >
+            {msg ?? (pending ? "Enregistrement…" : "")}
+          </p>
         </div>
 
         {/* Droite */}
@@ -425,7 +427,7 @@ export function SystemEditor({
                 <div className="flex flex-wrap gap-2">
                   <button className="chip" onClick={() => addToken("attack")} disabled={!atRest}>+ Attaquant</button>
                   <button className="chip" onClick={() => addToken("defense")} disabled={!atRest}>+ Défenseur</button>
-                  <button className="chip" onClick={removeSelected} disabled={!selected || !atRest}>Retirer {selected ? `« ${selected} »` : ""}</button>
+                  <button className="chip" onClick={removeSelected} disabled={!selected || !atRest}>Retirer le joueur</button>
                 </div>
                 <p className="text-xs leading-relaxed" style={{ color: "var(--text-faint)" }}>
                   Déplace les joueurs pour cette séquence. L&apos;outil <b>Ballon</b> désigne le porteur (une passe est dessinée), <b>Écran</b> marque un écran. L&apos;animation interpole les déplacements entre séquences.
