@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Profile } from "@/lib/data";
 
-export type IconName = "home" | "users" | "trophy" | "video" | "clip" | "bell" | "notebook" | "whistle" | "file" | "settings" | "library";
+export type IconName = "home" | "users" | "trophy" | "video" | "clip" | "bell" | "notebook" | "whistle" | "file" | "settings" | "library" | "play";
 
 export function Icon({ name }: { name: IconName }) {
   const common = {
@@ -99,6 +99,15 @@ export function Icon({ name }: { name: IconName }) {
           <path d="m14.2 5.2 3.4-1.1 3 14.6-3.4.9-3-14.4Z" />
         </svg>
       );
+    case "play":
+      return (
+        <svg {...common}>
+          <rect x="3" y="4" width="18" height="16" rx="2" />
+          <circle cx="8" cy="15" r="1.6" />
+          <path d="M10 14c3-1 4-4 8-5" strokeDasharray="2 2" />
+          <path d="m16 7 2.5 2L16 11" />
+        </svg>
+      );
     case "settings":
       return (
         <svg {...common}>
@@ -115,6 +124,7 @@ export const ALL_ITEMS: { href: string; label: string; icon: IconName; roles?: P
   { href: "/carnet-technique", label: "Carnet technique", icon: "notebook" },
   { href: "/bibliotheque", label: "Bibliothèque", icon: "library", roles: ["admin", "directeur_sportif", "coach", "preparateur_physique"] },
   { href: "/seances", label: "Séances", icon: "video" },
+  { href: "/systemes", label: "Systèmes", icon: "play", roles: ["admin", "directeur_sportif", "coach", "preparateur_physique"] },
   { href: "/videos", label: "Vidéos", icon: "clip" },
   { href: "/notifications", label: "Notifications", icon: "bell" },
   { href: "/coachs", label: "Coachs", icon: "whistle", roles: ["admin", "directeur_sportif"] },

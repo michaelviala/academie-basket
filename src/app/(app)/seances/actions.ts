@@ -19,6 +19,7 @@ export type SessionPayload = {
     duration_minutes: number | null;
     comment: string;
     skill_id: string;
+    system_id: string;
   }[];
 };
 
@@ -60,6 +61,7 @@ function blockRows(trainingId: string, blocks: SessionPayload["blocks"]) {
         : null,
     comment: b.comment.trim().slice(0, 2000) || null,
     skill_id: b.skill_id || null,
+    system_id: b.system_id || null,
     position: i,
   }));
 }

@@ -26,7 +26,7 @@ export default async function ModifierSeancePage({
   const [{ data: blocks }, form] = await Promise.all([
     supabase
       .from("training_exercises")
-      .select("name, block_type, duration_minutes, comment, skill_id")
+      .select("name, block_type, duration_minutes, comment, skill_id, system_id")
       .eq("training_id", id)
       .order("position"),
     getSessionFormData(),
@@ -68,12 +68,14 @@ export default async function ModifierSeancePage({
             duration_minutes: b.duration_minutes,
             comment: b.comment ?? "",
             skill_id: b.skill_id ?? "",
+            system_id: b.system_id ?? "",
           })),
         }}
         teams={form.teams.map((t) => ({ id: t.id, name: t.name }))}
         gyms={form.gyms.map((g) => ({ id: g.id, name: g.name }))}
         coaches={form.coaches}
         skills={form.skills}
+        systems={form.systems}
       />
     </div>
   );

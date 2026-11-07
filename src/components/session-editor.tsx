@@ -41,6 +41,7 @@ export function SessionEditor({
   gyms,
   coaches,
   skills,
+  systems = [],
 }: {
   sessionId?: string;
   initial: SessionInitial;
@@ -48,6 +49,7 @@ export function SessionEditor({
   gyms: Option[];
   coaches: { id: string; full_name: string }[];
   skills: Skill[];
+  systems?: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -91,6 +93,7 @@ export function SessionEditor({
         duration_minutes: type.minutes,
         comment: "",
         skill_id: "",
+        system_id: "",
       },
     ]);
 
@@ -110,6 +113,7 @@ export function SessionEditor({
         duration_minutes: b.duration_minutes,
         comment: b.comment,
         skill_id: b.skill_id,
+        system_id: b.system_id,
       })),
     };
     startTransition(async () => {
@@ -354,6 +358,29 @@ export function SessionEditor({
                       placeholder="Consignes, organisation, variantes…"
                       aria-label="Consignes"
                     />
+                    {systems.length > 0 && (
+                      <label
+                        className="flex flex-wrap items-center gap-2 text-xs"
+                        style={{ color: "var(--text-faint)" }}
+                      >
+                        Système :
+                        <select
+                          className="input"
+                          style={{ width: "auto", maxWidth: "100%" }}
+                          value={b.system_id}
+                          onChange={(e) =>
+                            patch(b.key, { system_id: e.target.value })
+                          }
+                        >
+                          <option value="">— Aucun —</option>
+                          {systems.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
                     {skills.length > 0 && (
                       <label
                         className="flex flex-wrap items-center gap-2 text-xs"
