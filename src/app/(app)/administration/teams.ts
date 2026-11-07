@@ -43,9 +43,9 @@ export async function deleteTeam(teamId: string): Promise<R> {
   if (denied) return denied;
   const supabase = await createClient();
   const { count } = await supabase.from("players").select("id", { count: "exact", head: true }).eq("team_id", teamId);
-  if ((count ?? 0) > 0) return { error: "Cette équipe a encore des joueurs : déplace-les d'abord." };
+  if ((count ?? 0) > 0) return { error: "Cette catégorie a encore des joueurs : déplace-les d'abord." };
   const { error } = await supabase.from("teams").delete().eq("id", teamId);
-  if (error) return { error: "Suppression impossible : l'équipe est utilisée (séances, etc.)." };
+  if (error) return { error: "Suppression impossible : la catégorie est utilisée (séances, etc.)." };
   refresh();
   return {};
 }

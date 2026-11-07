@@ -59,7 +59,7 @@ export default async function NouveauJoueurPage() {
           <input className="input" name="secondary_position" />
         </div>
         <div>
-          <label className="label">Équipe</label>
+          <label className="label">Catégorie</label>
           <select className="input" name="team_id" defaultValue="">
             <option value="">—</option>
             {teams?.map((t) => (

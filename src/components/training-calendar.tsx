@@ -124,7 +124,7 @@ export function TrainingCalendar({
           {toggle}
           <div className="flex flex-wrap gap-2">
             <select className="input" style={{ width: "auto" }} value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)}>
-              <option value="">Toutes les équipes</option>
+              <option value="">Toutes les catégories</option>
               {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
             <select className="input" style={{ width: "auto" }} value={coachFilter} onChange={(e) => setCoachFilter(e.target.value)}>
@@ -189,7 +189,7 @@ export function TrainingCalendar({
               value={teamFilter}
               onChange={(e) => setTeamFilter(e.target.value)}
             >
-              <option value="">Toutes les équipes</option>
+              <option value="">Toutes les catégories</option>
               {teams.map((t) => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
@@ -279,10 +279,10 @@ export function TrainingCalendar({
                       color: "var(--text)",
                       borderLeft: `2.5px solid ${teamColor.get(t.team_id ?? "") ?? "var(--brand)"}`,
                     }}
-                    title={`${t.start_time ?? ""} ${t.teams?.name ?? "Équipe"} — ${t.objective ?? "Séance"}`}
+                    title={`${t.start_time ?? ""} ${t.teams?.name ?? "Catégorie"} — ${t.objective ?? "Séance"}`}
                   >
                     {t.start_time ? `${t.start_time.slice(0, 5)} ` : ""}
-                    {t.teams?.name ?? "Équipe"}
+                    {t.teams?.name ?? "Catégorie"}
                   </Link>
                 ))}
                 {items.length > 3 && (

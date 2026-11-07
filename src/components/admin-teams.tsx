@@ -32,7 +32,7 @@ function TeamForm({ team, seasons, categories, onDone, onError }: { team?: Admin
     >
       <div><label className="label">Nom *</label><input className="input" name="name" defaultValue={team?.name} placeholder="U11 Poussins" required /></div>
       <div>
-        <label className="label">Catégorie *</label>
+        <label className="label">Code (ex. U11) *</label>
         <input className="input" name="category" list="team-cats" defaultValue={team?.category} placeholder="U11" required />
         <datalist id="team-cats">{categories.map((c) => <option key={c} value={c} />)}</datalist>
       </div>
@@ -43,7 +43,7 @@ function TeamForm({ team, seasons, categories, onDone, onError }: { team?: Admin
         </select>
       </div>
       <div className="flex gap-2 sm:col-span-3">
-        <button className="btn-primary" disabled={pending}>{team ? "Enregistrer" : "Créer l'équipe"}</button>
+        <button className="btn-primary" disabled={pending}>{team ? "Enregistrer" : "Créer la catégorie"}</button>
         <button type="button" className="btn-secondary" onClick={onDone}>Annuler</button>
       </div>
     </form>
@@ -59,7 +59,7 @@ export function AdminTeams({ teams, seasons, unassigned }: { teams: AdminTeam[];
   const categories = Array.from(new Set(teams.map((t) => t.category)));
 
   function remove(t: AdminTeam) {
-    if (!confirm(`Supprimer l'équipe « ${t.name} » ?`)) return;
+    if (!confirm(`Supprimer la catégorie « ${t.name} » ?`)) return;
     setError(null);
     start(async () => {
       const r = await deleteTeam(t.id);
@@ -78,8 +78,8 @@ export function AdminTeams({ teams, seasons, unassigned }: { teams: AdminTeam[];
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-faint">Équipes (niveaux) de l&apos;académie, leur saison, leurs coachs et leur effectif.</p>
-        {editing !== "new" && <button className="btn-primary" onClick={() => { setError(null); setEditing("new"); }}>+ Nouvelle équipe</button>}
+        <p className="text-sm text-faint">Catégories de l&apos;académie, leur saison, leurs coachs et leur effectif.</p>
+        {editing !== "new" && <button className="btn-primary" onClick={() => { setError(null); setEditing("new"); }}>+ Nouvelle catégorie</button>}
       </div>
       {error && <p className="rounded-lg px-3 py-2 text-sm" style={{ background: "rgba(239,68,68,0.12)", color: "#f87171" }}>{error}</p>}
       {editing === "new" && <TeamForm seasons={seasons} categories={categories} onDone={() => setEditing(null)} onError={setError} />}
@@ -124,12 +124,12 @@ export function AdminTeams({ teams, seasons, unassigned }: { teams: AdminTeam[];
         )}
       </div>
       {teams.length === 0 && (
-        <div className="empty">Aucune équipe pour le moment. Crée la première avec « + Nouvelle équipe ».</div>
+        <div className="empty">Aucune catégorie pour le moment. Crée la première avec « + Nouvelle catégorie ».</div>
       )}
 
       {unassigned.length > 0 && (
         <div className="card">
-          <h2 className="mb-2 font-semibold">Joueurs sans équipe ({unassigned.length})</h2>
+          <h2 className="mb-2 font-semibold">Joueurs sans catégorie ({unassigned.length})</h2>
           <ul className="space-y-1">
             {unassigned.map((p) => (
               <li key={p.id} className="flex items-center justify-between gap-2 text-sm">

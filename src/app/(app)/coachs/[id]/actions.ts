@@ -14,7 +14,7 @@ export async function updateCoachContact(coachId: string, formData: FormData) {
     })
     .eq("id", coachId);
 
-  if (error) throw new Error(error.code === "23505" ? "Ce coach est déjà affecté à cette équipe." : error.message);
+  if (error) throw new Error(error.code === "23505" ? "Ce coach est déjà affecté à cette catégorie." : error.message);
   revalidatePath(`/coachs/${coachId}`);
   revalidatePath("/administration");
 }
@@ -65,11 +65,11 @@ export async function removeCoachPhoto(coachId: string) {
 
 export async function assignTeam(coachId: string, formData: FormData) {
   const teamId = String(formData.get("team_id") ?? "");
-  if (!teamId) throw new Error("Équipe requise.");
+  if (!teamId) throw new Error("Catégorie requise.");
 
   const supabase = await createClient();
   const { error } = await supabase.from("team_coaches").insert({ coach_id: coachId, team_id: teamId });
-  if (error) throw new Error(error.code === "23505" ? "Ce coach est déjà affecté à cette équipe." : error.message);
+  if (error) throw new Error(error.code === "23505" ? "Ce coach est déjà affecté à cette catégorie." : error.message);
   revalidatePath(`/coachs/${coachId}`);
   revalidatePath("/administration");
 }

@@ -12,7 +12,7 @@ export const FIELDS: { key: FieldKey; label: string; required?: boolean; group: 
   { key: "lastName", label: "Nom du joueur", required: true, group: "joueur", hints: ["nom joueur", "nom du joueur", "nom licencie", "nom"] },
   { key: "firstName", label: "Prénom du joueur", required: true, group: "joueur", hints: ["prenom joueur", "prenom du joueur", "prenom licencie", "prenom"] },
   { key: "birthDate", label: "Date de naissance", required: true, group: "joueur", hints: ["date de naissance", "naissance", "date naissance", "ne le", "ne(e) le"] },
-  { key: "team", label: "Équipe / catégorie", group: "joueur", hints: ["equipe", "categorie", "niveau", "groupe"] },
+  { key: "team", label: "Catégorie", group: "joueur", hints: ["equipe", "categorie", "niveau", "groupe"] },
   { key: "jersey", label: "N° de maillot", group: "joueur", hints: ["maillot", "numero", "n°"] },
   { key: "p1Name", label: "Parent 1 — nom", group: "parent1", hints: ["parent 1 nom", "nom parent 1", "responsable 1", "parent 1", "mere", "nom mere", "nom parent", "parent", "responsable legal", "responsable"] },
   { key: "p1Email", label: "Parent 1 — e-mail", group: "parent1", hints: ["email parent 1", "mail parent 1", "e mail parent 1", "email mere", "mail mere", "email parent", "mail parent", "email responsable", "email", "mail", "e mail"] },
@@ -155,5 +155,5 @@ export function parseCsv(textContent: string): string[][] {
 }
 
 export const TEMPLATE_CSV =
-  "Nom;Prénom;Date de naissance;Équipe;N° maillot;Parent 1 nom;Parent 1 e-mail;Parent 1 téléphone;Parent 2 nom;Parent 2 e-mail;Parent 2 téléphone\n" +
+  "Nom;Prénom;Date de naissance;Catégorie;N° maillot;Parent 1 nom;Parent 1 e-mail;Parent 1 téléphone;Parent 2 nom;Parent 2 e-mail;Parent 2 téléphone\n" +
   "DUPONT;Lucas;12/03/2014;U11;7;Sophie Dupont;sophie.dupont@exemple.fr;0612345678;Marc Dupont;;0687654321\n";

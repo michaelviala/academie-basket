@@ -27,7 +27,6 @@ export function AdminPlayers({ players, guardians: initial }: { players: AdminPl
   const [guardians, setGuardians] = useState<Guardian[]>(initial);
   const [q, setQ] = useState("");
   const [team, setTeam] = useState("");
-  const [category, setCategory] = useState("");
   const [status, setStatus] = useState("");
   const [parents, setParents] = useState<"" | "with" | "without" | "nocontact">("");
   const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 }>({ key: "nom", dir: 1 });
@@ -41,14 +40,12 @@ export function AdminPlayers({ players, guardians: initial }: { players: AdminPl
   }, [guardians]);
 
   const teams = useMemo(() => [...new Set(players.flatMap((p) => (p.teamName ? [p.teamName] : [])))].sort((a, b) => a.localeCompare(b, "fr")), [players]);
-  const categories = useMemo(() => [...new Set(players.flatMap((p) => (p.category ? [p.category] : [])))].sort((a, b) => a.localeCompare(b, "fr", { numeric: true })), [players]);
 
   const rows = useMemo(() => {
     const nq = norm(q.trim());
     const list = players.filter((p) => {
       const gs = byPlayer.get(p.id) ?? [];
       if (team && p.teamName !== team) return false;
-      if (category && p.category !== category) return false;
       if (status && p.status !== status) return false;
       if (parents === "with" && !gs.length) return false;
       if (parents === "without" && gs.length) return false;
@@ -66,10 +63,10 @@ export function AdminPlayers({ players, guardians: initial }: { players: AdminPl
       return (c || `${a.lastName} ${a.firstName}`.localeCompare(`${b.lastName} ${b.firstName}`, "fr")) * sort.dir;
     });
     return list;
-  }, [players, byPlayer, q, team, category, status, parents, sort]);
+  }, [players, byPlayer, q, team, status, parents, sort]);
 
   const without = players.filter((p) => !(byPlayer.get(p.id) ?? []).length).length;
-  const active = !!(q || team || category || status || parents);
+  const active = !!(q || team || status || parents);
   const head = (key: SortKey, label: string) => (
     <th scope="col" className="px-3 py-2 text-left font-medium" aria-sort={sort.key === key ? (sort.dir === 1 ? "ascending" : "descending") : "none"}>
       <button type="button" onClick={() => setSort((s) => ({ key, dir: s.key === key ? (s.dir === 1 ? -1 : 1) : 1 }))}>
@@ -93,7 +90,7 @@ export function AdminPlayers({ players, guardians: initial }: { players: AdminPl
 
   function exportCsv() {
     const esc = (v: string | number | null) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const header = ["Prénom", "Nom", "Date de naissance", "Équipe", "Catégorie", "Statut", "N°"];
+    const header = ["Prénom", "Nom", "Date de naissance", "Catégorie", "Code catégorie", "Statut", "N°"];
     for (let i = 1; i <= 3; i++) header.push(`Parent ${i} - nom`, `Parent ${i} - lien`, `Parent ${i} - e-mail`, `Parent ${i} - téléphone`);
     const lines = [header.map(esc).join(";")];
     for (const p of rows) {
@@ -115,14 +112,10 @@ export function AdminPlayers({ players, guardians: initial }: { players: AdminPl
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
         <input className={`${sel} col-span-2 sm:col-span-3 lg:col-span-2`} type="search" placeholder="Rechercher : joueur, parent, e-mail, téléphone…" aria-label="Rechercher" value={q} onChange={(e) => setQ(e.target.value)} />
-        <select className={sel} aria-label="Catégorie" value={category} onChange={(e) => setCategory(e.target.value)}>
+        <select className={sel} aria-label="Catégorie" value={team} onChange={(e) => setTeam(e.target.value)}>
           <option value="">Toutes catégories</option>
-          {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
-        <select className={sel} aria-label="Équipe" value={team} onChange={(e) => setTeam(e.target.value)}>
-          <option value="">Toutes équipes</option>
           {teams.map((t) => <option key={t} value={t}>{t}</option>)}
         </select>
         <select className={sel} aria-label="Statut" value={status} onChange={(e) => setStatus(e.target.value)}>
@@ -142,7 +135,7 @@ export function AdminPlayers({ players, guardians: initial }: { players: AdminPl
           {rows.length} joueur{rows.length > 1 ? "s" : ""} sur {players.length} · <b style={{ color: without ? "#f59e0b" : undefined }}>{without} sans parent renseigné</b>
         </span>
         {active && (
-          <button type="button" className="underline" onClick={() => { setQ(""); setTeam(""); setCategory(""); setStatus(""); setParents(""); }}>
+          <button type="button" className="underline" onClick={() => { setQ(""); setTeam(""); setStatus(""); setParents(""); }}>
             Effacer les filtres
           </button>
         )}
@@ -161,7 +154,7 @@ export function AdminPlayers({ players, guardians: initial }: { players: AdminPl
               <tr>
                 {head("nom", "Joueur")}
                 {head("age", "Âge")}
-                {head("equipe", "Équipe")}
+                {head("equipe", "Catégorie")}
                 {head("statut", "Statut")}
                 <th scope="col" className="px-3 py-2 text-left font-medium">Parents / responsables</th>
                 <th scope="col" className="px-3 py-2"><span className="sr-only">Actions</span></th>
@@ -272,7 +265,7 @@ function GuardiansDialog({
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="font-semibold">Parents de {player.firstName} {player.lastName}</h3>
-            <p className="text-xs" style={{ color: "var(--text-faint)" }}>{player.teamName ?? "Sans équipe"} · {player.age} ans</p>
+            <p className="text-xs" style={{ color: "var(--text-faint)" }}>{player.teamName ?? "Sans catégorie"} · {player.age} ans</p>
           </div>
           <button type="button" className="text-2xl leading-none" onClick={onClose} aria-label="Fermer">×</button>
         </div>

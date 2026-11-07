@@ -619,14 +619,14 @@ export function Whiteboard({ board, teams, canEdit }: { board: WbBoard; teams: {
               Visible par les joueurs
             </label>
             <label className="text-xs" style={{ color: "var(--text-faint)" }}>
-              Équipe concernée
+              Catégorie concernée
               <select className="input mt-1 w-full" value={teamId ?? ""} onChange={(e) => { setTeamId(e.target.value || null); touch(); }}>
                 <option value="">Tout le club</option>
                 {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </label>
             <p className="text-xs" style={{ color: "var(--text-faint)" }}>
-              {shared ? "Les joueurs de l'équipe choisie (ou de tout le club) voient ce tableau en lecture seule." : "Brouillon : seuls les coachs le voient."}
+              {shared ? "Les joueurs de la catégorie choisie (ou de tout le club) voient ce tableau en lecture seule." : "Brouillon : seuls les coachs le voient."}
             </p>
             <button type="button" className="btn-secondary" style={{ color: "#f87171" }} onClick={remove}>Supprimer le tableau</button>
             {board.authorName && <p className="text-xs" style={{ color: "var(--text-faint)" }}>Créé par {board.authorName}</p>}

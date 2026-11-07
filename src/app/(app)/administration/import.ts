@@ -35,7 +35,7 @@ export async function importPlayers(rows: ParsedPlayer[], createTeams: boolean):
     if (!teamIds.has(norm(t.category))) teamIds.set(norm(t.category), t.id);
   }
 
-  // Équipes à créer
+  // Catégories à créer
   if (createTeams && season) {
     const wanted = [...new Set(rows.map((r) => r.team.trim()).filter((n) => n && !teamIds.has(norm(n))))];
     for (const name of wanted) {

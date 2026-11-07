@@ -51,7 +51,7 @@ export async function PlayerSummary({ playerId, showName = true }: { playerId: s
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="display text-2xl font-bold">{player.first_name} {player.last_name}</h1>
-            <p className="text-sm text-dim">{(player.teams as { name: string } | null)?.name ?? "Sans équipe"} · {calculateAge(player.birth_date)} ans</p>
+            <p className="text-sm text-dim">{(player.teams as { name: string } | null)?.name ?? "Sans catégorie"} · {calculateAge(player.birth_date)} ans</p>
           </div>
           <Link href={`/joueurs/${player.id}`} className="btn-secondary">Fiche complète →</Link>
         </div>

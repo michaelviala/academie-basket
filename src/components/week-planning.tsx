@@ -144,7 +144,7 @@ export function WeekPlanning({
           <div className="seg">
             {(["equipe", "salle", "coach"] as Mode[]).map((m) => (
               <button key={m} type="button" className={mode === m ? "active" : ""} onClick={() => setMode(m)}>
-                {m === "equipe" ? "Équipe" : m === "salle" ? "Salle" : "Coach"}
+                {m === "equipe" ? "Catégorie" : m === "salle" ? "Salle" : "Coach"}
               </button>
             ))}
           </div>
@@ -167,7 +167,7 @@ export function WeekPlanning({
             {conflictList.map((t) => (
               <li key={t.id}>
                 <Link href={`/seances/${t.id}`} className="underline">
-                  {new Date(t.date + "T12:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" })} {t.start_time?.slice(0, 5)} {t.teams?.name ?? "Équipe"}
+                  {new Date(t.date + "T12:00").toLocaleDateString("fr-FR", { weekday: "short", day: "numeric" })} {t.start_time?.slice(0, 5)} {t.teams?.name ?? "Catégorie"}
                 </Link>{" "}
                 — {conflicts.get(t.id)!.join(" ; ")}
               </li>
@@ -222,7 +222,7 @@ export function WeekPlanning({
                           outline: bad ? "1.5px solid #ef4444" : undefined,
                           color: "var(--text)",
                         }}>
-                        <b>{bad ? "⚠ " : ""}{hhmm(m.start)}</b> {t.teams?.name ?? "Équipe"}
+                        <b>{bad ? "⚠ " : ""}{hhmm(m.start)}</b> {t.teams?.name ?? "Catégorie"}
                         {t.gyms && <div style={{ color: "var(--text-faint)" }}>{t.gyms.name}</div>}
                         {t.coach_id && <div style={{ color: "var(--text-faint)" }}>{coachName.get(t.coach_id)}</div>}
                       </Link>

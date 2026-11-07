@@ -32,7 +32,7 @@ function SessionList({ rows, empty }: { rows: Upcoming[]; empty: string }) {
           <Link href={`/seances/${t.id}`} className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm" style={{ background: "var(--surf-2)" }}>
             <span className="min-w-0 truncate">
               <b>{formatDateLong(t.date)}</b>
-              {t.start_time ? ` · ${t.start_time.slice(0, 5)}` : ""} — {t.teams?.name ?? "Équipe"}
+              {t.start_time ? ` · ${t.start_time.slice(0, 5)}` : ""} — {t.teams?.name ?? "Catégorie"}
               {t.objective ? <span className="text-faint"> · {t.objective}</span> : null}
             </span>
             <span className="badge shrink-0">{t.gyms?.name ?? "Salle ?"}</span>
@@ -56,7 +56,7 @@ async function DirectionDashboard(profile: { id: string; role: string; full_name
   const supabase = await createClient();
   const isCoach = profile.role === "coach";
 
-  // Équipes du coach (le staff direction voit tout le club)
+  // Catégories du coach (le staff direction voit tout le club)
   let myTeamIds: string[] | null = null;
   let myTeams: { id: string; name: string; category: string }[] = [];
   if (isCoach) {
@@ -130,7 +130,7 @@ async function DirectionDashboard(profile: { id: string; role: string; full_name
   if (injured.length > 0) alerts.push(<Alert key="inj">{injured.length} joueur(s) blessé(s) : {injured.slice(0, 4).map((p) => p.first_name).join(", ")}{injured.length > 4 ? "…" : ""}</Alert>);
   if (staleEval.length > 0) alerts.push(<Alert key="eval" href="/joueurs">{staleEval.length} joueur(s) sans évaluation depuis 60 jours ou plus</Alert>);
   if (missingInfo.length > 0) alerts.push(<Alert key="miss" href={`/seances/${missingInfo[0].id}`}>{missingInfo.length} séance(s) à venir sans coach ou sans salle</Alert>);
-  if (teamsNoCoach.length > 0) alerts.push(<Alert key="tnc" href="/administration?vue=coachs">Équipe(s) sans coach : {teamsNoCoach.map((t) => t.name).join(", ")}</Alert>);
+  if (teamsNoCoach.length > 0) alerts.push(<Alert key="tnc" href="/administration?vue=coachs">Catégorie(s) sans coach : {teamsNoCoach.map((t) => t.name).join(", ")}</Alert>);
 
   return (
     <div className="space-y-6">
@@ -138,7 +138,7 @@ async function DirectionDashboard(profile: { id: string; role: string; full_name
         <h1 className="display text-2xl font-bold">{isCoach ? `Bonjour ${profile.full_name.split(" ")[0]}` : "Tableau de bord"}</h1>
         <p className="text-sm text-dim">
           {isCoach
-            ? myTeams.length > 0 ? `Tes équipes : ${myTeams.map((t) => t.name).join(", ")}` : "Aucune équipe ne t'est encore affectée."
+            ? myTeams.length > 0 ? `Tes catégories : ${myTeams.map((t) => t.name).join(", ")}` : "Aucune catégorie ne t'est encore affectée."
             : "Vue d'ensemble de l'académie."}
         </p>
       </div>

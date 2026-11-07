@@ -66,7 +66,7 @@ export function AttendanceSheet({
   const unset = players.filter((p) => !optimistic[p.id]).length;
 
   if (players.length === 0) {
-    return <p className="text-sm text-faint">Aucun joueur dans l&apos;équipe de cette séance.</p>;
+    return <p className="text-sm text-faint">Aucun joueur dans la catégorie de cette séance.</p>;
   }
 
   return (

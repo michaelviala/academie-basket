@@ -112,12 +112,12 @@ export function ImportPlayers({ onClose }: { onClose: () => void }) {
             <p className="mb-2 text-sm">
               <b>{built.players.length}</b> joueur(s) prêts, dont <b>{withParents}</b> avec parent(s)
               {built.issues.length > 0 && <> · <span style={{ color: "#fbbf24" }}>{built.issues.length} ligne(s) ignorée(s)</span></>}.
-              {teamNames.length > 0 && <> Équipes dans le fichier : {teamNames.join(", ")}.</>}
+              {teamNames.length > 0 && <> Catégories dans le fichier : {teamNames.join(", ")}.</>}
             </p>
             <div className="overflow-x-auto rounded-lg" style={{ border: "1px solid var(--border)" }}>
               <table className="w-full text-xs">
                 <thead style={{ background: "var(--surf-2)" }}>
-                  <tr className="text-left"><th className="p-2">Joueur</th><th className="p-2">Naissance</th><th className="p-2">Équipe</th><th className="p-2">Parents</th></tr>
+                  <tr className="text-left"><th className="p-2">Joueur</th><th className="p-2">Naissance</th><th className="p-2">Catégorie</th><th className="p-2">Parents</th></tr>
                 </thead>
                 <tbody>
                   {built.players.slice(0, 8).map((p, i) => (
@@ -142,7 +142,7 @@ export function ImportPlayers({ onClose }: { onClose: () => void }) {
 
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={createTeams} onChange={(e) => setCreateTeams(e.target.checked)} />
-            Créer automatiquement les équipes du fichier qui n&apos;existent pas encore (saison active)
+            Créer automatiquement les catégories du fichier qui n&apos;existent pas encore (saison active)
           </label>
 
           <button className="btn-primary" disabled={pending || missingRequired.length > 0 || built.players.length === 0} onClick={run}>
@@ -161,8 +161,8 @@ export function ImportPlayers({ onClose }: { onClose: () => void }) {
           <ul className="list-disc pl-5">
             <li>{result.created} joueur(s) créé(s), {result.existing} déjà présent(s)</li>
             <li>{result.guardiansAdded} parent(s) ajouté(s)</li>
-            {result.teamsCreated.length > 0 && <li>Équipes créées : {result.teamsCreated.join(", ")}</li>}
-            {result.noTeam.length > 0 && <li style={{ color: "#fbbf24" }}>Équipe introuvable (joueurs laissés sans équipe) : {result.noTeam.join(", ")}</li>}
+            {result.teamsCreated.length > 0 && <li>Catégories créées : {result.teamsCreated.join(", ")}</li>}
+            {result.noTeam.length > 0 && <li style={{ color: "#fbbf24" }}>Catégorie introuvable (joueurs laissés sans catégorie) : {result.noTeam.join(", ")}</li>}
           </ul>
           <button className="btn-secondary" onClick={() => { setResult(null); setSheet(null); }}>Importer un autre fichier</button>
         </div>

@@ -24,7 +24,7 @@ export default async function RapportJoueurPage({ params }: { params: Promise<{ 
     getClubSettings(),
   ]);
 
-  // Moyenne de l'équipe par type d'évaluation (si le profil peut voir les évaluations des coéquipiers)
+  // Moyenne de la catégorie par type d'évaluation (si le profil peut voir les évaluations des coéquipiers)
   const mateIds = (teamMates ?? []).map((p) => p.id).filter((x) => x !== id);
   const { data: mateEvals } = mateIds.length && ["admin", "directeur_sportif", "coach", "preparateur_physique"].includes(profile.role)
     ? await supabase.from("evaluations").select("evaluation_type, score, evaluated_at").in("player_id", mateIds)
@@ -67,7 +67,7 @@ export default async function RapportJoueurPage({ params }: { params: Promise<{ 
             </div>
           </div>
           <div style={{ textAlign: "right", fontSize: 13, color: "#555" }}>
-            <p>{(player.teams as { name: string } | null)?.name ?? "Sans équipe"}</p>
+            <p>{(player.teams as { name: string } | null)?.name ?? "Sans catégorie"}</p>
             <p>{calculateAge(player.birth_date)} ans{player.primary_position ? ` · ${player.primary_position}` : ""}</p>
             <p>Édité le {today}</p>
           </div>
@@ -79,7 +79,7 @@ export default async function RapportJoueurPage({ params }: { params: Promise<{ 
           <tbody>
             <tr><td><b>{player.first_name}</b></td>{EVAL_TYPES.map((t) => <td key={t}>{mine[t] !== null ? Number(mine[t]).toFixed(1) : "—"}</td>)}</tr>
             {(mateEvals ?? []).length > 0 && (
-              <tr><td>Moyenne de l&apos;équipe</td>{EVAL_TYPES.map((t) => <td key={t}>{team[t] !== null ? Number(team[t]).toFixed(1) : "—"}</td>)}</tr>
+              <tr><td>Moyenne de la catégorie</td>{EVAL_TYPES.map((t) => <td key={t}>{team[t] !== null ? Number(team[t]).toFixed(1) : "—"}</td>)}</tr>
             )}
           </tbody>
         </table>

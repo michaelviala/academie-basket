@@ -116,12 +116,12 @@ export default async function CoachPage({
 
         {/* EQUIPES */}
         <section className="card space-y-4">
-          <h2 className="font-semibold">Équipes entraînées</h2>
+          <h2 className="font-semibold">Catégories entraînées</h2>
           <CoachTeamsManager coachId={coach.id} teams={assignedTeams} />
           {assignableTeams.length > 0 && (
             <form action={assignTeam.bind(null, coach.id)} className="flex gap-2">
               <select className="input" name="team_id" required defaultValue="">
-                <option value="" disabled>Ajouter une équipe</option>
+                <option value="" disabled>Ajouter une catégorie</option>
                 {assignableTeams.map((t) => (
                   <option key={t.id} value={t.id}>{t.name} ({t.category})</option>
                 ))}
@@ -144,7 +144,7 @@ export default async function CoachPage({
               style={{ background: "var(--surf-2)" }}
             >
               <span>
-                {t.date} {t.start_time ? `· ${t.start_time}` : ""} · {t.teams?.name ?? "Équipe"}
+                {t.date} {t.start_time ? `· ${t.start_time}` : ""} · {t.teams?.name ?? "Catégorie"}
               </span>
               <span style={{ color: "var(--text-faint)" }}>
                 {t.duration_minutes ?? "?"} min · {t.gyms?.name ?? "Gymnase non défini"}

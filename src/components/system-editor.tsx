@@ -276,7 +276,7 @@ export function SystemEditor({
               style={meta.shared ? { borderColor: "var(--brand)", color: "var(--brand)" } : undefined}
             >
               <Icon d="M18 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM18 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
-              {meta.shared ? "Partagé à l'équipe" : "Non partagé"}
+              {meta.shared ? "Partagé à la catégorie" : "Non partagé"}
             </button>
             <button
               className={btn}

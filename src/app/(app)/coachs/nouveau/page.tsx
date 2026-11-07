@@ -11,7 +11,7 @@ export default async function NouveauCoachPage() {
       <h1 className="text-2xl font-bold">Nouveau coach</h1>
       <p className="text-sm" style={{ color: "var(--text-faint)" }}>
         Le compte est créé directement (pas besoin d&apos;inscription). Un mot de passe temporaire sera affiché une seule
-        fois après la création : à transmettre au coach. La photo et les équipes se gèrent ensuite sur sa fiche.
+        fois après la création : à transmettre au coach. La photo et les catégories se gèrent ensuite sur sa fiche.
       </p>
 
       <NewCoachForm />

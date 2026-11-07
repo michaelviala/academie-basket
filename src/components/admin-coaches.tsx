@@ -44,7 +44,7 @@ export function AdminCoaches({ coaches, teams, canCreate }: { coaches: AdminCoac
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm" style={{ color: "var(--text-faint)" }}>
-          Les coachs du club et les équipes (niveaux) qu&apos;ils entraînent. Le coach d&apos;une séance se choisit dans la séance elle-même.
+          Les coachs du club et les catégories qu&apos;ils entraînent. Le coach d&apos;une séance se choisit dans la séance elle-même.
         </p>
         <Link href="/coachs/nouveau" className="btn-primary whitespace-nowrap">+ Nouveau coach</Link>
       </div>
@@ -77,12 +77,12 @@ export function AdminCoaches({ coaches, teams, canCreate }: { coaches: AdminCoac
                     <button type="button" disabled={pending} onClick={() => remove(c.id, t.id)} aria-label={`Retirer ${t.name}`} className="ml-1">×</button>
                   </span>
                 ))}
-                {c.teams.length === 0 && <span className="text-xs" style={{ color: "var(--text-faint)" }}>Aucune équipe</span>}
+                {c.teams.length === 0 && <span className="text-xs" style={{ color: "var(--text-faint)" }}>Aucune catégorie</span>}
               </div>
               {free.length > 0 && (
                 <form action={(fd) => add(c.id, fd)} className="flex gap-2">
                   <select className="input" name="team_id" required defaultValue="">
-                    <option value="" disabled>Affecter à une équipe…</option>
+                    <option value="" disabled>Affecter à une catégorie…</option>
                     {free.map((t) => (
                       <option key={t.id} value={t.id}>{t.name} ({t.category})</option>
                     ))}

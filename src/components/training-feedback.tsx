@@ -114,7 +114,7 @@ export function TrainingFeedback({
   if (players.length === 0) {
     return (
       <p className="text-sm" style={{ color: "var(--text-faint)" }}>
-        Aucun joueur rattaché à cette équipe pour l&apos;instant.
+        Aucun joueur rattaché à cette catégorie pour l&apos;instant.
       </p>
     );
   }

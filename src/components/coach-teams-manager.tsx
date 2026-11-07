@@ -27,7 +27,7 @@ export function CoachTeamsManager({ coachId, teams }: { coachId: string; teams: 
         </div>
       ))}
       {teams.length === 0 && (
-        <p className="text-sm" style={{ color: "var(--text-faint)" }}>Aucune équipe assignée.</p>
+        <p className="text-sm" style={{ color: "var(--text-faint)" }}>Aucune catégorie assignée.</p>
       )}
     </div>
   );

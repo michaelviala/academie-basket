@@ -194,7 +194,7 @@ export default async function AidePage() {
             <b>Renommer</b> change le nom et la catégorie ; <b>Dupliquer</b> crée une variante à modifier.
           </li>
           <li>
-            <b>Partagé à l&apos;équipe</b> rend le système visible par tous les coachs.
+            <b>Partagé à la catégorie</b> rend le système visible par tous les coachs.
           </li>
           <li>
             <b>Clips liés</b> : dans Vidéos, rattache un clip à ce système pour comparer le jeu réel au schéma.

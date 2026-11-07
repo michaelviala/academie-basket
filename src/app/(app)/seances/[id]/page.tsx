@@ -91,7 +91,7 @@ export default async function SeancePage({
           </h1>
           <div className="mt-2 flex flex-wrap gap-2">
             <span className="badge">
-              {training.teams?.name ?? "Équipe non définie"}
+              {training.teams?.name ?? "Catégorie non définie"}
             </span>
             {training.gyms?.name && (
               <span className="badge">{training.gyms.name}</span>

@@ -13,7 +13,7 @@ import type { Guardian } from "@/lib/guardians";
 
 const TABS = [
   { key: "joueurs", label: "Joueurs & parents" },
-  { key: "equipes", label: "Équipes" },
+  { key: "equipes", label: "Catégories" },
   { key: "coachs", label: "Coachs" },
   { key: "utilisateurs", label: "Utilisateurs" },
   { key: "club", label: "Club & salles" },
@@ -91,8 +91,8 @@ export default async function AdministrationPage({ searchParams }: { searchParam
     return (
       <div className="space-y-2">
         <p className="text-sm" style={{ color: "var(--text-faint)" }}>
-          Tous les joueurs du club avec leurs parents ou responsables. Filtre par catégorie, équipe ou statut, repère les fiches sans parent, et exporte la liste en CSV.
-          Ces données personnelles ne sont visibles que de la direction et des coachs de l&apos;équipe concernée.
+          Tous les joueurs du club avec leurs parents ou responsables. Filtre par catégorie ou statut, repère les fiches sans parent, et exporte la liste en CSV.
+          Ces données personnelles ne sont visibles que de la direction et des coachs de la catégorie concernée.
         </p>
         <PlayersImportToggle>
           <AdminPlayers key={`${players.length}-${guardians.length}`} players={players} guardians={guardians} />

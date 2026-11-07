@@ -98,7 +98,7 @@ export function SystemsLibrary({
               ))}
             </select>
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="shared" defaultChecked /> Partagé avec l&apos;équipe
+              <input type="checkbox" name="shared" defaultChecked /> Partagé avec la catégorie
             </label>
             <div className="flex justify-end gap-2">
               <button type="button" className="btn-secondary" onClick={() => setCreating(false)}>Annuler</button>

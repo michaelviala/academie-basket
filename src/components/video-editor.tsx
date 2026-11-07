@@ -1389,7 +1389,7 @@ export function VideoEditor({
 
             <label className="flex items-center justify-between gap-3 text-sm">
               <span>
-                <b>Partager avec l&apos;équipe</b>
+                <b>Partager avec la catégorie</b>
                 <span className="block text-xs" style={{ color: "var(--text-faint)" }}>Visible par les joueurs sur leur page</span>
               </span>
               <input type="checkbox" className="h-5 w-5 accent-[var(--brand)]" checked={draft.shared} disabled={!canEdit} onChange={(e) => patch({ shared: e.target.checked })} />
