@@ -117,7 +117,7 @@ export function PlayerEvaluations({
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-semibold">Historique — {EVAL_TYPE_LABELS[active]}</h2>
           <span className="text-xs" style={{ color: "var(--text-faint)" }}>
-            Moyenne : {avgByType(active) ?? "—"} / 5 sur {activeRows.length} évaluation{activeRows.length > 1 ? "s" : ""}
+            Moyenne : {avgByType(active) ?? "—"} / 10 sur {activeRows.length} évaluation{activeRows.length > 1 ? "s" : ""}
           </span>
         </div>
         <div className="max-h-72 space-y-2 overflow-y-auto">

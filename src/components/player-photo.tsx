@@ -7,10 +7,14 @@ export function PlayerPhoto({
   playerId,
   initialPhotoUrl,
   initials,
+  size = 64,
+  ringColor,
 }: {
   playerId: string;
   initialPhotoUrl: string | null;
   initials: string;
+  size?: number;
+  ringColor?: string;
 }) {
   const [photoUrl, setPhotoUrl] = useState(initialPhotoUrl);
   const [isPending, startTransition] = useTransition();
@@ -52,8 +56,15 @@ export function PlayerPhoto({
         type="button"
         onClick={() => fileInputRef.current?.click()}
         disabled={isPending}
-        className="group relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-full text-2xl font-bold"
-        style={{ background: "var(--surf-2)", border: "2px solid var(--border)", color: "var(--text-dim)" }}
+        className="group relative flex items-center justify-center overflow-hidden rounded-full font-bold"
+        style={{
+          width: size,
+          height: size,
+          fontSize: size * 0.34,
+          background: "var(--surf-2)",
+          border: `3px solid ${ringColor ?? "var(--border)"}`,
+          color: "var(--text-dim)",
+        }}
         title="Changer la photo"
       >
         {photoUrl ? (
