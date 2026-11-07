@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { VideoStage } from "@/components/video-stage";
 import { formatTimecode } from "@/lib/library";
 import {
@@ -171,6 +172,13 @@ export function MontageEditor({
                     {clipDuration(c) !== null ? ` · ${clipDuration(c)} s` : ""}
                   </p>
                 </button>
+                <Link
+                  className="chip shrink-0"
+                  href={`/videos/clip/${c.id}?montage=${montage.id}`}
+                  title="Ouvrir avec dessins, commentaires et système"
+                >
+                  Ouvrir
+                </Link>
                 {canEdit && (
                   <div className="flex shrink-0 gap-1 text-sm">
                     <button className="chip" onClick={() => move(i, -1)} disabled={i === 0} aria-label="Monter">↑</button>
