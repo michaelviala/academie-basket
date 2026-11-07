@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { deleteFeedback, upsertFeedback } from "@/app/(app)/seances/[id]/actions";
 import { DictationField } from "@/components/dictation-field";
 import { AddPlayerVideo, PlayerClipList, type PlayerClip } from "@/components/player-video";
 import { discardUpload, uploadVideo, FEEDBACK_MAX_SECONDS, videoDuration } from "@/lib/player-video";
+import { VideoRecorder } from "@/components/video-recorder";
 import { addPlayerVideo } from "@/app/(app)/videos/player-video";
 
 const PRIORITY_LABELS: Record<string, string> = {
@@ -47,6 +48,19 @@ export function TrainingFeedback({
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [video, setVideo] = useState<File | null>(null);
+  const [filming, setFilming] = useState(false);
+  const nativeFilm = useRef<HTMLInputElement>(null);
+
+  async function chooseVideo(f: File | null) {
+    if (!f) return setVideo(null);
+    const d = await videoDuration(f);
+    if (d && d > FEEDBACK_MAX_SECONDS + 0.7) {
+      setVideo(null);
+      return setError(`Vidéo de ${Math.round(d)} s : ${FEEDBACK_MAX_SECONDS} secondes maximum.`);
+    }
+    setError(null);
+    setVideo(f);
+  }
 
   function handleSubmit(player: Player, formData: FormData) {
     setError(null);
@@ -106,6 +120,15 @@ export function TrainingFeedback({
 
   return (
     <div className="space-y-3">
+      {filming && (
+        <VideoRecorder
+          maxSeconds={FEEDBACK_MAX_SECONDS}
+          onCancel={() => setFilming(false)}
+          onRecorded={(f) => { setFilming(false); void chooseVideo(f); }}
+          onUnavailable={(why) => { setFilming(false); setError(`${why} L'appareil photo du téléphone va s'ouvrir (sans décompte : 12 s max).`); setTimeout(() => nativeFilm.current?.click(), 0); }}
+        />
+      )}
+      <input ref={nativeFilm} type="file" accept="video/*" capture="environment" hidden onChange={(e) => void chooseVideo(e.target.files?.[0] ?? null)} />
       {error && <p className="text-xs" style={{ color: "#f87171" }}>{error}</p>}
       {players.map((p) => {
         const history = feedbacksByPlayer[p.id] ?? [];
@@ -196,27 +219,35 @@ export function TrainingFeedback({
                   <option value="basse">Basse</option>
                 </select>
                 <DictationField name="next_session_goal" placeholder="Objectif prochaine séance" multiline={false} maxLength={300} />
-                <label className="text-xs sm:col-span-2" style={{ color: "var(--text-faint)" }}>
-                  🎥 Vidéo de l&apos;exercice (optionnel, {FEEDBACK_MAX_SECONDS} secondes maximum)
-                  <input
-                    className="input mt-1 w-full"
-                    type="file"
-                    accept="video/*"
-                    onChange={async (e) => {
-                      const input = e.target;
-                      const f = input.files?.[0] ?? null;
-                      const d = f ? await videoDuration(f) : null;
-                      if (f && d && d > FEEDBACK_MAX_SECONDS + 0.7) {
-                        input.value = "";
-                        setVideo(null);
-                        setError(`Vidéo de ${Math.round(d)} s : ${FEEDBACK_MAX_SECONDS} secondes maximum.`);
-                        return;
-                      }
-                      setError(null);
-                      setVideo(f);
-                    }}
-                  />
-                </label>
+                <div className="space-y-1 sm:col-span-2">
+                  <p className="text-xs" style={{ color: "var(--text-faint)" }}>
+                    🎥 Vidéo de l&apos;exercice (optionnel, {FEEDBACK_MAX_SECONDS} secondes maximum)
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button type="button" className="btn-secondary" onClick={() => setFilming(true)} disabled={isPending}>
+                      📹 Filmer
+                    </button>
+                    <label className="btn-secondary cursor-pointer">
+                      Choisir un fichier
+                      <input
+                        type="file"
+                        accept="video/*"
+                        hidden
+                        onChange={(e) => {
+                          const input = e.target;
+                          const f = input.files?.[0] ?? null;
+                          void chooseVideo(f).then(() => { input.value = ""; });
+                        }}
+                      />
+                    </label>
+                    {video && (
+                      <span className="text-xs">
+                        ✓ {video.name} · {(video.size / 1048576).toFixed(1)} Mo{" "}
+                        <button type="button" className="underline" onClick={() => setVideo(null)}>retirer</button>
+                      </span>
+                    )}
+                  </div>
+                </div>
                 <button className="btn-primary sm:col-span-2" type="submit" disabled={isPending}>
                   Enregistrer le feedback
                 </button>
