@@ -48,6 +48,42 @@ export async function addEvaluation(playerId: string, formData: FormData) {
   revalidatePath(`/joueurs/${playerId}`);
 }
 
+const EVAL_EDIT_ROLES = ["admin", "directeur_sportif"];
+
+export async function updateEvaluation(playerId: string, evaluationId: string, formData: FormData) {
+  const profile = await requireProfile();
+  if (!EVAL_EDIT_ROLES.includes(profile.role)) return { error: "Seule la direction peut modifier une évaluation." };
+  const score = Number(formData.get("score"));
+  if (!Number.isFinite(score) || score < 1 || score > 10) return { error: "La note doit être comprise entre 1 et 10." };
+  const date = ((formData.get("evaluated_at") as string) || "").slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "Date invalide." };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("evaluations")
+    .update({ score, evaluated_at: date, comment: ((formData.get("comment") as string) || "").trim() || null })
+    .eq("id", evaluationId)
+    .eq("player_id", playerId)
+    .select("id");
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "Modification refusée." };
+  revalidatePath(`/joueurs/${playerId}`);
+  revalidatePath("/joueurs");
+  return { success: true };
+}
+
+export async function deleteEvaluation(playerId: string, evaluationId: string) {
+  const profile = await requireProfile();
+  if (!EVAL_EDIT_ROLES.includes(profile.role)) return { error: "Seule la direction peut supprimer une évaluation." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("evaluations").delete().eq("id", evaluationId).eq("player_id", playerId).select("id");
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "Suppression refusée." };
+  revalidatePath(`/joueurs/${playerId}`);
+  revalidatePath("/joueurs");
+  return { success: true };
+}
+
 const PHOTO_BUCKET = "player-photos";
 
 export async function uploadPlayerPhoto(playerId: string, formData: FormData) {
