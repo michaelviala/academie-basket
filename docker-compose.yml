@@ -10,6 +10,10 @@ services:
     environment:
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      # Transcription des commentaires vocaux (facultatif : vide = dictée du navigateur)
+      - TRANSCRIBE_API_KEY=${TRANSCRIBE_API_KEY:-}
+      - TRANSCRIBE_API_URL=${TRANSCRIBE_API_URL:-}
+      - TRANSCRIBE_MODEL=${TRANSCRIBE_MODEL:-}
       - VIRTUAL_HOST=${VIRTUAL_HOST}
       - VIRTUAL_PORT=3000
       - LETSENCRYPT_HOST=${VIRTUAL_HOST}
