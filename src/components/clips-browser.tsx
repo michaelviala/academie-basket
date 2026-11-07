@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { ClipModal } from "@/components/clip-modal";
+import Link from "next/link";
 import { VideoStage } from "@/components/video-stage";
 import { formatTimecode, normalize } from "@/lib/library";
 import { clipDuration, type ClipView, type VideoSourceInfo } from "@/lib/videos";
@@ -22,7 +22,7 @@ export function ClipsBrowser({
 }) {
   const [q, setQ] = useState("");
   const [tag, setTag] = useState("");
-  const [editing, setEditing] = useState<ClipView | "new" | null>(null);
+  const [picking, setPicking] = useState(false);
   const [watching, setWatching] = useState<ClipView | null>(null);
   const [, startTransition] = useTransition();
 
@@ -45,7 +45,7 @@ export function ClipsBrowser({
       <div className="flex flex-wrap items-center gap-2">
         <input className="input min-w-0 flex-1 sm:max-w-sm" placeholder="Rechercher un clip, un joueur, un tag…" value={q} onChange={(e) => setQ(e.target.value)} />
         {canEdit && (
-          <button className="btn-primary" onClick={() => setEditing("new")}>
+          <button className="btn-primary" onClick={() => setPicking(true)}>
             ✂ Nouveau clip
           </button>
         )}
@@ -110,7 +110,7 @@ export function ClipsBrowser({
                 )}
                 {canEdit && c.canEdit && (
                   <div className="mt-2 flex gap-3 text-xs">
-                    <button style={{ color: "var(--brand)" }} onClick={() => setEditing(c)}>Modifier</button>
+                    <Link style={{ color: "var(--brand)" }} href={`/videos/editeur/${c.source.id}?clip=${c.id}`}>Modifier</Link>
                     <button
                       style={{ color: "#ff6b6b" }}
                       onClick={() => {
@@ -127,14 +127,30 @@ export function ClipsBrowser({
         </div>
       )}
 
-      {editing && (
-        <ClipModal
-          sources={sources}
-          players={players}
-          systems={systems}
-          initial={editing === "new" ? undefined : editing}
-          onClose={() => setEditing(null)}
-        />
+      {picking && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setPicking(false)}>
+          <div className="card w-full max-w-md space-y-3" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold">Choisir la vidéo à découper</h2>
+              <button className="text-xl leading-none" onClick={() => setPicking(false)} aria-label="Fermer">×</button>
+            </div>
+            {sources.length === 0 ? (
+              <p className="text-sm" style={{ color: "var(--text-faint)" }}>
+                Aucune vidéo dans la bibliothèque. Ajoute d&apos;abord un fichier ou un lien YouTube.
+              </p>
+            ) : (
+              <ul className="max-h-80 space-y-1.5 overflow-y-auto">
+                {sources.map((s) => (
+                  <li key={s.id}>
+                    <Link href={`/videos/editeur/${s.id}`} className="block truncate rounded-lg border p-2.5 text-sm" style={{ borderColor: "var(--border)" }}>
+                      ▶ {s.title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
       )}
 
       {watching && (

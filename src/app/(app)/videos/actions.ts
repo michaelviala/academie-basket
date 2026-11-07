@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/data";
 import { parseTags, parseTimecode } from "@/lib/library";
 import { VIDEO_EDIT_ROLES } from "@/lib/videos";
+import { PHASES, resultOk } from "@/lib/clip-tags";
 
 type Result = { error?: string; success?: boolean };
 
@@ -153,4 +154,98 @@ export async function deleteMontage(montageId: string) {
   if (dbError) throw new Error(dbError.message);
   revalidatePath("/videos");
   redirect("/videos?vue=montages");
+}
+
+/* ---------- Éditeur (repris de PIVOT) ---------- */
+
+export type ClipInput = {
+  id?: string;
+  sourceId: string;
+  title: string;
+  start: number;
+  end: number;
+  phase: string;
+  result: string | null;
+  playerIds: string[];
+  systemId: string | null;
+  systemStep: number;
+  tags: string;
+  shared: boolean;
+  comments: { t: number; text: string }[];
+};
+
+export async function saveClip(
+  input: ClipInput,
+): Promise<{ error?: string; id?: string }> {
+  const { profile, error } = await guard();
+  if (error) return { error };
+  if (!Number.isFinite(input.start) || !Number.isFinite(input.end))
+    return { error: "Début ou fin invalide." };
+  if (input.end <= input.start)
+    return { error: "La fin du clip doit être après le début." };
+  if (!PHASES.some((p) => p.id === input.phase))
+    return { error: "Phase de jeu inconnue." };
+  if (!resultOk(input.phase, input.result))
+    return { error: "Ce résultat n'existe pas pour cette phase." };
+
+  const fields = {
+    title: input.title.trim().slice(0, 200) || "Clip",
+    start_seconds: Math.max(0, Math.round(input.start * 100) / 100),
+    end_seconds: Math.round(input.end * 100) / 100,
+    phase: input.phase,
+    result: input.result || null,
+    player_ids: input.playerIds.slice(0, 30),
+    system_id: input.systemId || null,
+    system_step: Math.max(0, Math.round(input.systemStep || 0)),
+    tags: parseTags(input.tags),
+    shared: !!input.shared,
+    comments: input.comments
+      .filter((c) => c.text.trim())
+      .slice(0, 50)
+      .map((c) => ({ t: Math.max(0, c.t), text: c.text.trim().slice(0, 500) })),
+  };
+  const supabase = await createClient();
+  if (input.id) {
+    const { error: dbError } = await supabase
+      .from("video_clips")
+      .update(fields)
+      .eq("id", input.id);
+    if (dbError) return { error: dbError.message };
+    revalidatePath("/videos");
+    return { id: input.id };
+  }
+  const { data, error: dbError } = await supabase
+    .from("video_clips")
+    .insert({ ...fields, source_id: input.sourceId, created_by: profile.id })
+    .select("id")
+    .single();
+  if (dbError || !data) return { error: dbError?.message ?? "Création impossible." };
+  revalidatePath("/videos");
+  return { id: data.id };
+}
+
+export async function addQuarter(
+  sourceId: string,
+  t: number,
+): Promise<{ error?: string; id?: string }> {
+  const { error } = await guard();
+  if (error) return { error };
+  if (!Number.isFinite(t) || t < 0) return { error: "Position invalide." };
+  const supabase = await createClient();
+  const { data, error: dbError } = await supabase
+    .from("video_quarters")
+    .insert({ source_id: sourceId, t: Math.round(t * 100) / 100 })
+    .select("id")
+    .single();
+  if (dbError || !data) return { error: dbError?.message ?? "Échec." };
+  return { id: data.id };
+}
+
+export async function deleteQuarter(id: string): Promise<Result> {
+  const { error } = await guard();
+  if (error) return { error };
+  const supabase = await createClient();
+  const { error: dbError } = await supabase.from("video_quarters").delete().eq("id", id);
+  if (dbError) return { error: dbError.message };
+  return { success: true };
 }

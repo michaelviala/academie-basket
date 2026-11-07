@@ -8,6 +8,10 @@ export type StageApi = {
   seek: (t: number) => void;
   play: () => void;
   pause: () => void;
+  duration: () => number;
+  paused: () => boolean;
+  setRate: (r: number) => void;
+  setMuted: (m: boolean) => void;
 };
 
 /* ---------- API YouTube (chargée une seule fois) ---------- */
@@ -17,6 +21,11 @@ type YTPlayer = {
   seekTo: (t: number, allowSeekAhead: boolean) => void;
   playVideo: () => void;
   pauseVideo: () => void;
+  getDuration: () => number;
+  getPlayerState: () => number;
+  setPlaybackRate: (r: number) => void;
+  mute: () => void;
+  unMute: () => void;
 };
 type YTNamespace = {
   Player: new (
@@ -109,6 +118,10 @@ function YouTubeStage({
           seek: (t) => player?.seekTo(t, true),
           play: () => player?.playVideo(),
           pause: () => player?.pauseVideo(),
+          duration: () => player?.getDuration?.() ?? 0,
+          paused: () => player?.getPlayerState?.() !== 1,
+          setRate: (r) => player?.setPlaybackRate?.(r),
+          setMuted: (m) => (m ? player?.mute?.() : player?.unMute?.()),
         };
     });
     return () => {
@@ -129,7 +142,9 @@ function FileStage({
   autoplay,
   onEnded,
   apiRef,
+  controls = true,
 }: {
+  controls?: boolean;
   url: string;
   start: number;
   end: number | null;
@@ -150,6 +165,14 @@ function FileStage({
       },
       play: () => void v.play(),
       pause: () => v.pause(),
+      duration: () => (Number.isFinite(v.duration) ? v.duration : 0),
+      paused: () => v.paused,
+      setRate: (r) => {
+        v.playbackRate = r;
+      },
+      setMuted: (m) => {
+        v.muted = m;
+      },
     };
     return () => {
       apiRef.current = null;
@@ -162,7 +185,8 @@ function FileStage({
       ref={ref}
       className="absolute inset-0 h-full w-full bg-black"
       src={url.split("#")[0] + frag}
-      controls
+      controls={controls}
+      preload="auto"
       playsInline
       autoPlay={autoplay}
       onTimeUpdate={(e) => {
@@ -191,7 +215,9 @@ export function VideoStage({
   autoplay = false,
   onEnded,
   apiRef,
+  controls = true,
 }: {
+  controls?: boolean;
   source: VideoSourceInfo;
   start?: number;
   end?: number | null;
@@ -204,7 +230,7 @@ export function VideoStage({
       {source.kind === "youtube" && source.ytId ? (
         <YouTubeStage ytId={source.ytId} start={start} end={end} autoplay={autoplay} onEnded={onEnded} apiRef={apiRef} />
       ) : source.kind === "file" && source.url ? (
-        <FileStage url={source.url} start={start} end={end} autoplay={autoplay} onEnded={onEnded} apiRef={apiRef} />
+        <FileStage url={source.url} start={start} end={end} autoplay={autoplay} onEnded={onEnded} apiRef={apiRef} controls={controls} />
       ) : (
         <div className="flex h-full flex-col items-center justify-center gap-2 p-4 text-center text-sm text-white/80">
           <p>Cette vidéo ne peut pas être lue ici.</p>

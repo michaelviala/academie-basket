@@ -55,3 +55,59 @@ export function formatDuration(sec: number) {
   const s = Math.round(sec % 60);
   return m > 0 ? `${m} min ${String(s).padStart(2, "0")} s` : `${s} s`;
 }
+
+/** m:ss (ou m:ss.d avec `fine`). */
+export function fmtT(sec: number, fine = false) {
+  const t = Math.max(0, sec || 0);
+  const m = Math.floor(t / 60);
+  const s = t - m * 60;
+  return fine
+    ? `${m}:${s.toFixed(1).padStart(4, "0")}`
+    : `${m}:${String(Math.floor(s)).padStart(2, "0")}`;
+}
+
+/** Lit « 1:23.4 », « 83 » ou « 1:23 » en secondes (décimales admises). */
+export function parseT(raw: string): number | null {
+  const v = raw.trim().replace(",", ".");
+  if (!v) return null;
+  const parts = v.split(":").map((p) => Number(p));
+  if (parts.some((n) => !Number.isFinite(n) || n < 0) || parts.length > 3) return null;
+  return parts.reduce((acc, n) => acc * 60 + n, 0);
+}
+
+/** Construit la source vidéo lisible (fichier signé, YouTube, ou lien non lisible). */
+export function buildSource(
+  r: {
+    id: string;
+    title: string;
+    file_path: string | null;
+    thumbnail_path: string | null;
+    video_url: string | null;
+  },
+  signed: Map<string, string>,
+  helpers: {
+    youtubeId: (u: string | null | undefined) => string | null;
+    isDirect: (u: string) => boolean;
+  },
+): VideoSourceInfo {
+  const yt = helpers.youtubeId(r.video_url);
+  const kind: VideoSourceInfo["kind"] = r.file_path
+    ? "file"
+    : yt
+      ? "youtube"
+      : r.video_url && helpers.isDirect(r.video_url)
+        ? "file"
+        : "other";
+  return {
+    id: r.id,
+    title: r.title,
+    kind,
+    url: r.file_path ? (signed.get(r.file_path) ?? null) : r.video_url,
+    ytId: yt,
+    thumbUrl: r.thumbnail_path
+      ? (signed.get(r.thumbnail_path) ?? null)
+      : yt
+        ? `https://i.ytimg.com/vi/${yt}/hqdefault.jpg`
+        : null,
+  };
+}
