@@ -82,16 +82,32 @@ export async function updateSidebarColor(formData: FormData) {
   return { success: true };
 }
 
+function gymFields(formData: FormData) {
+  const courts = Math.round(Number(formData.get("courts") ?? 1));
+  return {
+    name: String(formData.get("name") ?? "").trim(),
+    address: String(formData.get("address") ?? "").trim() || null,
+    notes: String(formData.get("notes") ?? "").trim() || null,
+    courts: Number.isFinite(courts) ? Math.min(20, Math.max(1, courts)) : 1,
+  };
+}
+
 export async function createGym(formData: FormData) {
-  const name = String(formData.get("name") ?? "").trim();
-  if (!name) return { error: "Le nom du gymnase est requis." };
-
+  const f = gymFields(formData);
+  if (!f.name) return { error: "Le nom du gymnase est requis." };
   const supabase = await createClient();
-  const { error } = await supabase.from("gyms").insert({
-    name,
-    address: (formData.get("address") as string) || null,
-  });
+  const { error } = await supabase.from("gyms").insert(f);
+  if (error) return { error: error.message };
+  revalidatePath("/administration");
+  revalidatePath("/seances");
+  return { success: true };
+}
 
+export async function updateGym(gymId: string, formData: FormData) {
+  const f = gymFields(formData);
+  if (!f.name) return { error: "Le nom du gymnase est requis." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("gyms").update(f).eq("id", gymId);
   if (error) return { error: error.message };
   revalidatePath("/administration");
   revalidatePath("/seances");
@@ -101,7 +117,7 @@ export async function createGym(formData: FormData) {
 export async function deleteGym(gymId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("gyms").delete().eq("id", gymId);
-  if (error) return { error: error.message };
+  if (error) return { error: "Impossible de supprimer : ce gymnase est utilisé par des séances." };
   revalidatePath("/administration");
   revalidatePath("/seances");
   return { success: true };

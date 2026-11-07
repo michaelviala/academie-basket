@@ -3,14 +3,16 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { calculateAge, getClubSettings, requireProfile, ROLE_LABELS } from "@/lib/data";
 import { BrandingForm } from "@/components/branding-form";
+import { AdminCoaches, type AdminCoach } from "@/components/admin-coaches";
 import { GymsManager } from "@/components/gyms-manager";
 import { AdminPlayers, type AdminPlayer } from "@/components/admin-players";
 import type { Guardian } from "@/lib/guardians";
 
 const TABS = [
   { key: "joueurs", label: "Joueurs & parents" },
+  { key: "coachs", label: "Coachs" },
   { key: "utilisateurs", label: "Utilisateurs" },
-  { key: "club", label: "Club & gymnases" },
+  { key: "club", label: "Club & salles" },
   { key: "saisons", label: "Saisons & référentiel" },
 ] as const;
 
@@ -37,6 +39,8 @@ export default async function AdministrationPage({ searchParams }: { searchParam
       </div>
 
       {tab === "joueurs" && <PlayersTab />}
+
+      {tab === "coachs" && <CoachsTab />}
 
       {tab === "utilisateurs" && <UsersTab />}
 
@@ -89,6 +93,26 @@ export default async function AdministrationPage({ searchParams }: { searchParam
     );
   }
 
+  async function CoachsTab() {
+    const [{ data: rows }, { data: teams }] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id, full_name, email, phone, role, team_coaches(teams(id, name, category))")
+        .in("role", ["coach", "directeur_sportif", "preparateur_physique"])
+        .order("full_name"),
+      supabase.from("teams").select("id, name, category").order("name"),
+    ]);
+    const coaches: AdminCoach[] = (rows ?? []).map((c) => ({
+      id: c.id,
+      name: c.full_name,
+      email: c.email,
+      phone: c.phone,
+      roleLabel: ROLE_LABELS[c.role] ?? c.role,
+      teams: (c.team_coaches ?? []).map((tc) => tc.teams).filter((t): t is { id: string; name: string; category: string } => !!t),
+    }));
+    return <AdminCoaches coaches={coaches} teams={teams ?? []} canCreate={!!process.env.SUPABASE_SERVICE_ROLE_KEY} />;
+  }
+
   async function UsersTab() {
     const { data: profiles } = await supabase.from("profiles").select("id, full_name, email, role").order("full_name");
     return (
@@ -112,7 +136,7 @@ export default async function AdministrationPage({ searchParams }: { searchParam
   }
 
   async function ClubTab() {
-    const [{ data: gyms }, settings] = await Promise.all([supabase.from("gyms").select("id, name, address").order("name"), getClubSettings()]);
+    const [{ data: gyms }, settings] = await Promise.all([supabase.from("gyms").select("id, name, address, courts, notes").order("name"), getClubSettings()]);
     return (
       <div className="space-y-6">
         <BrandingForm

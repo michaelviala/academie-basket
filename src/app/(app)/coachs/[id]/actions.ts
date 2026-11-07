@@ -14,8 +14,9 @@ export async function updateCoachContact(coachId: string, formData: FormData) {
     })
     .eq("id", coachId);
 
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(error.code === "23505" ? "Ce coach est déjà affecté à cette équipe." : error.message);
   revalidatePath(`/coachs/${coachId}`);
+  revalidatePath("/administration");
 }
 
 const PHOTO_BUCKET = "coach-photos";
@@ -68,8 +69,9 @@ export async function assignTeam(coachId: string, formData: FormData) {
 
   const supabase = await createClient();
   const { error } = await supabase.from("team_coaches").insert({ coach_id: coachId, team_id: teamId });
-  if (error) throw new Error(error.message);
+  if (error) throw new Error(error.code === "23505" ? "Ce coach est déjà affecté à cette équipe." : error.message);
   revalidatePath(`/coachs/${coachId}`);
+  revalidatePath("/administration");
 }
 
 export async function unassignTeam(coachId: string, teamId: string) {
@@ -81,5 +83,6 @@ export async function unassignTeam(coachId: string, teamId: string) {
     .eq("team_id", teamId);
   if (error) return { error: error.message };
   revalidatePath(`/coachs/${coachId}`);
+  revalidatePath("/administration");
   return { success: true };
 }

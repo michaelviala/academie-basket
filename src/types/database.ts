@@ -385,21 +385,27 @@ export type Database = {
       gyms: {
         Row: {
           address: string | null
+          courts: number
           created_at: string
           id: string
           name: string
+          notes: string | null
         }
         Insert: {
           address?: string | null
+          courts?: number
           created_at?: string
           id?: string
           name: string
+          notes?: string | null
         }
         Update: {
           address?: string | null
+          courts?: number
           created_at?: string
           id?: string
           name?: string
+          notes?: string | null
         }
         Relationships: []
       }
