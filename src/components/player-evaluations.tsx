@@ -5,6 +5,8 @@ import {
   deleteEvaluation,
   updateEvaluation,
 } from "@/app/(app)/joueurs/[id]/actions";
+import { CompetencyHistogram } from "@/components/competency-histogram";
+import { EVAL_COLORS } from "@/lib/player-stats";
 import { PlayerEvaluationChart } from "@/components/player-evaluation-chart";
 
 const EVAL_TYPE_LABELS: Record<string, string> = {
@@ -101,6 +103,11 @@ export function PlayerEvaluations({
     for (const e of typeRows) map.set(e.skills?.category ?? "", (map.get(e.skills?.category ?? "") ?? 0) + 1);
     return [...map.entries()].sort((a, b) => catLabel(a[0]).localeCompare(catLabel(b[0])));
   })();
+  const histoLabel = (e: Evaluation) => {
+    const name = e.skills?.name ?? EVAL_TYPE_LABELS[active];
+    // sans filtre, on préfixe par le type de compétence (ex. « Sous pression » existe en Tir, Dribble, Passe)
+    return !cat && catCounts.length > 1 && e.skills?.category ? `${catLabel(e.skills.category)} · ${name}` : name;
+  };
   const avgOf = (rows: Evaluation[]) => (rows.reduce((s, r) => s + Number(r.score), 0) / rows.length).toFixed(1);
   const [openId, setOpenId] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
@@ -254,6 +261,21 @@ export function PlayerEvaluations({
       <div className="card mb-4">
         <h2 className="mb-3 font-semibold">Progression</h2>
         <PlayerEvaluationChart evaluations={evaluations} />
+      </div>
+
+      <div className="card mb-4">
+        <h2 className="mb-3 font-semibold">
+          Compétences — {EVAL_TYPE_LABELS[active]}
+          {cat ? ` · ${catLabel(cat)}` : ""}
+        </h2>
+        <CompetencyHistogram
+          color={EVAL_COLORS[active]}
+          evals={activeRows.map((e) => ({
+            skill: histoLabel(e),
+            score: Number(e.score),
+            date: e.evaluated_at,
+          }))}
+        />
       </div>
 
       <div className="card">
