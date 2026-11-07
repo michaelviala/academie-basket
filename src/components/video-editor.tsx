@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useSyncExternalStore, useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { VideoStage, type StageApi } from "@/components/video-stage";
 import { PHASES, RESULTS, phaseOf, resultsFor, resultOk, type ClipComment } from "@/lib/clip-tags";
 import { fmtT, parseT, type VideoSourceInfo } from "@/lib/videos";
+import { createClient } from "@/lib/supabase/client";
 import {
   COLORS,
   HOLDS,
@@ -46,6 +47,22 @@ export type EditorClip = {
 };
 
 type Draft = Omit<EditorClip, "id" | "canDelete"> & { id: string | null; canDelete: boolean };
+type SpeechRec = {
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onresult: ((ev: { results: ArrayLike<{ isFinal: boolean; 0: { transcript: string } }> }) => void) | null;
+  onerror: ((ev: { error: string }) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+type SpeechCtor = new () => SpeechRec;
+const speechCtor = (): SpeechCtor | null => {
+  if (typeof window === "undefined") return null;
+  const w = window as unknown as { SpeechRecognition?: SpeechCtor; webkitSpeechRecognition?: SpeechCtor };
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
+};
 type Draw = { id: string | null; t: number; dur: number; hold: number; shapes: Shape[] };
 type Player = { id: string; first_name: string; last_name: string };
 type SystemOpt = { id: string; name: string; steps: string[] };
@@ -62,6 +79,7 @@ const emptyDraft = (start: number, end: number): Draft => ({
 export function VideoEditor({
   source,
   initialClips,
+  initialAudioUrls,
   initialQuarters,
   initialDrawings,
   players,
@@ -71,6 +89,7 @@ export function VideoEditor({
 }: {
   source: VideoSourceInfo;
   initialClips: EditorClip[];
+  initialAudioUrls: Record<string, string>;
   initialQuarters: Quarter[];
   initialDrawings: Drawing[];
   players: Player[];
@@ -106,6 +125,25 @@ export function VideoEditor({
   const [cur, setCur] = useState<Shape | null>(null);
   const [textAt, setTextAt] = useState<[number, number] | null>(null);
   const [textVal, setTextVal] = useState("");
+  const [audioUrls, setAudioUrls] = useState<Record<string, string>>(initialAudioUrls);
+  const [recording, setRecording] = useState(false);
+  const [recText, setRecText] = useState("");
+  const rec = useRef<{
+    stream: MediaStream | null;
+    mr: MediaRecorder | null;
+    sr: SpeechRec | null;
+    chunks: Blob[];
+    base: string;
+    text: string;
+    interim: string;
+    t: number;
+    active: boolean;
+  } | null>(null);
+  const speechOk = useSyncExternalStore(() => () => {}, () => !!speechCtor(), () => false);
+  const draftRef = useRef<Draft | null>(null);
+  const audioEl = useRef<HTMLAudioElement | null>(null);
+  const audioPrev = useRef<number | null>(null);
+  const playAudioRef = useRef<(path: string) => void>(() => {});
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const redrawRef = useRef<() => void>(() => {});
   const drawingsRef = useRef<Drawing[]>(initialDrawings);
@@ -127,6 +165,7 @@ export function VideoEditor({
   useEffect(() => {
     win.current = { a, b };
     drawingsRef.current = drawings;
+    draftRef.current = draft;
     editingRef.current = dEdit !== null;
   });
 
@@ -159,6 +198,12 @@ export function VideoEditor({
           }
         } else prevT.current = t;
       } else prevT.current = t;
+      if (stopAt.current !== null) {
+        const dr = draftRef.current, pv = audioPrev.current;
+        if (dr && pv !== null)
+          for (const c of dr.comments) if (c.audio && c.t > pv && c.t <= t) playAudioRef.current(c.audio);
+        audioPrev.current = t;
+      } else audioPrev.current = null;
       setTime(t);
       const d = h.duration();
       if (d) setDur((old) => (Math.abs(old - d) > 0.05 ? d : old));
@@ -376,6 +421,145 @@ export function VideoEditor({
       setClips((all) => all.filter((c) => c.id !== id));
       setDraft(null);
     });
+  }
+
+  /* ---------- commentaires vocaux ---------- */
+  function playAudio(path: string) {
+    const url = audioUrls[path];
+    if (!url) return setMsg("Audio introuvable.");
+    audioEl.current?.pause();
+    const a = new Audio(url);
+    audioEl.current = a;
+    a.play().catch(() => setMsg("Lecture audio impossible."));
+  }
+  useEffect(() => {
+    playAudioRef.current = playAudio;
+  });
+
+  async function startRec() {
+    const d = draftRef.current;
+    if (!d || !canEdit) return setMsg("Ouvre d'abord un clip.");
+    api.current?.pause();
+    const t = clamp(api.current?.getTime() ?? d.start, d.start, d.end);
+    const r = { stream: null as MediaStream | null, mr: null as MediaRecorder | null, sr: null as SpeechRec | null, chunks: [] as Blob[], base: "", text: "", interim: "", t, active: true };
+    try {
+      if (navigator.mediaDevices && typeof MediaRecorder !== "undefined") {
+        r.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        r.mr = new MediaRecorder(r.stream);
+        r.mr.ondataavailable = (e) => {
+          if (e.data && e.data.size) r.chunks.push(e.data);
+        };
+        r.mr.start();
+      }
+    } catch {
+      r.stream = null;
+      r.mr = null;
+    }
+    const SR = speechCtor();
+    if (SR) {
+      try {
+        const sr = new SR();
+        sr.lang = "fr-FR";
+        sr.continuous = true;
+        sr.interimResults = true;
+        let denied = false;
+        sr.onresult = (ev) => {
+          let fin = "", inter = "";
+          for (let i = 0; i < ev.results.length; i++) {
+            const x = ev.results[i];
+            if (x.isFinal) fin += x[0].transcript;
+            else inter += x[0].transcript;
+          }
+          r.text = fin;
+          r.interim = inter;
+          setRecText((r.base + " " + r.text + " " + r.interim).replace(/\s+/g, " ").trim());
+        };
+        sr.onerror = (e) => {
+          if (e.error === "not-allowed") denied = true;
+        };
+        sr.onend = () => {
+          if (r.active && !denied) {
+            r.base = (r.base + " " + r.text).trim();
+            r.text = "";
+            try {
+              sr.start();
+            } catch {
+              /* ignore */
+            }
+          }
+        };
+        sr.start();
+        r.sr = sr;
+      } catch {
+        r.sr = null;
+      }
+    }
+    if (!r.mr && !r.sr) {
+      setMsg("Micro indisponible : autorise l'accès au micro, ou ajoute un commentaire écrit.");
+      return;
+    }
+    rec.current = r;
+    setRecText("");
+    setRecording(true);
+  }
+
+  async function stopRec() {
+    const r = rec.current;
+    if (!r) return;
+    r.active = false;
+    setRecording(false);
+    try {
+      r.sr?.stop();
+    } catch {
+      /* ignore */
+    }
+    if (r.mr && r.mr.state !== "inactive") {
+      await new Promise<void>((res) => {
+        r.mr!.onstop = () => res();
+        try {
+          r.mr!.stop();
+        } catch {
+          res();
+        }
+      });
+    }
+    r.stream?.getTracks().forEach((x) => x.stop());
+    await new Promise((res) => setTimeout(res, 500));
+    rec.current = null;
+    const text = (r.base + " " + r.text + " " + r.interim).replace(/\s+/g, " ").trim().slice(0, 500);
+    let audio: string | undefined;
+    let upErr: string | null = null;
+    if (r.chunks.length) {
+      const type = r.mr?.mimeType || "audio/webm";
+      const ext = type.includes("mp4") ? "m4a" : type.includes("ogg") ? "ogg" : "webm";
+      const path = `audio/${crypto.randomUUID()}.${ext}`;
+      const supabase = createClient();
+      const { error } = await supabase.storage
+        .from("library")
+        .upload(path, new Blob(r.chunks, { type }), { contentType: type.split(";")[0] });
+      if (error) upErr = `Audio non enregistré : ${error.message}`;
+      else {
+        audio = path;
+        const { data } = await supabase.storage.from("library").createSignedUrl(path, 3600 * 4);
+        if (data?.signedUrl) setAudioUrls((m) => ({ ...m, [path]: data.signedUrl }));
+      }
+    }
+    const d = draftRef.current;
+    if (!d) return;
+    if (!text && !audio) return setMsg(upErr ?? "Rien n'a été enregistré.");
+    const next: Draft = {
+      ...d,
+      comments: [...d.comments, { t: r.t, text, ...(audio ? { audio } : {}) }].sort((x, y) => x.t - y.t),
+    };
+    setDraft(next);
+    persist(next, true);
+    setMsg(upErr ?? (text ? "Commentaire transcrit." : "Audio enregistré (pas de transcription : tu peux saisir le texte)."));
+  }
+  function removeComment(i: number) {
+    if (!draft) return;
+    const c = draft.comments[i];
+    if (c?.audio) void createClient().storage.from("library").remove([c.audio]);
+    patch({ comments: draft.comments.filter((_, k) => k !== i) });
   }
 
   /* ---------- dessins sur la vidéo ---------- */
@@ -651,6 +835,7 @@ export function VideoEditor({
 
   const allComments = clips.flatMap((c) => c.comments);
   const caption = allComments.find((c) => {
+    if (!c.text) return false;
     const d = clamp(c.text.split(/\s+/).length * 0.42, 3, 10);
     return time >= c.t && time <= c.t + d;
   });
@@ -1136,16 +1321,42 @@ export function VideoEditor({
                 )}
                 {draft.comments.map((c, i) => (
                   <li key={i} className="flex items-start gap-2 rounded-lg p-2 text-sm" style={{ background: "var(--surf-2)" }}>
+                    {c.audio ? (
+                      <button type="button" className="text-sm" aria-label="Écouter le commentaire" onClick={() => playAudio(c.audio!)}>▶</button>
+                    ) : null}
                     <span className="font-mono text-xs" style={{ color: "var(--text-faint)" }}>{fmtT(c.t)}</span>
-                    <span className="min-w-0 flex-1">{c.text}</span>
+                    <span className="min-w-0 flex-1">{c.text || <i style={{ color: "var(--text-faint)" }}>(audio sans transcription)</i>}</span>
                     {canEdit && (
-                      <button type="button" aria-label="Supprimer le commentaire" className="text-xs" style={{ color: "#ff6b6b" }} onClick={() => patch({ comments: draft.comments.filter((_, k) => k !== i) })}>
+                      <button type="button" aria-label="Supprimer le commentaire" className="text-xs" style={{ color: "#ff6b6b" }} onClick={() => removeComment(i)}>
                         ✕
                       </button>
                     )}
                   </li>
                 ))}
               </ul>
+              {canEdit && (
+                <div className="mt-2 flex items-center gap-3 rounded-lg p-2" style={{ background: "var(--surf-2)" }}>
+                  <button
+                    type="button"
+                    onClick={() => (recording ? void stopRec() : void startRec())}
+                    aria-label={recording ? "Arrêter l'enregistrement" : "Enregistrer un commentaire vocal"}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white"
+                    style={{ background: recording ? "#e5484d" : "var(--brand)" }}
+                  >
+                    {recording ? "■" : "🎤"}
+                  </button>
+                  <span className="min-w-0 text-xs leading-snug" aria-live="polite">
+                    <b className="block text-sm">{recording ? "Enregistrement… parle maintenant" : "Commentaire vocal"}</b>
+                    <span style={{ color: "var(--text-faint)" }}>
+                      {recording
+                        ? recText || "…"
+                        : speechOk
+                          ? "Transcrit automatiquement, affiché en sous-titre"
+                          : "Audio enregistré · transcription non disponible sur ce navigateur"}
+                    </span>
+                  </span>
+                </div>
+              )}
               {canEdit && (
                 <div className="mt-2 flex gap-2">
                   <input className="input min-w-0 flex-1" value={cmText} placeholder="Texte affiché en sous-titre…" maxLength={500} onChange={(e) => setCmText(e.target.value)} />

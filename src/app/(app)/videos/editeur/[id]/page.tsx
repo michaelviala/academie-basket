@@ -72,6 +72,15 @@ export default async function EditeurPage({
     canDelete: isDirection || c.created_by === profile.id,
   }));
 
+  const audioPaths = clips.flatMap((c) => c.comments.flatMap((m) => (m.audio ? [m.audio] : [])));
+  const audioUrls: Record<string, string> = {};
+  if (audioPaths.length > 0) {
+    const { data } = await supabase.storage.from("library").createSignedUrls(audioPaths, 3600 * 4);
+    data?.forEach((s) => {
+      if (s.path && s.signedUrl) audioUrls[s.path] = s.signedUrl;
+    });
+  }
+
   return (
     <div className="space-y-4">
       <div>
@@ -83,6 +92,7 @@ export default async function EditeurPage({
       <VideoEditor
         source={source}
         initialClips={clips}
+        initialAudioUrls={audioUrls}
         initialQuarters={(quarters ?? []).map((q) => ({ id: q.id, t: Number(q.t) }))}
         initialDrawings={(drawingRows ?? []).map((d) => ({
           id: d.id,
