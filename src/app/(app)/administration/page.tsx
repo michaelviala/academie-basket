@@ -3,6 +3,9 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { calculateAge, getClubSettings, requireProfile, ROLE_LABELS } from "@/lib/data";
 import { BrandingForm } from "@/components/branding-form";
+import { PlayersImportToggle } from "@/components/players-import-toggle";
+import { AdminTeams, type AdminTeam } from "@/components/admin-teams";
+import { AdminUsers, type AdminUser } from "@/components/admin-users";
 import { AdminCoaches, type AdminCoach } from "@/components/admin-coaches";
 import { GymsManager } from "@/components/gyms-manager";
 import { AdminPlayers, type AdminPlayer } from "@/components/admin-players";
@@ -10,6 +13,7 @@ import type { Guardian } from "@/lib/guardians";
 
 const TABS = [
   { key: "joueurs", label: "Joueurs & parents" },
+  { key: "equipes", label: "Équipes" },
   { key: "coachs", label: "Coachs" },
   { key: "utilisateurs", label: "Utilisateurs" },
   { key: "club", label: "Club & salles" },
@@ -39,6 +43,8 @@ export default async function AdministrationPage({ searchParams }: { searchParam
       </div>
 
       {tab === "joueurs" && <PlayersTab />}
+
+      {tab === "equipes" && <TeamsTab />}
 
       {tab === "coachs" && <CoachsTab />}
 
@@ -88,7 +94,9 @@ export default async function AdministrationPage({ searchParams }: { searchParam
           Tous les joueurs du club avec leurs parents ou responsables. Filtre par catégorie, équipe ou statut, repère les fiches sans parent, et exporte la liste en CSV.
           Ces données personnelles ne sont visibles que de la direction et des coachs de l&apos;équipe concernée.
         </p>
-        <AdminPlayers players={players} guardians={guardians} />
+        <PlayersImportToggle>
+          <AdminPlayers key={`${players.length}-${guardians.length}`} players={players} guardians={guardians} />
+        </PlayersImportToggle>
       </div>
     );
   }
@@ -113,26 +121,41 @@ export default async function AdministrationPage({ searchParams }: { searchParam
     return <AdminCoaches coaches={coaches} teams={teams ?? []} canCreate={!!process.env.SUPABASE_SERVICE_ROLE_KEY} />;
   }
 
+  async function TeamsTab() {
+    const [{ data: teams }, { data: seasons }, { data: players }, { data: tc }] = await Promise.all([
+      supabase.from("teams").select("id, name, category, season_id").order("category").order("name"),
+      supabase.from("seasons").select("id, label, is_active").order("start_date", { ascending: false }),
+      supabase.from("players").select("id, first_name, last_name, team_id").order("last_name"),
+      supabase.from("team_coaches").select("team_id, profiles(full_name)"),
+    ]);
+    const rows: AdminTeam[] = (teams ?? []).map((t) => ({
+      id: t.id,
+      name: t.name,
+      category: t.category,
+      seasonId: t.season_id,
+      coaches: (tc ?? []).filter((r) => r.team_id === t.id).map((r) => (r.profiles as { full_name: string } | null)?.full_name ?? "").filter(Boolean),
+      players: (players ?? []).filter((p) => p.team_id === t.id).map((p) => ({ id: p.id, name: `${p.first_name} ${p.last_name}` })),
+    }));
+    const unassigned = (players ?? []).filter((p) => !p.team_id).map((p) => ({ id: p.id, name: `${p.first_name} ${p.last_name}` }));
+    return <AdminTeams teams={rows} seasons={seasons ?? []} unassigned={unassigned} />;
+  }
+
   async function UsersTab() {
-    const { data: profiles } = await supabase.from("profiles").select("id, full_name, email, role").order("full_name");
-    return (
-      <div className="card">
-        <h2 className="mb-1 font-semibold">Utilisateurs ({profiles?.length ?? 0})</h2>
-        <p className="mb-3 text-xs" style={{ color: "var(--text-faint)" }}>
-          Comptes de connexion. La gestion fine des rôles se fait pour l&apos;instant depuis Supabase (table <code>profiles</code>).
-        </p>
-        <div className="space-y-1">
-          {profiles?.map((p) => (
-            <div key={p.id} className="flex items-center justify-between gap-3 text-sm">
-              <span className="min-w-0 truncate">
-                {p.full_name} <span style={{ color: "var(--text-faint)" }}>({p.email})</span>
-              </span>
-              <span className="badge">{ROLE_LABELS[p.role] ?? p.role}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    const [{ data: profiles }, { data: players }, { data: links }] = await Promise.all([
+      supabase.from("profiles").select("id, full_name, email, role").order("full_name"),
+      supabase.from("players").select("id, first_name, last_name, user_id").order("last_name"),
+      supabase.from("parent_player").select("parent_id, player_id"),
+    ]);
+    const users: AdminUser[] = (profiles ?? []).map((p) => ({
+      id: p.id,
+      name: p.full_name,
+      email: p.email,
+      role: p.role,
+      linkedPlayerId: (players ?? []).find((pl) => pl.user_id === p.id)?.id ?? null,
+      children: (links ?? []).filter((l) => l.parent_id === p.id).map((l) => l.player_id),
+    }));
+    const opts = (players ?? []).map((p) => ({ id: p.id, name: `${p.first_name} ${p.last_name}`, userId: p.user_id }));
+    return <AdminUsers users={users} players={opts} roles={ROLE_LABELS} meId={profile.id} />;
   }
 
   async function ClubTab() {

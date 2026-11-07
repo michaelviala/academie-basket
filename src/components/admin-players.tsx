@@ -78,6 +78,19 @@ export function AdminPlayers({ players, guardians: initial }: { players: AdminPl
     </th>
   );
 
+  const [copied, setCopied] = useState<string | null>(null);
+  async function copyEmails() {
+    const emails = [...new Set(rows.flatMap((p) => (byPlayer.get(p.id) ?? []).map((g) => g.email).filter(Boolean)))];
+    if (!emails.length) { setCopied("Aucun e-mail de parent dans la sélection"); return; }
+    try {
+      await navigator.clipboard.writeText(emails.join("; "));
+      setCopied(`${emails.length} adresse(s) copiée(s) — colle-les dans « Cci » de ton e-mail`);
+    } catch {
+      setCopied("Copie impossible sur cet appareil");
+    }
+    setTimeout(() => setCopied(null), 6000);
+  }
+
   function exportCsv() {
     const esc = (v: string | number | null) => `"${String(v ?? "").replace(/"/g, '""')}"`;
     const header = ["Prénom", "Nom", "Date de naissance", "Équipe", "Catégorie", "Statut", "N°"];
@@ -135,6 +148,8 @@ export function AdminPlayers({ players, guardians: initial }: { players: AdminPl
         )}
         <div className="flex-1" />
         <button type="button" className="btn-secondary !px-3 !py-1.5 text-xs" onClick={exportCsv} disabled={!rows.length}>⤓ Exporter en CSV ({rows.length})</button>
+        <button type="button" className="btn-secondary !px-3 !py-1.5 text-xs" onClick={copyEmails} disabled={!rows.length}>✉ Copier les e-mails des parents</button>
+        {copied && <span className="text-xs text-faint" role="status">{copied}</span>}
       </div>
 
       {rows.length === 0 ? (
