@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { discardUpload, uploadVideo, type UploadStage } from "@/lib/player-video";
-import { useDictation } from "@/lib/dictation";
+import { DictationField } from "@/components/dictation-field";
 import { addPlayerVideo, deletePlayerVideo } from "@/app/(app)/videos/player-video";
 
 export type PlayerClip = {
@@ -44,12 +44,6 @@ export function AddPlayerVideo({
   const [stage, setStage] = useState<UploadStage | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [doneId, setDoneId] = useState<{ clip: string; source: string } | null>(null);
-  const noteRef = useRef("");
-  useEffect(() => {
-    noteRef.current = note;
-  }, [note]);
-  const getNote = useCallback(() => noteRef.current, []);
-  const dictation = useDictation(getNote, setNote);
   const filmRef = useRef<HTMLInputElement>(null);
   const pickRef = useRef<HTMLInputElement>(null);
 
@@ -63,7 +57,6 @@ export function AddPlayerVideo({
   }
   function close() {
     if (busy) return;
-    dictation.stop();
     setOpen(false);
     reset();
   }
@@ -71,7 +64,6 @@ export function AddPlayerVideo({
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!file) return setError("Filme ou choisis une vidéo.");
-    dictation.stop();
     setError(null);
     setBusy(true);
     const up = await uploadVideo(file, setStage);
@@ -158,45 +150,13 @@ export function AddPlayerVideo({
                   Titre <span style={{ color: "var(--text-faint)" }}>(nom du joueur ajouté automatiquement : complète avec l&apos;exercice)</span>
                   <input className="input mt-1 w-full" value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} onFocus={(e) => { const el = e.target; setTimeout(() => el.setSelectionRange(el.value.length, el.value.length), 0); }} />
                 </label>
-                <div className="space-y-1.5">
-                  <textarea className="input w-full" rows={3} placeholder="Commentaire (optionnel) : ce qu'on voit, le point à corriger… ou dicte-le avec le micro" value={note} maxLength={2000} onChange={(e) => setNote(e.target.value)} />
-                  <div className="flex flex-wrap items-center gap-2">
-                    {dictation.supported ? (
-                      <button
-                        type="button"
-                        onClick={() => (dictation.listening ? dictation.stop() : void dictation.start())}
-                        disabled={busy || dictation.transcribing}
-                        className="btn-secondary"
-                        style={dictation.listening ? { background: "#e5484d", color: "#fff", borderColor: "#e5484d" } : undefined}
-                        aria-pressed={dictation.listening}
-                      >
-                        {dictation.transcribing ? "Transcription…" : dictation.listening ? "■ Arrêter la dictée" : "🎤 Dicter le commentaire"}
-                      </button>
-                    ) : (
-                      <span className="text-xs" style={{ color: "var(--text-faint)" }}>
-                        Dictée vocale indisponible sur ce navigateur (Chrome, Edge ou Safari).
-                      </span>
-                    )}
-                    {dictation.listening && (
-                      <span className="flex items-center gap-2 text-xs" style={{ color: "var(--text-faint)" }} aria-live="polite">
-                        <span className="inline-block h-2 w-20 overflow-hidden rounded" style={{ background: "var(--border)" }} title="Niveau du micro : la barre doit bouger quand tu parles">
-                          <i className="block h-full rounded" style={{ width: `${Math.round(dictation.level * 100)}%`, background: dictation.level > 0.05 ? "#3BD16F" : "var(--text-faint)" }} />
-                        </span>
-                        {dictation.level <= 0.05
-                          ? "Aucun son capté…"
-                          : dictation.mode === "serveur"
-                            ? "Son capté · appuie sur « Arrêter » quand tu as fini"
-                            : dictation.heard
-                              ? "Texte reconnu ✓"
-                              : "Son capté, reconnaissance en cours…"}
-                      </span>
-                    )}
-                    {dictation.transcribing && (
-                      <span className="text-xs" style={{ color: "var(--text-faint)" }} aria-live="polite">Transcription en cours…</span>
-                    )}
-                    {dictation.error && <span className="text-xs" style={{ color: "#f87171" }}>{dictation.error}</span>}
-                  </div>
-                </div>
+                <DictationField
+                  placeholder="Commentaire (optionnel) : ce qu'on voit, le point à corriger… ou dicte-le avec le micro"
+                  rows={3}
+                  value={note}
+                  onValueChange={setNote}
+                  disabled={busy}
+                />
                 {trainings && (
                   <label className="label">
                     Séance
