@@ -49,6 +49,7 @@ export const TOOL_LABELS = {
   zone: "Zone",
   text: "Texte",
   erase: "Gomme",
+  laser: "Laser",
 } as const;
 export type Tool = keyof typeof TOOL_LABELS;
 

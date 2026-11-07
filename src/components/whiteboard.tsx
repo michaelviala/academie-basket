@@ -38,6 +38,7 @@ const TOOL_GROUPS: { label: string; tools: Tool[] }[] = [
   { label: "Pièces", tools: ["select", "att", "def", "ball", "cone"] },
   { label: "Traits", tools: ["move", "pass", "dribble", "screen", "pen"] },
   { label: "Annoter", tools: ["zone", "text", "erase"] },
+  { label: "Présenter", tools: ["laser"] },
 ];
 const LINE_TOOLS: Tool[] = ["move", "pass", "dribble", "screen"];
 
@@ -76,6 +77,12 @@ export function Whiteboard({ board, teams, canEdit }: { board: WbBoard; teams: {
   const [errMsg, setErrMsg] = useState<string | null>(null);
   const [ver, setVer] = useState(0);
   const [full, setFull] = useState(false);
+  // pointeur laser : éphémère, jamais enregistré
+  const [laserView, setLaserView] = useState(false);
+  const [laserHead, setLaserHead] = useState<Pt | null>(null);
+  const [trail, setTrail] = useState<{ p: Pt; t: number }[]>([]);
+  const laserActive = canEdit ? tool === "laser" : laserView;
+  const trailLive = trail.length > 0;
 
   const drag = useRef<{ id: string; start: Pt; orig: WbEl } | null>(null);
   const zoneOrigin = useRef<Pt | null>(null);
@@ -168,6 +175,12 @@ export function Whiteboard({ board, teams, canEdit }: { board: WbBoard; teams: {
       if (e.key === "Escape") { setFull(false); return; }
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
+      if (e.key.toLowerCase() === "l" && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        if (canEdit) setTool((cur) => (cur === "laser" ? "select" : "laser"));
+        else setLaserView((v) => !v);
+        return;
+      }
       // flèches (et PageHaut/PageBas) : page précédente / suivante
       if (e.key === "ArrowLeft" || e.key === "ArrowUp" || e.key === "PageUp") { e.preventDefault(); setPi((p) => Math.max(0, p - 1)); }
       else if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === "PageDown") { e.preventDefault(); setPi((p) => Math.min(last, p + 1)); }
@@ -179,7 +192,23 @@ export function Whiteboard({ board, teams, canEdit }: { board: WbBoard; teams: {
       window.removeEventListener("keydown", k);
       document.body.style.overflow = prev;
     };
-  }, [full, pages.length]);
+  }, [full, pages.length, canEdit]);
+
+  // la traînée du laser s'efface en 0,6 s
+  useEffect(() => {
+    if (!trailLive) return;
+    let raf = 0;
+    const tick = () => {
+      const now = performance.now();
+      setTrail((cur) => {
+        const n = cur.filter((q) => now - q.t < 600);
+        return n.length === cur.length ? cur : n;
+      });
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [trailLive]);
 
   function toPt(e: React.PointerEvent): Pt {
     const svg = svgRef.current!;
@@ -196,7 +225,14 @@ export function Whiteboard({ board, teams, canEdit }: { board: WbBoard; teams: {
     return String(page.els.filter((e) => e.k === k).length + 1).slice(0, 2);
   }
 
+  function laserMove(e: React.PointerEvent) {
+    const p = toPt(e);
+    setLaserHead(p);
+    setTrail((cur) => [...cur.slice(-40), { p, t: performance.now() }]);
+  }
+
   function onDown(e: React.PointerEvent<SVGSVGElement>) {
+    if (laserActive) { laserMove(e); return; }
     if (!canEdit) return;
     const p = toPt(e);
     const hit = hitId(e.target);
@@ -241,6 +277,7 @@ export function Whiteboard({ board, teams, canEdit }: { board: WbBoard; teams: {
   }
 
   function onMove(e: React.PointerEvent<SVGSVGElement>) {
+    if (laserActive) { laserMove(e); return; }
     if (!canEdit) return;
     const p = toPt(e);
     const d = drag.current;
@@ -337,17 +374,39 @@ export function Whiteboard({ board, teams, canEdit }: { board: WbBoard; teams: {
         viewBox={`-6 -6 ${w + 12} ${h + 12}`}
         role="img"
         aria-label={`Tableau « ${title} », ${page.title} : ${page.els.length} éléments sur un ${court === "half" ? "demi-terrain" : "terrain complet"}`}
-        style={{ display: "block", width: "100%", height: full ? "100%" : "auto", maxHeight: full ? undefined : "78vh", touchAction: canEdit ? "none" : "auto", cursor: canEdit ? (tool === "select" ? "default" : "crosshair") : "default" }}
+        style={{ display: "block", width: "100%", height: full ? "100%" : "auto", maxHeight: full ? undefined : "78vh", touchAction: canEdit || laserActive ? "none" : "auto", cursor: laserActive ? "none" : canEdit ? (tool === "select" ? "default" : "crosshair") : "default" }}
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
         onPointerCancel={onUp}
+        onPointerLeave={() => setLaserHead(null)}
       >
         <rect x={-6} y={-6} width={w + 12} height={h + 12} fill={THEMES[theme].out} />
         <ArrowDefs uid={uid} />
         <CourtLines court={court} theme={theme} />
         {page.els.map((e) => renderElement(e, theme, uid, e.id === sel))}
         {draft && renderElement(draft, theme, uid)}
+        {laserActive && (
+          <g pointerEvents="none">
+            <defs>
+              <filter id={`${uid}laser`} x="-200%" y="-200%" width="500%" height="500%">
+                <feGaussianBlur stdDeviation="1.6" />
+              </filter>
+            </defs>
+            {trail.slice(1).map((q, i) => {
+              const prev = trail[i];
+              const a = (i + 1) / trail.length; // plus ancien = plus transparent
+              return <line key={i} x1={prev.p[0]} y1={prev.p[1]} x2={q.p[0]} y2={q.p[1]} stroke="#ff2a2a" strokeWidth={0.5 + 1.6 * a} strokeLinecap="round" opacity={0.75 * a} />;
+            })}
+            {laserHead && (
+              <>
+                <circle cx={laserHead[0]} cy={laserHead[1]} r={4.2} fill="#ff1f1f" opacity={0.55} filter={`url(#${uid}laser)`} />
+                <circle cx={laserHead[0]} cy={laserHead[1]} r={1.5} fill="#ff3b3b" />
+                <circle cx={laserHead[0]} cy={laserHead[1]} r={0.6} fill="#fff" />
+              </>
+            )}
+          </g>
+        )}
       </svg>
       {textAt && (
         <input
@@ -373,73 +432,8 @@ export function Whiteboard({ board, teams, canEdit }: { board: WbBoard; teams: {
     </div>
   );
 
-  const pageTabs = (
-    <div className="flex flex-wrap items-center gap-2">
-      {pages.map((pg, i) => (
-        <button
-          key={pg.id}
-          type="button"
-          onClick={() => { setPi(i); setSel(null); }}
-          aria-current={i === pi}
-          className={btn}
-          style={i === pi ? { borderColor: "var(--brand)", color: "var(--brand)", fontWeight: 600 } : { borderColor: "var(--border)" }}
-        >
-          {pg.title || `Page ${i + 1}`}
-        </button>
-      ))}
-      {canEdit && (
-        <>
-          <button type="button" className={btn} style={{ borderColor: "var(--border)", borderStyle: "dashed" }} onClick={() => addPage(false)}>+ Page</button>
-          <button type="button" className={btn} style={{ borderColor: "var(--border)" }} onClick={() => addPage(true)}>Dupliquer</button>
-          {pages.length > 1 && <button type="button" className={btn} style={{ borderColor: "var(--border)" }} onClick={removePage}>Supprimer la page</button>}
-        </>
-      )}
-    </div>
-  );
-
-  if (full)
-    return (
-      <div className="fixed inset-0 z-[100] flex flex-col gap-2 p-3" style={{ background: dark ? "#0f1015" : "#111" }}>
-        <div className="flex items-center gap-2 text-white">
-          <b className="display text-xl">{title}</b>
-          <span className="text-sm opacity-80">{page.title}{pages.length > 1 ? ` · ${Math.min(pi, pages.length - 1) + 1}/${pages.length}` : ""}</span>
-          <div className="flex-1" />
-          {pages.length > 1 && (
-            <>
-              <button type="button" className="btn-secondary" disabled={pi === 0} onClick={() => setPi(pi - 1)} aria-label="Page précédente" title="Page précédente (←)">←</button>
-              <button type="button" className="btn-secondary" disabled={pi >= pages.length - 1} onClick={() => setPi(pi + 1)} aria-label="Page suivante" title="Page suivante (→)">→</button>
-            </>
-          )}
-          <button type="button" className="btn-secondary" onClick={() => setFull(false)}>✕ Quitter</button>
-        </div>
-        {stage}
-        {page.note && <p className="rounded-lg bg-black/60 p-3 text-center text-base text-white">{page.note}</p>}
-      </div>
-    );
-
-  return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <Link href="/tableaux" className="text-xs" style={{ color: "var(--text-faint)" }}>← Tous les tableaux</Link>
-        <div className="flex-1" />
-        {canEdit && (
-          <span className="text-xs" style={{ color: status === "error" ? "#f87171" : "var(--text-faint)" }} aria-live="polite">
-            {status === "saved" ? "✓ Enregistré" : status === "error" ? `Erreur : ${errMsg}` : "Enregistrement…"}
-          </span>
-        )}
-        <button type="button" className="btn-secondary" onClick={() => setFull(true)}>⛶ Plein écran</button>
-      </div>
-
-      {canEdit ? (
-        <input className="input display w-full !text-2xl font-bold" value={title} maxLength={200} aria-label="Titre du tableau" onChange={(e) => { setTitle(e.target.value); touch(); }} />
-      ) : (
-        <h1 className="display text-2xl font-bold sm:text-3xl">{title}</h1>
-      )}
-      {!canEdit && description && <p className="text-sm" style={{ color: "var(--text-faint)" }}>{description}</p>}
-
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
-        {canEdit && (
-          <div className="card flex flex-none flex-col gap-3 !p-3 lg:w-[176px]">
+  const toolsPanel = (cls: string) => (
+          <div className={cls}>
             {TOOL_GROUPS.map((g) => (
               <div key={g.label}>
                 <p className="mb-1 text-[10px] uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>{g.label}</p>
@@ -490,7 +484,94 @@ export function Whiteboard({ board, teams, canEdit }: { board: WbBoard; teams: {
               </label>
             )}
           </div>
+  );
+
+  const pageTabs = (
+    <div className="flex flex-wrap items-center gap-2">
+      {pages.map((pg, i) => (
+        <button
+          key={pg.id}
+          type="button"
+          onClick={() => { setPi(i); setSel(null); }}
+          aria-current={i === pi}
+          className={btn}
+          style={i === pi ? { borderColor: "var(--brand)", color: "var(--brand)", fontWeight: 600 } : { borderColor: "var(--border)" }}
+        >
+          {pg.title || `Page ${i + 1}`}
+        </button>
+      ))}
+      {canEdit && (
+        <>
+          <button type="button" className={btn} style={{ borderColor: "var(--border)", borderStyle: "dashed" }} onClick={() => addPage(false)}>+ Page</button>
+          <button type="button" className={btn} style={{ borderColor: "var(--border)" }} onClick={() => addPage(true)}>Dupliquer</button>
+          {pages.length > 1 && <button type="button" className={btn} style={{ borderColor: "var(--border)" }} onClick={removePage}>Supprimer la page</button>}
+        </>
+      )}
+    </div>
+  );
+
+  if (full)
+    return (
+      <div className="fixed inset-0 z-[100] flex flex-col gap-2 p-3" style={{ background: dark ? "#0f1015" : "#111" }}>
+        <div className="flex items-center gap-2 text-white">
+          <b className="display text-xl">{title}</b>
+          <span className="text-sm opacity-80">{page.title}{pages.length > 1 ? ` · ${Math.min(pi, pages.length - 1) + 1}/${pages.length}` : ""}</span>
+          <div className="flex-1" />
+          {!canEdit && (
+            <button type="button" className="btn-secondary" aria-pressed={laserView} onClick={() => setLaserView((v) => !v)} title="Pointeur laser (L)" style={laserView ? { background: "#e11d1d", borderColor: "#e11d1d", color: "#fff" } : undefined}>
+              🔴 Laser
+            </button>
+          )}
+          {pages.length > 1 && (
+            <>
+              <button type="button" className="btn-secondary" disabled={pi === 0} onClick={() => setPi(pi - 1)} aria-label="Page précédente" title="Page précédente (←)">←</button>
+              <button type="button" className="btn-secondary" disabled={pi >= pages.length - 1} onClick={() => setPi(pi + 1)} aria-label="Page suivante" title="Page suivante (→)">→</button>
+            </>
+          )}
+          {canEdit && (
+            <span className="text-xs opacity-80" aria-live="polite">
+              {status === "saved" ? "✓ Enregistré" : status === "error" ? "Erreur d'enregistrement" : "Enregistrement…"}
+            </span>
+          )}
+          <button type="button" className="btn-secondary" onClick={() => setFull(false)}>✕ Quitter</button>
+        </div>
+        <div className="flex min-h-0 flex-1 gap-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            {stage}
+            {page.note && <p className="rounded-lg bg-black/60 p-3 text-center text-base text-white">{page.note}</p>}
+          </div>
+          {canEdit && toolsPanel("flex w-[176px] flex-none flex-col gap-3 overflow-y-auto rounded-xl border p-3")}
+        </div>
+      </div>
+    );
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <Link href="/tableaux" className="text-xs" style={{ color: "var(--text-faint)" }}>← Tous les tableaux</Link>
+        <div className="flex-1" />
+        {canEdit && (
+          <span className="text-xs" style={{ color: status === "error" ? "#f87171" : "var(--text-faint)" }} aria-live="polite">
+            {status === "saved" ? "✓ Enregistré" : status === "error" ? `Erreur : ${errMsg}` : "Enregistrement…"}
+          </span>
         )}
+        {!canEdit && (
+          <button type="button" className="btn-secondary" aria-pressed={laserView} onClick={() => setLaserView((v) => !v)} style={laserView ? { background: "#e11d1d", borderColor: "#e11d1d", color: "#fff" } : undefined}>
+            🔴 Laser
+          </button>
+        )}
+        <button type="button" className="btn-secondary" onClick={() => setFull(true)}>⛶ Plein écran</button>
+      </div>
+
+      {canEdit ? (
+        <input className="input display w-full !text-2xl font-bold" value={title} maxLength={200} aria-label="Titre du tableau" onChange={(e) => { setTitle(e.target.value); touch(); }} />
+      ) : (
+        <h1 className="display text-2xl font-bold sm:text-3xl">{title}</h1>
+      )}
+      {!canEdit && description && <p className="text-sm" style={{ color: "var(--text-faint)" }}>{description}</p>}
+
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
+        {canEdit && toolsPanel("card flex flex-none flex-col gap-3 !p-3 lg:w-[176px]")}
 
         <div className="min-w-0 flex-1 space-y-3">
           {stage}
