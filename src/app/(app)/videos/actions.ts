@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/data";
 import { parseTags, parseTimecode } from "@/lib/library";
 import { VIDEO_EDIT_ROLES } from "@/lib/videos";
-import { PHASES, resultOk } from "@/lib/clip-tags";
+import { AUDIO_PATH, PHASES, resultOk } from "@/lib/clip-tags";
 import { parseShapes } from "@/lib/drawings";
 import type { Json } from "@/types/database";
 
@@ -173,7 +173,7 @@ export type ClipInput = {
   systemStep: number;
   tags: string;
   shared: boolean;
-  comments: { t: number; text: string }[];
+  comments: { t: number; text: string; audio?: string }[];
 };
 
 export async function saveClip(
@@ -202,9 +202,13 @@ export async function saveClip(
     tags: parseTags(input.tags),
     shared: !!input.shared,
     comments: input.comments
-      .filter((c) => c.text.trim())
-      .slice(0, 50)
-      .map((c) => ({ t: Math.max(0, c.t), text: c.text.trim().slice(0, 500) })),
+      .map((c) => ({
+        t: Math.max(0, c.t),
+        text: c.text.trim().slice(0, 500),
+        ...(c.audio && AUDIO_PATH.test(c.audio) ? { audio: c.audio } : {}),
+      }))
+      .filter((c) => c.text || c.audio)
+      .slice(0, 50),
   };
   const supabase = await createClient();
   if (input.id) {

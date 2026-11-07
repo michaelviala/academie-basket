@@ -36,12 +36,17 @@ export function resultOk(phase: string, result: string | null) {
   return !result || resultsFor(phase).some((r) => r.id === result);
 }
 
-export type ClipComment = { t: number; text: string };
+export type ClipComment = { t: number; text: string; audio?: string };
+export const AUDIO_PATH = /^audio\/[0-9a-f-]{36}\.(webm|ogg|m4a)$/;
 
 export function parseComments(raw: unknown): ClipComment[] {
   if (!Array.isArray(raw)) return [];
   return raw
     .map((c) => c as Partial<ClipComment>)
     .filter((c) => typeof c.t === "number" && typeof c.text === "string")
-    .map((c) => ({ t: c.t as number, text: c.text as string }));
+    .map((c) => {
+      const out: ClipComment = { t: c.t as number, text: c.text as string };
+      if (typeof c.audio === "string" && AUDIO_PATH.test(c.audio)) out.audio = c.audio;
+      return out;
+    });
 }
