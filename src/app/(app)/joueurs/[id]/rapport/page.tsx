@@ -57,10 +57,6 @@ export default async function RapportJoueurPage({ params }: { params: Promise<{ 
       <article className="report">
         <header className="flex items-center justify-between gap-4 border-b pb-4" style={{ borderColor: "#ddd" }}>
           <div className="flex items-center gap-3">
-            {settings.logo_url && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={settings.logo_url} alt="" style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 8 }} />
-            )}
             {player.photo_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={player.photo_url} alt="" style={{ width: 84, height: 84, objectFit: "cover", borderRadius: 12, border: "2px solid #ddd" }} />
@@ -74,10 +70,16 @@ export default async function RapportJoueurPage({ params }: { params: Promise<{ 
               <h1 style={{ fontSize: 26, fontWeight: 800 }}>{player.first_name} {player.last_name}</h1>
             </div>
           </div>
-          <div style={{ textAlign: "right", fontSize: 13, color: "#555" }}>
-            <p>{(player.teams as { name: string } | null)?.name ?? "Sans catégorie"}</p>
-            <p>{calculateAge(player.birth_date)} ans{player.primary_position ? ` · ${player.primary_position}` : ""}</p>
-            <p>Édité le {today}</p>
+          <div className="flex items-center gap-4">
+            <div style={{ textAlign: "right", fontSize: 13, color: "#555" }}>
+              <p>{(player.teams as { name: string } | null)?.name ?? "Sans catégorie"}</p>
+              <p>{calculateAge(player.birth_date)} ans{player.primary_position ? ` · ${player.primary_position}` : ""}</p>
+              <p>Édité le {today}</p>
+            </div>
+            {settings.logo_url && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={settings.logo_url} alt="" style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 10 }} />
+            )}
           </div>
         </header>
 
