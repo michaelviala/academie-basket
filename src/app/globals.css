@@ -310,3 +310,24 @@ h1, h2, h3, .display {
 /* Onglets de la fiche joueur : restent visibles pendant le défilement */
 .player-tabs { position: sticky; top: 0; z-index: 20; background: var(--bg, #0e0f12); padding-top: 0.5rem; padding-bottom: 0.5rem; }
 @media (max-width: 767px) { .player-tabs { top: calc(env(safe-area-inset-top) + 3.3rem); } }
+
+/* --- Export PDF d'un tableau blanc : une page paysage par page du tableau --- */
+@page wb { size: A4 landscape; margin: 10mm; }
+.wb-sheet { background: #fff; color: #111; border-radius: 12px; padding: 20px 24px; max-width: 1100px; margin: 0 auto; font-size: 14px; line-height: 1.5; -webkit-print-color-adjust: exact; print-color-adjust: exact; page: wb; }
+.wb-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid #ddd; padding-bottom: 8px; }
+.wb-ptitle { margin: 10px 0 8px; font-size: 16px; font-weight: 800; }
+.wb-body { display: flex; gap: 18px; align-items: flex-start; }
+.wb-court { flex: 1 1 auto; min-width: 0; }
+.wb-note { flex: 0 0 240px; font-size: 15px; border-left: 3px solid #e5e5e5; padding-left: 14px; font-size: 14px; }
+.wb-note h3 { margin-bottom: 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #666; }
+.wb-half .wb-court { flex: 0 1 400px; }
+.wb-half .wb-note { flex: 1 1 auto; }
+.wb-full .wb-body { flex-direction: column; align-items: stretch; }
+.wb-full .wb-court { width: 100%; flex: none; }
+.wb-full .wb-note { flex: none; width: 100%; border-left: 0; border-top: 3px solid #e5e5e5; padding: 8px 0 0; }
+@media print {
+  .wb-sheet { border-radius: 0; padding: 0; max-width: none; break-after: page; }
+  .wb-sheet:last-of-type { break-after: auto; }
+  .wb-full .wb-court svg { max-height: 125mm; }
+  .wb-half .wb-court { flex-basis: 150mm; }
+}

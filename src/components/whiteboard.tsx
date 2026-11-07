@@ -561,6 +561,7 @@ export function Whiteboard({ board, teams, canEdit }: { board: WbBoard; teams: {
             🔴 Laser
           </button>
         )}
+        <Link href={`/tableaux/${board.id}/pdf`} className="btn-secondary" title="Exporter toutes les pages avec leurs notes">⤓ Export PDF</Link>
         <button type="button" className="btn-secondary" onClick={() => setFull(true)}>⛶ Plein écran</button>
       </div>
 
