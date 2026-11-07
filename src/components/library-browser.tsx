@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -18,6 +19,18 @@ import {
   withFragment,
   type LibraryItem,
 } from "@/lib/library";
+
+const PdfViewer = dynamic(() => import("@/components/pdf-viewer"), {
+  ssr: false,
+  loading: () => (
+    <p
+      className="p-6 text-center text-sm"
+      style={{ color: "var(--text-faint)" }}
+    >
+      Chargement du PDF…
+    </p>
+  ),
+});
 
 type KindFilter = "all" | "document" | "video";
 
@@ -431,7 +444,6 @@ function ItemModal({
           </div>
         )}
         {media?.type === "file" && (
-           
           <video
             src={media.src}
             controls
@@ -441,11 +453,7 @@ function ItemModal({
           />
         )}
         {media?.type === "pdf" && (
-          <iframe
-            src={media.src}
-            className="h-[60vh] w-full rounded-lg bg-white"
-            title={item.title}
-          />
+          <PdfViewer url={media.src} title={item.title} />
         )}
         {media?.type === "image" && (
           // eslint-disable-next-line @next/next/no-img-element
