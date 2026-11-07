@@ -24,6 +24,9 @@ export type LibraryItem = {
   created_by: string | null;
   /** Lien signé temporaire (fichier hébergé), calculé côté serveur. */
   signedUrl: string | null;
+  /** Vignette (lien signé), ou miniature YouTube. */
+  thumbUrl: string | null;
+  hasStoredThumb: boolean;
   author: string | null;
   canDelete: boolean;
 };
@@ -138,3 +141,16 @@ export function withFragment(
 /** Minuscules sans accents, pour la recherche. */
 export const normalize = (v: string) =>
   v.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+export function youtubeId(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./, "");
+    if (host === "youtu.be") return u.pathname.slice(1) || null;
+    if (host.endsWith("youtube.com")) return u.searchParams.get("v") ?? u.pathname.match(/\/(?:embed|shorts)\/([\w-]{6,})/)?.[1] ?? null;
+  } catch {
+    /* lien invalide */
+  }
+  return null;
+}

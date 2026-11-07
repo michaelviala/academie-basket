@@ -48,6 +48,9 @@ export async function addLibraryItem(formData: FormData): Promise<Result> {
   if (kind === "video" && !filePath && !videoUrl)
     return { error: "Ajoute un fichier vidéo ou un lien." };
 
+  const thumbRaw = String(formData.get("thumbnail_path") ?? "");
+  const thumbPath = /^thumbs\/[\w.-]+\.jpg$/.test(thumbRaw) ? thumbRaw : null;
+
   const start = parseTimecode(String(formData.get("start") ?? ""));
   const end = parseTimecode(String(formData.get("end") ?? ""));
   if (start !== null && end !== null && end <= start)
@@ -68,6 +71,7 @@ export async function addLibraryItem(formData: FormData): Promise<Result> {
     file_size: fileSize,
     mime_type: String(formData.get("mime_type") ?? "").slice(0, 120) || null,
     video_url: videoUrl,
+    thumbnail_path: thumbPath,
     start_seconds: kind === "video" ? start : null,
     end_seconds: kind === "video" ? end : null,
     created_by: profile.id,
@@ -75,6 +79,27 @@ export async function addLibraryItem(formData: FormData): Promise<Result> {
   if (error) return { error: error.message };
 
   revalidatePath("/bibliotheque");
+  return { success: true };
+}
+
+/** Enregistre la vignette générée par le navigateur (auteur ou direction). */
+export async function setLibraryThumbnail(
+  itemId: string,
+  path: string,
+): Promise<Result> {
+  const profile = await requireProfile();
+  if (!LIBRARY_EDIT_ROLES.includes(profile.role))
+    return { error: "Action réservée à l'équipe encadrante." };
+  if (!/^thumbs\/[\w.-]+\.jpg$/.test(path))
+    return { error: "Chemin invalide." };
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("library_items")
+    .update({ thumbnail_path: path })
+    .eq("id", itemId)
+    .select("id");
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "Modification refusée." };
   return { success: true };
 }
 
