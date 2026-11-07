@@ -5,6 +5,7 @@ import { requireProfile } from "@/lib/data";
 import { videoSource, youtubeId } from "@/lib/library";
 import { VIDEO_EDIT_ROLES, buildSource } from "@/lib/videos";
 import { parseComments } from "@/lib/clip-tags";
+import { parseShapes } from "@/lib/drawings";
 import { VideoEditor, type EditorClip } from "@/components/video-editor";
 
 export default async function EditeurPage({
@@ -41,10 +42,11 @@ export default async function EditeurPage({
     isDirect: (u) => videoSource(u, null, null)?.type === "file",
   });
 
-  const [{ data: clipRows }, { data: quarters }, { data: players }, { data: systems }, { data: steps }] =
+  const [{ data: clipRows }, { data: quarters }, { data: drawingRows }, { data: players }, { data: systems }, { data: steps }] =
     await Promise.all([
       supabase.from("video_clips").select("*").eq("source_id", id).order("start_seconds"),
       supabase.from("video_quarters").select("id, t").eq("source_id", id).order("t"),
+      supabase.from("video_drawings").select("id, t, dur, hold, shapes").eq("source_id", id).order("t"),
       supabase.from("players").select("id, first_name, last_name").order("last_name"),
       supabase.from("systems").select("id, name").order("name"),
       supabase.from("system_sequences").select("system_id, label, position").order("position"),
@@ -82,6 +84,13 @@ export default async function EditeurPage({
         source={source}
         initialClips={clips}
         initialQuarters={(quarters ?? []).map((q) => ({ id: q.id, t: Number(q.t) }))}
+        initialDrawings={(drawingRows ?? []).map((d) => ({
+          id: d.id,
+          t: Number(d.t),
+          dur: Number(d.dur),
+          hold: Number(d.hold),
+          shapes: parseShapes(d.shapes),
+        }))}
         players={players ?? []}
         systems={(systems ?? []).map((s) => ({ id: s.id, name: s.name, steps: stepsBy.get(s.id) ?? [] }))}
         canEdit={VIDEO_EDIT_ROLES.includes(profile.role)}

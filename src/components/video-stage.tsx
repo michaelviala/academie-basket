@@ -12,6 +12,7 @@ export type StageApi = {
   paused: () => boolean;
   setRate: (r: number) => void;
   setMuted: (m: boolean) => void;
+  aspect: () => number;
 };
 
 /* ---------- API YouTube (chargée une seule fois) ---------- */
@@ -119,6 +120,7 @@ function YouTubeStage({
           play: () => player?.playVideo(),
           pause: () => player?.pauseVideo(),
           duration: () => player?.getDuration?.() ?? 0,
+          aspect: () => 16 / 9,
           paused: () => player?.getPlayerState?.() !== 1,
           setRate: (r) => player?.setPlaybackRate?.(r),
           setMuted: (m) => (m ? player?.mute?.() : player?.unMute?.()),
@@ -166,6 +168,7 @@ function FileStage({
       play: () => void v.play(),
       pause: () => v.pause(),
       duration: () => (Number.isFinite(v.duration) ? v.duration : 0),
+      aspect: () => (v.videoWidth && v.videoHeight ? v.videoWidth / v.videoHeight : 16 / 9),
       paused: () => v.paused,
       setRate: (r) => {
         v.playbackRate = r;

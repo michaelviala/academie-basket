@@ -7,6 +7,8 @@ import { requireProfile } from "@/lib/data";
 import { parseTags, parseTimecode } from "@/lib/library";
 import { VIDEO_EDIT_ROLES } from "@/lib/videos";
 import { PHASES, resultOk } from "@/lib/clip-tags";
+import { parseShapes } from "@/lib/drawings";
+import type { Json } from "@/types/database";
 
 type Result = { error?: string; success?: boolean };
 
@@ -248,4 +250,49 @@ export async function deleteQuarter(id: string): Promise<Result> {
   const { error: dbError } = await supabase.from("video_quarters").delete().eq("id", id);
   if (dbError) return { error: dbError.message };
   return { success: true };
+}
+
+export type DrawingInput = {
+  id?: string;
+  sourceId: string;
+  t: number;
+  dur: number;
+  hold: number;
+  shapes: unknown;
+};
+
+export async function saveDrawing(input: DrawingInput): Promise<{ error?: string; id?: string }> {
+  const { error } = await guard();
+  if (error) return { error };
+  const shapes = parseShapes(input.shapes);
+  if (shapes.length === 0) return { error: "Le dessin est vide." };
+  if (!Number.isFinite(input.t) || input.t < 0) return { error: "Position invalide." };
+  const row = {
+    t: Math.round(input.t * 100) / 100,
+    dur: Math.min(120, Math.max(0.5, Math.round((Number(input.dur) || 2) * 100) / 100)),
+    hold: [-1, 0, 2, 3, 5, 8].includes(input.hold) ? input.hold : 3,
+    shapes: shapes as unknown as Json,
+  };
+  const supabase = await createClient();
+  if (input.id) {
+    const { error: dbError } = await supabase.from("video_drawings").update(row).eq("id", input.id);
+    if (dbError) return { error: dbError.message };
+    return { id: input.id };
+  }
+  const { data, error: dbError } = await supabase
+    .from("video_drawings")
+    .insert({ ...row, source_id: input.sourceId })
+    .select("id")
+    .single();
+  if (dbError || !data) return { error: dbError?.message ?? "Échec." };
+  return { id: data.id };
+}
+
+export async function deleteDrawing(id: string): Promise<Result> {
+  const { error } = await guard();
+  if (error) return { error };
+  const supabase = await createClient();
+  const { error: dbError } = await supabase.from("video_drawings").delete().eq("id", id);
+  if (dbError) return { error: dbError.message };
+  return {};
 }
