@@ -2,7 +2,6 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
-import { VideoStage } from "@/components/video-stage";
 import { formatTimecode, normalize } from "@/lib/library";
 import { clipDuration, type ClipView, type VideoSourceInfo } from "@/lib/videos";
 import { deleteClip } from "@/app/(app)/videos/actions";
@@ -23,7 +22,6 @@ export function ClipsBrowser({
   const [q, setQ] = useState("");
   const [tag, setTag] = useState("");
   const [picking, setPicking] = useState(false);
-  const [watching, setWatching] = useState<ClipView | null>(null);
   const [, startTransition] = useTransition();
 
   const tags = useMemo(
@@ -77,11 +75,10 @@ export function ClipsBrowser({
             const d = clipDuration(c);
             return (
               <div key={c.id} className="card min-w-0 !p-3">
-                <button
-                  type="button"
+                <Link
+                  href={`/videos/clip/${c.id}`}
                   className="relative block w-full overflow-hidden rounded-lg bg-black"
                   style={{ aspectRatio: "16 / 9" }}
-                  onClick={() => setWatching(c)}
                   aria-label={`Lire ${c.title}`}
                 >
                   {c.source.thumbUrl && (
@@ -94,7 +91,7 @@ export function ClipsBrowser({
                     {c.end !== null ? ` → ${formatTimecode(c.end)}` : ""}
                     {d !== null ? ` · ${d} s` : ""}
                   </span>
-                </button>
+                </Link>
                 <p className="mt-2 truncate font-semibold">{c.title}</p>
                 <p className="truncate text-xs" style={{ color: "var(--text-faint)" }}>
                   {c.source.title}
@@ -153,18 +150,6 @@ export function ClipsBrowser({
         </div>
       )}
 
-      {watching && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3" onClick={() => setWatching(null)}>
-          <div className="w-full max-w-3xl space-y-2" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between text-white">
-              <p className="truncate font-semibold">{watching.title}</p>
-              <button className="text-2xl leading-none" onClick={() => setWatching(null)} aria-label="Fermer">×</button>
-            </div>
-            <VideoStage source={watching.source} start={watching.start} end={watching.end} autoplay />
-            {watching.note && <p className="text-sm text-white/80">{watching.note}</p>}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
