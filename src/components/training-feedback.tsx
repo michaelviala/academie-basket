@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { deleteFeedback, upsertFeedback } from "@/app/(app)/seances/[id]/actions";
+import { DictationField } from "@/components/dictation-field";
 import { AddPlayerVideo, PlayerClipList, type PlayerClip } from "@/components/player-video";
 import { discardUpload, uploadVideo } from "@/lib/player-video";
 import { addPlayerVideo } from "@/app/(app)/videos/player-video";
@@ -186,15 +187,15 @@ export function TrainingFeedback({
                 className="mt-3 grid grid-cols-1 gap-2 border-t pt-3 sm:grid-cols-2"
                 style={{ borderColor: "var(--border)" }}
               >
-                <textarea className="input sm:col-span-2" name="positives" placeholder="Points positifs" rows={2} />
-                <textarea className="input sm:col-span-2" name="improvements" placeholder="Axes d'amélioration" rows={2} />
+                <DictationField className="sm:col-span-2" name="positives" placeholder="Points positifs" rows={2} />
+                <DictationField className="sm:col-span-2" name="improvements" placeholder="Axes d'amélioration" rows={2} />
                 <select className="input" name="priority" defaultValue="">
                   <option value="">Priorité (optionnel)</option>
                   <option value="haute">Haute</option>
                   <option value="moyenne">Moyenne</option>
                   <option value="basse">Basse</option>
                 </select>
-                <input className="input" name="next_session_goal" placeholder="Objectif prochaine séance" />
+                <DictationField name="next_session_goal" placeholder="Objectif prochaine séance" multiline={false} maxLength={300} />
                 <label className="text-xs sm:col-span-2" style={{ color: "var(--text-faint)" }}>
                   🎥 Vidéo de l&apos;exercice (optionnel, 50 Mo max, compressée automatiquement)
                   <input
