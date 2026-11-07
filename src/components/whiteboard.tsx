@@ -213,8 +213,9 @@ export function Whiteboard({ board, teams, canEdit }: { board: WbBoard; teams: {
       edit((els) => [...els, el]);
       setSel(el.id);
     } else if (tool === "ball" || tool === "cone") {
-      const el: WbEl = { id: newId(), k: tool, x: p[0], y: p[1] };
+      const el: WbEl = tool === "ball" ? { id: newId(), k: "ball", x: p[0], y: p[1] } : { id: newId(), k: "cone", c: color, x: p[0], y: p[1] };
       edit((els) => [...els, el]);
+      setSel(el.id);
     } else if (LINE_TOOLS.includes(tool)) {
       setDraft({ id: "draft", k: "line", s: tool as "move", c: color, a: p, b: p });
       e.currentTarget.setPointerCapture(e.pointerId);
@@ -451,7 +452,7 @@ export function Whiteboard({ board, teams, canEdit }: { board: WbBoard; teams: {
               </div>
             ))}
             <div>
-              <p className="mb-1 text-[10px] uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>Couleur du trait</p>
+              <p className="mb-1 text-[10px] uppercase tracking-wider" style={{ color: "var(--text-faint)" }}>Couleur (traits, texte, plots)</p>
               <div className="flex flex-wrap gap-2">
                 {COLORS.map((c) => (
                   <button

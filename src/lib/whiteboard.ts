@@ -9,7 +9,8 @@ export type LineStyle = "move" | "pass" | "dribble" | "screen";
 
 export type WbEl =
   | { id: string; k: "att" | "def"; n: string; x: number; y: number }
-  | { id: string; k: "ball" | "cone"; x: number; y: number }
+  | { id: string; k: "ball"; x: number; y: number }
+  | { id: string; k: "cone"; c: string; x: number; y: number }
   | { id: string; k: "line"; s: LineStyle; c: string; a: Pt; b: Pt }
   | { id: string; k: "pen"; c: string; pts: Pt[] }
   | { id: string; k: "zone"; c: string; x: number; y: number; rx: number; ry: number }
@@ -23,7 +24,7 @@ export const DIMS: Record<Court, { w: number; h: number }> = {
   full: { w: 280, h: 150 },
 };
 
-export const COLORS = ["#ffd23f", "#ffffff", "#e5171b", "#3ba7ff", "#3bd16f", "#111111"] as const;
+export const COLORS = ["#ffd23f", "#ff8a00", "#ffffff", "#e5171b", "#3ba7ff", "#3bd16f", "#111111"] as const;
 
 export const THEMES: Record<
   Theme,
@@ -81,7 +82,8 @@ export function parsePages(raw: unknown, court: Court = "half"): WbPage[] {
           const y = num(r.y, 0, h);
           if ((r.k === "att" || r.k === "def") && x !== null && y !== null)
             els.push({ id: id(r.id), k: r.k, n: String(r.n ?? "").slice(0, 3), x, y });
-          else if ((r.k === "ball" || r.k === "cone") && x !== null && y !== null) els.push({ id: id(r.id), k: r.k, x, y });
+          else if (r.k === "ball" && x !== null && y !== null) els.push({ id: id(r.id), k: "ball", x, y });
+          else if (r.k === "cone" && x !== null && y !== null) els.push({ id: id(r.id), k: "cone", c: col(r.c), x, y });
           else if (r.k === "line") {
             const a = pt(r.a, w, h);
             const b = pt(r.b, w, h);

@@ -54,6 +54,20 @@ export function ArrowDefs({ uid }: { uid: string }) {
   );
 }
 
+function rgb(hex: string): [number, number, number] {
+  const n = parseInt(hex.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+const luminance = (hex: string) => {
+  const [r, g, b] = rgb(hex);
+  return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+};
+/** Assombrit une couleur (f = part de la couleur d'origine conservée). */
+const shade = (hex: string, f: number) => {
+  const [r, g, b] = rgb(hex).map((v) => Math.round(v * f));
+  return `rgb(${r},${g},${b})`;
+};
+
 function zigzag(a: [number, number], b: [number, number]) {
   const dx = b[0] - a[0];
   const dy = b[1] - a[1];
@@ -95,12 +109,18 @@ export function renderElement(e: WbEl, theme: Theme, uid: string, selected = fal
           <path d={`M${e.x - 2.7} ${e.y} H${e.x + 2.7} M${e.x} ${e.y - 2.7} V${e.y + 2.7}`} stroke="#1a1208" strokeWidth={0.3} />
         </g>
       );
-    case "cone":
+    case "cone": {
+      const { x, y, c } = e;
+      const stripe = luminance(c) > 0.7 ? "#e5171b" : "#ffffff";
       return (
         <g key={e.id} data-id={e.id} style={glow}>
-          <path d={`M${e.x} ${e.y - 3.2} L${e.x + 3} ${e.y + 2.6} H${e.x - 3} Z`} fill="#ffd23f" stroke="#1a1208" strokeWidth={0.5} />
+          <ellipse cx={x} cy={y + 3} rx={4.7} ry={1.7} fill={shade(c, 0.55)} stroke="#1a1208" strokeWidth={0.35} />
+          <path d={`M${x - 3.2} ${y + 3} L${x - 0.7} ${y - 4.6} Q${x} ${y - 5.5} ${x + 0.7} ${y - 4.6} L${x + 3.2} ${y + 3} Z`} fill={c} stroke="#1a1208" strokeWidth={0.4} strokeLinejoin="round" />
+          <path d={`M${x + 0.5} ${y - 4.9} L${x + 3.2} ${y + 3} L${x + 0.6} ${y + 3} Z`} fill="#000" fillOpacity={0.16} />
+          <path d={`M${x - 1.49} ${y - 2.2} L${x + 1.49} ${y - 2.2} L${x + 2.28} ${y + 0.2} L${x - 2.28} ${y + 0.2} Z`} fill={stripe} fillOpacity={0.92} />
         </g>
       );
+    }
     case "line": {
       const { a, b, c, s } = e;
       const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
