@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { WeekPlanning } from "@/components/week-planning";
 
 type CalendarTraining = {
   id: string;
@@ -47,8 +48,9 @@ export function TrainingCalendar({
   trainings: CalendarTraining[];
   teams: { id: string; name: string }[];
   coaches: { id: string; full_name: string }[];
-  gyms: { id: string; name: string }[];
+  gyms: { id: string; name: string; courts?: number }[];
 }) {
+  const [view, setView] = useState<"semaine" | "mois">("semaine");
   const today = new Date();
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [teamFilter, setTeamFilter] = useState("");
@@ -108,9 +110,47 @@ export function TrainingCalendar({
 
   const todayKey = toKey(today.getFullYear(), today.getMonth(), today.getDate());
 
+  const toggle = (
+    <div className="seg">
+      <button type="button" className={view === "semaine" ? "active" : ""} onClick={() => setView("semaine")}>Semaine</button>
+      <button type="button" className={view === "mois" ? "active" : ""} onClick={() => setView("mois")}>Mois</button>
+    </div>
+  );
+
+  if (view === "semaine") {
+    return (
+      <div className="card space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {toggle}
+          <div className="flex flex-wrap gap-2">
+            <select className="input" style={{ width: "auto" }} value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)}>
+              <option value="">Toutes les équipes</option>
+              {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+            <select className="input" style={{ width: "auto" }} value={coachFilter} onChange={(e) => setCoachFilter(e.target.value)}>
+              <option value="">Tous les coachs</option>
+              {coaches.map((c) => <option key={c.id} value={c.id}>{c.full_name}</option>)}
+            </select>
+            <select className="input" style={{ width: "auto" }} value={gymFilter} onChange={(e) => setGymFilter(e.target.value)}>
+              <option value="">Toutes les salles</option>
+              {gyms.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+            </select>
+          </div>
+        </div>
+        <WeekPlanning
+          trainings={trainings.filter((t) => (!teamFilter || t.team_id === teamFilter) && (!coachFilter || t.coach_id === coachFilter) && (!gymFilter || t.gym_id === gymFilter))}
+          teams={teams}
+          coaches={coaches}
+          gyms={gyms}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="card space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
+        {toggle}
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
