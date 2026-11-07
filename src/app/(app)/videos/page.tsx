@@ -9,10 +9,11 @@ import {
   totalDuration,
   type ClipView,
   type VideoSourceInfo,
+  type VideoRow,
 } from "@/lib/videos";
 import { ClipsBrowser } from "@/components/clips-browser";
 import { MontageEditor } from "@/components/montage-editor";
-import { VideoSources } from "@/components/video-sources";
+import { VideoLibrary } from "@/components/video-library";
 import { createMontage } from "./actions";
 
 export default async function VideosPage({
@@ -32,12 +33,12 @@ export default async function VideosPage({
     await Promise.all([
       supabase
         .from("library_items")
-        .select("id, title, file_path, thumbnail_path, video_url")
+        .select("id, title, file_path, thumbnail_path, video_url, created_at, created_by")
         .eq("kind", "video")
         .order("created_at", { ascending: false }),
       supabase
         .from("video_clips")
-        .select("id, title, source_id, start_seconds, end_seconds, note, tags, player_id, system_id, created_by, created_at")
+        .select("id, title, source_id, start_seconds, end_seconds, note, tags, player_id, player_ids, training_id, system_id, created_by, created_at")
         .order("created_at", { ascending: false }),
       supabase.from("players").select("id, first_name, last_name").order("last_name"),
       supabase.from("systems").select("id, name").order("name"),
@@ -106,6 +107,48 @@ export default async function VideosPage({
   });
   const clipMap = new Map(clips.map((c) => [c.id, c]));
 
+  /* ---------- liste générale : joueur / séance / coach de chaque vidéo ---------- */
+  const trainingIds = [...new Set((clipRows ?? []).flatMap((c) => (c.training_id ? [c.training_id] : [])))];
+  const coachIds = [...new Set((items ?? []).flatMap((r) => (r.created_by ? [r.created_by] : [])))];
+  const [{ data: trainingRows }, { data: coachRows }] = await Promise.all([
+    trainingIds.length
+      ? supabase.from("trainings").select("id, date, teams:team_id(name)").in("id", trainingIds)
+      : Promise.resolve({ data: [] as { id: string; date: string; teams: { name: string } | null }[] }),
+    coachIds.length
+      ? supabase.from("profiles").select("id, full_name").in("id", coachIds)
+      : Promise.resolve({ data: [] as { id: string; full_name: string }[] }),
+  ]);
+  const trainingLabel = new Map(
+    (trainingRows ?? []).map((t) => {
+      const team = (t.teams as { name: string } | null)?.name;
+      const d = new Date(t.date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+      return [t.id, team ? `${d} · ${team}` : d] as const;
+    }),
+  );
+  const coachName = new Map((coachRows ?? []).map((c) => [c.id, c.full_name]));
+  const rows: VideoRow[] = (items ?? []).map((r) => {
+    const mine = (clipRows ?? []).filter((c) => c.source_id === r.id);
+    const pl = new Map<string, string>();
+    const tr = new Map<string, string>();
+    for (const c of mine) {
+      for (const id of new Set([...(c.player_ids ?? []), ...(c.player_id ? [c.player_id] : [])])) {
+        const n = playerMap.get(id);
+        if (n) pl.set(id, n);
+      }
+      if (c.training_id && trainingLabel.has(c.training_id)) tr.set(c.training_id, trainingLabel.get(c.training_id)!);
+    }
+    return {
+      source: sourceMap.get(r.id)!,
+      createdAt: r.created_at,
+      coachId: r.created_by,
+      coachName: r.created_by ? (coachName.get(r.created_by) ?? null) : null,
+      players: [...pl].map(([id, name]) => ({ id, name })),
+      trainings: [...tr].map(([id, label]) => ({ id, label })),
+      clipCount: mine.length,
+      firstClipId: mine.length === 1 ? mine[0].id : null,
+    };
+  });
+
   const montageClips = new Map<string, string[]>();
   for (const r of mcRows ?? [])
     (montageClips.get(r.montage_id) ?? montageClips.set(r.montage_id, []).get(r.montage_id)!).push(r.clip_id);
@@ -135,33 +178,41 @@ export default async function VideosPage({
     );
   }
 
-  const tab = vue === "montages" ? "montages" : vue === "videos" ? "videos" : "clips";
-  const clipCounts: Record<string, number> = {};
-  for (const c of clips) clipCounts[c.source.id] = (clipCounts[c.source.id] ?? 0) + 1;
+  const tab = vue === "montages" ? "montages" : vue === "clips" ? "clips" : "videos";
+  const inMontage = tab !== "videos";
 
   return (
     <div className="space-y-5">
       <div>
         <h1 className="display text-2xl font-bold sm:text-3xl">Vidéos</h1>
         <p className="text-sm" style={{ color: "var(--text-faint)" }}>
-          Importe tes vidéos, découpe-les en clips, puis assemble-les en montages.
+          {inMontage
+            ? "Découpe une vidéo en clips (avec dessins et commentaires), puis assemble les clips en montages."
+            : "Toutes les vidéos du club : filtre par joueur, séance ou coach."}
         </p>
       </div>
 
       <div className="seg">
-        <Link href="/videos?vue=videos" className={tab === "videos" ? "active" : ""}>
-          Vidéos ({sources.length})
+        <Link href="/videos" className={!inMontage ? "active" : ""}>
+          Toutes les vidéos ({sources.length})
         </Link>
-        <Link href="/videos" className={tab === "clips" ? "active" : ""}>
-          Clips ({clips.length})
-        </Link>
-        <Link href="/videos?vue=montages" className={tab === "montages" ? "active" : ""}>
-          Montages ({montages?.length ?? 0})
+        <Link href="/videos?vue=clips" className={inMontage ? "active" : ""}>
+          ✂ Montage &amp; analyse
         </Link>
       </div>
+      {inMontage && (
+        <div className="seg">
+          <Link href="/videos?vue=clips" className={tab === "clips" ? "active" : ""}>
+            Clips ({clips.length})
+          </Link>
+          <Link href="/videos?vue=montages" className={tab === "montages" ? "active" : ""}>
+            Montages ({montages?.length ?? 0})
+          </Link>
+        </div>
+      )}
 
       {tab === "videos" ? (
-        <VideoSources sources={sources} clipCounts={clipCounts} canEdit={canEdit} />
+        <VideoLibrary rows={rows} canEdit={canEdit} />
       ) : tab === "clips" ? (
         <ClipsBrowser
           clips={clips}

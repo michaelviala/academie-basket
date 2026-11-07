@@ -134,7 +134,7 @@ export function ClipsBrowser({
             {sources.length === 0 ? (
               <p className="text-sm" style={{ color: "var(--text-faint)" }}>
                 Aucune vidéo pour l&apos;instant.{" "}
-                <Link href="/videos?vue=videos" style={{ color: "var(--brand)" }}>Importer une vidéo →</Link>
+                <Link href="/videos" style={{ color: "var(--brand)" }}>Importer une vidéo →</Link>
               </p>
             ) : (
               <ul className="max-h-80 space-y-1.5 overflow-y-auto">

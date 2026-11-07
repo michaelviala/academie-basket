@@ -111,3 +111,15 @@ export function buildSource(
         : null,
   };
 }
+
+/** Une vidéo de la liste générale, avec ce qui permet de la retrouver (joueur, séance, coach). */
+export type VideoRow = {
+  source: VideoSourceInfo;
+  createdAt: string;
+  coachId: string | null;
+  coachName: string | null;
+  players: { id: string; name: string }[];
+  trainings: { id: string; label: string }[];
+  clipCount: number;
+  firstClipId: string | null;
+};
