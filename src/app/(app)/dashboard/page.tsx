@@ -17,7 +17,6 @@ async function DirectionDashboard() {
 
   const [
     { count: playersCount },
-    { count: teamsCount },
     { count: evaluationsCount },
     { count: goalsInProgress },
     { count: goalsAchieved },
@@ -25,7 +24,6 @@ async function DirectionDashboard() {
     { data: attendanceRows },
   ] = await Promise.all([
     supabase.from("players").select("*", { count: "exact", head: true }).eq("status", "actif"),
-    supabase.from("teams").select("*", { count: "exact", head: true }),
     supabase.from("evaluations").select("*", { count: "exact", head: true }),
     supabase.from("goals").select("*", { count: "exact", head: true }).eq("status", "en_cours"),
     supabase.from("goals").select("*", { count: "exact", head: true }).eq("status", "atteint"),
@@ -46,7 +44,6 @@ async function DirectionDashboard() {
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 [&>*:last-child:nth-child(odd)]:col-span-2 sm:[&>*:last-child:nth-child(odd)]:col-span-1">
         <StatCard label="Joueurs actifs" value={playersCount ?? 0} />
-        <StatCard label="Équipes" value={teamsCount ?? 0} />
         <StatCard label="Taux de présence" value={attendanceRate !== null ? `${attendanceRate}%` : "—"} />
         <StatCard label="Évaluations" value={evaluationsCount ?? 0} />
         <StatCard label="Objectifs en cours" value={goalsInProgress ?? 0} />
@@ -58,7 +55,6 @@ async function DirectionDashboard() {
         <h2 className="mb-3 font-semibold">Accès rapides</h2>
         <div className="flex flex-wrap gap-3">
           <Link href="/joueurs" className="btn-secondary">Voir les joueurs</Link>
-          <Link href="/equipes" className="btn-secondary">Gérer les équipes</Link>
           <Link href="/rapports" className="btn-secondary">Générer un rapport</Link>
         </div>
       </div>
@@ -108,7 +104,7 @@ async function PlayerDashboard(playerUserId: string) {
           {player.first_name} {player.last_name}
         </h1>
         <p className="text-sm text-slate-500">
-          {player.teams?.name ?? "Sans équipe"} · {calculateAge(player.birth_date)} ans
+          {player.teams?.name ?? "Sans catégorie"} · {calculateAge(player.birth_date)} ans
         </p>
       </div>
 

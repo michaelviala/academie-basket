@@ -114,7 +114,6 @@ export const ALL_ITEMS: { href: string; label: string; icon: IconName; roles?: P
   { href: "/joueurs", label: "Joueurs", icon: "users" },
   { href: "/carnet-technique", label: "Carnet technique", icon: "notebook" },
   { href: "/bibliotheque", label: "Bibliothèque", icon: "library", roles: ["admin", "directeur_sportif", "coach", "preparateur_physique"] },
-  { href: "/equipes", label: "Équipes", icon: "trophy", roles: ["admin", "directeur_sportif", "coach"] },
   { href: "/entrainements", label: "Entraînements", icon: "video" },
   { href: "/videos", label: "Vidéos", icon: "clip" },
   { href: "/notifications", label: "Notifications", icon: "bell" },
