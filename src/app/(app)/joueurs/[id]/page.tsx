@@ -245,6 +245,14 @@ export default async function JoueurPage({
     : { data: null };
 
   const ev = evaluations ?? [];
+  const evaluatorIds = Array.from(new Set(ev.map((e) => e.evaluator_id).filter((v): v is string => !!v)));
+  const evaluatorNames: Record<string, string> = {};
+  if (evaluatorIds.length > 0) {
+    const { data: evaluators } = await supabase.from("profiles").select("id, full_name").in("id", evaluatorIds);
+    evaluators?.forEach((u) => {
+      evaluatorNames[u.id] = u.full_name;
+    });
+  }
   const goalList = (goals ?? []) as Goal[];
   const attendanceStatuses = (attendance ?? []).map((a) => a.status);
   const attendancePresent = attendanceStatuses.filter((s) => s === "present").length;
@@ -611,7 +619,7 @@ export default async function JoueurPage({
       {/* ===== ÉVALUATIONS ===== */}
       {activeTab === "evaluations" && (
         <div className="space-y-6">
-          <PlayerEvaluations key={initialType} initialType={initialType} evaluations={ev} attendanceRate={attendanceRate} attendancePresent={attendancePresent} attendanceTotal={attendanceTotal} />
+          <PlayerEvaluations key={initialType} playerId={player.id} evaluatorNames={evaluatorNames} canEdit={["admin", "directeur_sportif"].includes(profile.role)} initialType={initialType} evaluations={ev} attendanceRate={attendanceRate} attendancePresent={attendancePresent} attendanceTotal={attendanceTotal} />
           <section id="nouvelle-evaluation" className="card scroll-mt-4">
             <SectionTitle hint="Choisis une rubrique, une compétence et une note sur 10.">Nouvelle évaluation</SectionTitle>
             <EvaluationForm skills={skills ?? []} action={addEvaluation.bind(null, player.id)} />
