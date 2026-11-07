@@ -274,7 +274,7 @@ export default async function JoueurPage({
   }
   const goalList = (goals ?? []) as Goal[];
   const attendanceStatuses = (attendance ?? []).map((a) => a.status);
-  const attendancePresent = attendanceStatuses.filter((s) => s === "present").length;
+  const attendancePresent = attendanceStatuses.filter((s) => s === "present" || s === "retard").length;
   const attendanceTotal = attendanceStatuses.length;
   const attendanceRate = computeAttendanceRate(attendanceStatuses);
 

@@ -29,7 +29,8 @@ export function GoalStatusForm({
       <select
         name="status"
         defaultValue={currentStatus}
-        className="rounded-full border-0 bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600"
+        className="rounded-full border-0 px-2.5 py-1 text-xs font-medium"
+        style={{ background: "var(--surf-2)", color: "var(--text)" }}
         onChange={() => formRef.current?.requestSubmit()}
       >
         {STATUS_OPTIONS.map((o) => (

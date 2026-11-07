@@ -5,6 +5,7 @@ import { requireProfile } from "@/lib/data";
 import { formatDateLong } from "@/lib/sessions";
 import { focusColor, focusLabel } from "@/lib/blocks";
 import { SessionBlocks } from "@/components/session-blocks";
+import { AttendanceSheet } from "@/components/attendance-sheet";
 import { TrainingFeedback } from "@/components/training-feedback";
 import { loadPlayerClips } from "@/lib/player-clips";
 import type { PlayerClip } from "@/components/player-video";
@@ -26,7 +27,7 @@ export default async function SeancePage({
 
   if (!training) notFound();
 
-  const [{ data: blocks }, { data: players }, { data: feedbacks }] =
+  const [{ data: blocks }, { data: players }, { data: feedbacks }, { data: attendanceRows }] =
     await Promise.all([
       supabase
         .from("training_exercises")
@@ -47,7 +48,10 @@ export default async function SeancePage({
         )
         .eq("training_id", id)
         .order("created_at", { ascending: false }),
+      supabase.from("attendance").select("player_id, status").eq("training_id", id),
     ]);
+  const attendanceByPlayer: Record<string, string> = {};
+  for (const a of attendanceRows ?? []) attendanceByPlayer[a.player_id] = a.status;
 
   const sessionClips = await loadPlayerClips(supabase, { trainingId: id });
   const videosByPlayer: Record<string, PlayerClip[]> = {};
@@ -123,6 +127,18 @@ export default async function SeancePage({
           canManage={false}
         />
       </div>
+
+      {(players ?? []).length > 0 && (
+        <div className="card">
+          <h2 className="mb-3 font-semibold">Présence</h2>
+          <AttendanceSheet
+            trainingId={training.id}
+            players={players ?? []}
+            initial={attendanceByPlayer}
+            canManage={canManage}
+          />
+        </div>
+      )}
 
       <div className="card">
         <h2 className="mb-3 font-semibold">Feedback joueurs</h2>

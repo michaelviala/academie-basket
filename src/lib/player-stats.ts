@@ -84,10 +84,10 @@ export function scoreColor(v: number | null): string {
   return "var(--red)";
 }
 
-/** Taux de présence : part des séances où le joueur est « présent » (même définition que le tableau de bord). */
+/** Taux de présence : part des séances où le joueur est « présent » ou « en retard » (même définition que le tableau de bord). */
 export function attendanceRate(statuses: string[]): number | null {
   if (statuses.length === 0) return null;
-  return Math.round((statuses.filter((s) => s === "present").length / statuses.length) * 100);
+  return Math.round((statuses.filter((s) => s === "present" || s === "retard").length / statuses.length) * 100);
 }
 
 export function agoLabel(days: number | null): string {

@@ -284,3 +284,10 @@ h1, h2, h3, .display {
   background: var(--brand);
   color: white;
 }
+
+/* Couleurs de texte du thème (remplacent les anciennes classes slate claires) */
+.text-faint { color: var(--text-faint); }
+.text-dim { color: var(--text-dim); }
+
+@keyframes skeleton-pulse { 0%, 100% { opacity: .45; } 50% { opacity: .9; } }
+.skeleton { background: var(--surf-2); border-radius: 12px; animation: skeleton-pulse 1.4s ease-in-out infinite; }

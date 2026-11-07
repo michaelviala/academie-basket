@@ -9,7 +9,7 @@ export function LogoutButton() {
 
   return (
     <button
-      className="text-sm font-medium text-slate-500 hover:text-slate-800"
+      className="text-sm font-medium text-dim hover:text-white"
       onClick={async () => {
         await supabase.auth.signOut();
         router.push("/login");

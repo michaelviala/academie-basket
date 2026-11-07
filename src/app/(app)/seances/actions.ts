@@ -185,3 +185,44 @@ export async function updateTrainingGym(trainingId: string, gymId: string) {
   revalidatePath("/seances");
   return { success: true };
 }
+
+/** Enregistre (ou efface) la présence d'un joueur à une séance. */
+export async function setAttendance(trainingId: string, playerId: string, status: string | null): Promise<{ error?: string }> {
+  const profile = await requireProfile();
+  if (!SESSION_EDIT_ROLES.includes(profile.role)) return { error: "Action réservée au staff." };
+  const supabase = await createClient();
+  if (status === null) {
+    const { error } = await supabase.from("attendance").delete().eq("training_id", trainingId).eq("player_id", playerId);
+    if (error) return { error: error.message };
+  } else {
+    if (!["present", "absent", "absent_justifie", "retard", "blesse"].includes(status)) return { error: "Statut invalide." };
+    const { error } = await supabase
+      .from("attendance")
+      .upsert(
+        { training_id: trainingId, player_id: playerId, status: status as "present" },
+        { onConflict: "training_id,player_id" },
+      );
+    if (error) return { error: error.message };
+  }
+  revalidatePath(`/seances/${trainingId}`);
+  revalidatePath("/dashboard");
+  revalidatePath("/joueurs");
+  return {};
+}
+
+/** Marque tous les joueurs non renseignés comme présents. */
+export async function markAllPresent(trainingId: string, playerIds: string[]): Promise<{ error?: string }> {
+  const profile = await requireProfile();
+  if (!SESSION_EDIT_ROLES.includes(profile.role)) return { error: "Action réservée au staff." };
+  const supabase = await createClient();
+  const { data: existing } = await supabase.from("attendance").select("player_id").eq("training_id", trainingId);
+  const done = new Set((existing ?? []).map((r) => r.player_id));
+  const rows = playerIds.filter((id) => !done.has(id)).map((player_id) => ({ training_id: trainingId, player_id, status: "present" as const }));
+  if (rows.length > 0) {
+    const { error } = await supabase.from("attendance").insert(rows);
+    if (error) return { error: error.message };
+  }
+  revalidatePath(`/seances/${trainingId}`);
+  revalidatePath("/dashboard");
+  return {};
+}

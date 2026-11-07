@@ -12,19 +12,19 @@ export default async function RapportsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Rapports</h1>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-dim">
           Rapport individuel consultable et imprimable (export PDF prévu en V2) depuis la fiche joueur 360°.
         </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {players?.map((p) => (
-          <Link key={p.id} href={`/joueurs/${p.id}`} className="card hover:border-orange-300">
+          <Link key={p.id} href={`/joueurs/${p.id}`} className="card">
             <p className="font-semibold">{p.first_name} {p.last_name}</p>
-            <p className="text-xs text-slate-400">{p.teams?.name ?? "Sans catégorie"} · Voir la fiche complète →</p>
+            <p className="text-xs text-faint">{p.teams?.name ?? "Sans catégorie"} · Voir la fiche complète →</p>
           </Link>
         ))}
-        {(!players || players.length === 0) && <p className="text-sm text-slate-400">Aucun joueur.</p>}
+        {(!players || players.length === 0) && <p className="text-sm text-faint">Aucun joueur.</p>}
       </div>
     </div>
   );
