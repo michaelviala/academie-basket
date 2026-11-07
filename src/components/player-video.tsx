@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { discardUpload, uploadVideo } from "@/lib/player-video";
+import { useDictation } from "@/lib/dictation";
 import { addPlayerVideo, deletePlayerVideo } from "@/app/(app)/videos/player-video";
 
 export type PlayerClip = {
@@ -35,18 +36,25 @@ export function AddPlayerVideo({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [title, setTitle] = useState("");
+  const prefix = `${playerName} · `;
+  const [title, setTitle] = useState(prefix);
   const [note, setNote] = useState("");
   const [training, setTraining] = useState<string>(trainingId ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [doneId, setDoneId] = useState<{ clip: string; source: string } | null>(null);
+  const noteRef = useRef("");
+  useEffect(() => {
+    noteRef.current = note;
+  }, [note]);
+  const getNote = useCallback(() => noteRef.current, []);
+  const dictation = useDictation(getNote, setNote);
   const filmRef = useRef<HTMLInputElement>(null);
   const pickRef = useRef<HTMLInputElement>(null);
 
   function reset() {
     setFile(null);
-    setTitle("");
+    setTitle(prefix);
     setNote("");
     setError(null);
     setDoneId(null);
@@ -54,6 +62,7 @@ export function AddPlayerVideo({
   }
   function close() {
     if (busy) return;
+    dictation.stop();
     setOpen(false);
     reset();
   }
@@ -61,6 +70,7 @@ export function AddPlayerVideo({
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!file) return setError("Filme ou choisis une vidéo.");
+    dictation.stop();
     setError(null);
     setBusy(true);
     const up = await uploadVideo(file);
@@ -71,7 +81,7 @@ export function AddPlayerVideo({
     const res = await addPlayerVideo({
       playerId,
       trainingId: training || null,
-      title,
+      title: title.trim() === prefix.trim() ? `${prefix}exercice` : title,
       note,
       filePath: up.ok.filePath,
       thumbPath: up.ok.thumbPath,
@@ -142,8 +152,35 @@ export function AddPlayerVideo({
                     ? `${file.name} · ${(file.size / 1048576).toFixed(1)} Mo`
                     : "mp4 (H.264), 50 Mo max : une vidéo de quelques dizaines de secondes."}
                 </p>
-                <input className="input w-full" placeholder={`Titre (ex. ${playerName} · tir en mouvement)`} value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} />
-                <textarea className="input w-full" rows={2} placeholder="Commentaire (optionnel) : ce qu'on voit, le point à corriger…" value={note} maxLength={2000} onChange={(e) => setNote(e.target.value)} />
+                <label className="label">
+                  Titre <span style={{ color: "var(--text-faint)" }}>(nom du joueur ajouté automatiquement : complète avec l&apos;exercice)</span>
+                  <input className="input mt-1 w-full" value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} onFocus={(e) => { const el = e.target; setTimeout(() => el.setSelectionRange(el.value.length, el.value.length), 0); }} />
+                </label>
+                <div className="space-y-1.5">
+                  <textarea className="input w-full" rows={3} placeholder="Commentaire (optionnel) : ce qu'on voit, le point à corriger… ou dicte-le avec le micro" value={note} maxLength={2000} onChange={(e) => setNote(e.target.value)} />
+                  <div className="flex flex-wrap items-center gap-2">
+                    {dictation.supported ? (
+                      <button
+                        type="button"
+                        onClick={() => (dictation.listening ? dictation.stop() : dictation.start())}
+                        disabled={busy}
+                        className="btn-secondary"
+                        style={dictation.listening ? { background: "#e5484d", color: "#fff", borderColor: "#e5484d" } : undefined}
+                        aria-pressed={dictation.listening}
+                      >
+                        {dictation.listening ? "■ Arrêter la dictée" : "🎤 Dicter le commentaire"}
+                      </button>
+                    ) : (
+                      <span className="text-xs" style={{ color: "var(--text-faint)" }}>
+                        Dictée vocale indisponible sur ce navigateur (Chrome, Edge ou Safari).
+                      </span>
+                    )}
+                    {dictation.listening && (
+                      <span className="text-xs" style={{ color: "var(--text-faint)" }} aria-live="polite">Parle maintenant… le texte s&apos;écrit tout seul.</span>
+                    )}
+                    {dictation.error && <span className="text-xs" style={{ color: "#f87171" }}>{dictation.error}</span>}
+                  </div>
+                </div>
                 {trainings && (
                   <label className="label">
                     Séance
