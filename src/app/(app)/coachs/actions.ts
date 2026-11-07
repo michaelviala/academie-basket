@@ -42,12 +42,14 @@ export async function createCoach(formData: FormData) {
     email,
     password: tempPassword,
     email_confirm: true,
-    user_metadata: { full_name: fullName, role },
+    user_metadata: { full_name: fullName },
+    // Le trigger handle_new_user lit le rôle dans app_metadata (posée côté serveur), jamais dans user_metadata.
+    app_metadata: { role },
   });
 
   if (error) throw new Error(error.message);
 
-  // Le trigger handle_new_user crée déjà la ligne profiles (id, email, full_name, role).
+  // Le trigger handle_new_user crée déjà la ligne profiles (id, email, full_name, role depuis app_metadata).
   // On complète juste le téléphone si fourni.
   if (phone && created.user) {
     const supabase = await createClient();
