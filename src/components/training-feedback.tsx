@@ -5,7 +5,7 @@ import Link from "next/link";
 import { deleteFeedback, upsertFeedback } from "@/app/(app)/seances/[id]/actions";
 import { DictationField } from "@/components/dictation-field";
 import { AddPlayerVideo, PlayerClipList, type PlayerClip } from "@/components/player-video";
-import { discardUpload, uploadVideo } from "@/lib/player-video";
+import { discardUpload, uploadVideo, FEEDBACK_MAX_SECONDS, videoDuration } from "@/lib/player-video";
 import { addPlayerVideo } from "@/app/(app)/videos/player-video";
 
 const PRIORITY_LABELS: Record<string, string> = {
@@ -55,7 +55,7 @@ export function TrainingFeedback({
       try {
         let up: Awaited<ReturnType<typeof uploadVideo>> | null = null;
         if (file) {
-          up = await uploadVideo(file);
+          up = await uploadVideo(file, undefined, FEEDBACK_MAX_SECONDS);
           if ("error" in up) throw new Error(up.error);
         }
         try {
@@ -197,12 +197,24 @@ export function TrainingFeedback({
                 </select>
                 <DictationField name="next_session_goal" placeholder="Objectif prochaine séance" multiline={false} maxLength={300} />
                 <label className="text-xs sm:col-span-2" style={{ color: "var(--text-faint)" }}>
-                  🎥 Vidéo de l&apos;exercice (optionnel, 50 Mo max, compressée automatiquement)
+                  🎥 Vidéo de l&apos;exercice (optionnel, {FEEDBACK_MAX_SECONDS} secondes maximum)
                   <input
                     className="input mt-1 w-full"
                     type="file"
                     accept="video/*"
-                    onChange={(e) => setVideo(e.target.files?.[0] ?? null)}
+                    onChange={async (e) => {
+                      const input = e.target;
+                      const f = input.files?.[0] ?? null;
+                      const d = f ? await videoDuration(f) : null;
+                      if (f && d && d > FEEDBACK_MAX_SECONDS + 0.7) {
+                        input.value = "";
+                        setVideo(null);
+                        setError(`Vidéo de ${Math.round(d)} s : ${FEEDBACK_MAX_SECONDS} secondes maximum.`);
+                        return;
+                      }
+                      setError(null);
+                      setVideo(f);
+                    }}
                   />
                 </label>
                 <button className="btn-primary sm:col-span-2" type="submit" disabled={isPending}>
