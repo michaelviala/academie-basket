@@ -4,9 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Profile } from "@/lib/data";
 
-type IconName = "home" | "users" | "trophy" | "video" | "clip" | "bell" | "notebook" | "whistle" | "file" | "settings";
+export type IconName = "home" | "users" | "trophy" | "video" | "clip" | "bell" | "notebook" | "whistle" | "file" | "settings";
 
-function Icon({ name }: { name: IconName }) {
+export function Icon({ name }: { name: IconName }) {
   const common = {
     width: 18,
     height: 18,
@@ -101,7 +101,7 @@ function Icon({ name }: { name: IconName }) {
   }
 }
 
-const ALL_ITEMS: { href: string; label: string; icon: IconName; roles?: Profile["role"][] }[] = [
+export const ALL_ITEMS: { href: string; label: string; icon: IconName; roles?: Profile["role"][] }[] = [
   { href: "/dashboard", label: "Tableau de bord", icon: "home" },
   { href: "/joueurs", label: "Joueurs", icon: "users" },
   { href: "/carnet-technique", label: "Carnet technique", icon: "notebook" },

@@ -435,7 +435,7 @@ export default async function JoueurPage({
       </section>
 
       {/* ===== ONGLETS ===== */}
-      <nav aria-label="Sections de la fiche" className="flex flex-wrap gap-2">
+      <nav aria-label="Sections de la fiche" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 [&>a]:shrink-0 [&>a]:whitespace-nowrap">
         {visibleTabs.map((t) => {
           const active = t.key === activeTab;
           const count = tabCounts[t.key];

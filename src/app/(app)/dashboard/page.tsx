@@ -44,7 +44,7 @@ async function DirectionDashboard() {
         <p className="text-sm text-slate-500">Vue d&apos;ensemble de l&apos;académie.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 [&>*:last-child:nth-child(odd)]:col-span-2 sm:[&>*:last-child:nth-child(odd)]:col-span-1">
         <StatCard label="Joueurs actifs" value={playersCount ?? 0} />
         <StatCard label="Équipes" value={teamsCount ?? 0} />
         <StatCard label="Taux de présence" value={attendanceRate !== null ? `${attendanceRate}%` : "—"} />

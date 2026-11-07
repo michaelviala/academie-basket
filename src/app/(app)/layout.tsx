@@ -2,6 +2,7 @@ import { requireProfile, ROLE_LABELS, getClubSettings, darkenHex } from "@/lib/d
 import { createClient } from "@/lib/supabase/server";
 import { Nav } from "@/components/nav";
 import { LogoutButton } from "@/components/logout-button";
+import { AppShell } from "@/components/app-shell";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const [profile, settings] = await Promise.all([requireProfile(), getClubSettings()]);
@@ -22,8 +23,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   } as React.CSSProperties;
 
   return (
-    <div className="shell" style={brandVars}>
-      <aside className="side">
+    <div style={brandVars}>
+      <AppShell
+        role={profile.role}
+        logoUrl={settings.logo_url}
+        unread={unreadNotifications ?? 0}
+        sidebar={
+          <>
         <div className="flex items-center gap-3 px-4 py-5">
           {settings.logo_url ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -54,10 +60,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <LogoutButton />
           </div>
         </div>
-      </aside>
-      <main className="main">
-        <div className="mx-auto max-w-7xl px-6 py-8">{children}</div>
-      </main>
+          </>
+        }
+      >
+        <div className="mx-auto max-w-7xl px-4 py-5 md:px-6 md:py-8">{children}</div>
+      </AppShell>
     </div>
   );
 }

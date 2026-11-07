@@ -64,6 +64,105 @@ h1, h2, h3, .display {
   min-width: 0;
 }
 
+/* --- Mobile : barre du haut, tiroir, barre du bas --- */
+.topbar,
+.bottombar,
+.side-overlay,
+.side-close {
+  display: none;
+}
+.topbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  color: var(--text);
+}
+@media (max-width: 767px) {
+  .shell {
+    flex-direction: column;
+  }
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    padding: calc(env(safe-area-inset-top) + 0.4rem) 0.6rem 0.4rem;
+    background: var(--side-bg, var(--surf));
+    border-bottom: 1px solid var(--border);
+  }
+  .side {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 60;
+    width: min(300px, 85vw);
+    overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    padding-top: env(safe-area-inset-top);
+  }
+  .side.open {
+    transform: none;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+  }
+  .side-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: rgba(0, 0, 0, 0.6);
+  }
+  .side-close {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    font-size: 1.6rem;
+    line-height: 1;
+    color: var(--text-dim);
+  }
+  .nav-link {
+    padding: 0.7rem 0.75rem;
+    font-size: 0.95rem;
+  }
+  .main {
+    padding-bottom: calc(68px + env(safe-area-inset-bottom));
+  }
+  .bottombar {
+    display: flex;
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 40;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--side-bg, var(--surf));
+    border-top: 1px solid var(--border);
+  }
+  .bottom-link {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 0.5rem 0.25rem;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--text-faint);
+  }
+  .bottom-link.active {
+    color: var(--brand);
+  }
+  /* champs de saisie à 16 px : évite le zoom automatique d'iOS */
+  .input {
+    font-size: 16px;
+  }
+  .card {
+    padding: 1rem;
+  }
+}
+
 /* --- Components --- */
 .card {
   background: var(--surf);

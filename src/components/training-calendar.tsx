@@ -111,7 +111,7 @@ export function TrainingCalendar({
   return (
     <div className="card space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             className="btn-secondary"
