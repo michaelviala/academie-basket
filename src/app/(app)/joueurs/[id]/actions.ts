@@ -299,3 +299,32 @@ export async function updateGoalStatus(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidatePath(`/joueurs/${playerId}`);
 }
+
+export async function updatePlayerMeasures(playerId: string, formData: FormData): Promise<{ error?: string }> {
+  const num = (k: string, max: number) => {
+    const raw = String(formData.get(k) ?? "").replace(",", ".").trim();
+    if (!raw) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) && n > 0 && n <= max ? n : NaN;
+  };
+  const height = num("height_cm", 260);
+  const weight = num("weight_kg", 250);
+  const wingspan = num("wingspan_cm", 280);
+  if ([height, weight, wingspan].some((v) => Number.isNaN(v))) return { error: "Valeur incorrecte (nombre positif attendu)." };
+  const hand = String(formData.get("dominant_hand") ?? "");
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("players")
+    .update({
+      height_cm: height,
+      weight_kg: weight,
+      wingspan_cm: wingspan,
+      dominant_hand: hand === "droite" || hand === "gauche" || hand === "ambidextre" ? hand : null,
+      previous_club: String(formData.get("previous_club") ?? "").trim() || null,
+    })
+    .eq("id", playerId);
+  if (error) return { error: error.message };
+  revalidatePath(`/joueurs/${playerId}`);
+  revalidatePath("/joueurs");
+  return {};
+}

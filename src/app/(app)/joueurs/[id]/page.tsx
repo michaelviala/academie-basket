@@ -32,6 +32,7 @@ import {
   updateInjury,
 } from "./actions";
 import { GoalStatusForm } from "@/components/goal-status-form";
+import { PlayerFacts } from "@/components/player-facts";
 import { PlayerPhoto } from "@/components/player-photo";
 import { AddPlayerVideo, PlayerClipList, type TrainingOption } from "@/components/player-video";
 import { loadPlayerClips } from "@/lib/player-clips";
@@ -352,14 +353,6 @@ export default async function JoueurPage({
     lastFeedback: feedbacks?.[0] ? [feedbacks[0].positives, feedbacks[0].improvements].filter(Boolean).join(" · ") || null : null,
   };
 
-  const facts = [
-    { label: "Taille", value: player.height_cm ? `${player.height_cm} cm` : "—" },
-    { label: "Poids", value: player.weight_kg ? `${player.weight_kg} kg` : "—" },
-    { label: "Envergure", value: player.wingspan_cm ? `${player.wingspan_cm} cm` : "—" },
-    { label: "Main", value: player.dominant_hand ?? "—" },
-    { label: "Entrée", value: player.entry_date ? formatDateFr(player.entry_date) : "—" },
-    { label: "Ancien club", value: player.previous_club ?? "—" },
-  ];
   const ringLen = 2 * Math.PI * 44;
 
   return (
@@ -460,16 +453,16 @@ export default async function JoueurPage({
           </div>
         </div>
 
-        <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          {facts.map((f) => (
-            <div key={f.label} className="rounded-lg px-3 py-2" style={{ background: "var(--surf)", border: "1px solid var(--border)" }}>
-              <dt className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-faint)" }}>
-                {f.label}
-              </dt>
-              <dd className="mt-0.5 truncate text-sm font-semibold capitalize">{f.value}</dd>
-            </div>
-          ))}
-        </dl>
+        <PlayerFacts
+          playerId={player.id}
+          canEdit={staffView}
+          entry={player.entry_date ? formatDateFr(player.entry_date) : "—"}
+          height={player.height_cm}
+          weight={player.weight_kg}
+          wingspan={player.wingspan_cm}
+          hand={player.dominant_hand}
+          previousClub={player.previous_club}
+        />
       </section>
 
       {staffView && (
