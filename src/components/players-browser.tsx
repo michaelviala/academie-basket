@@ -307,9 +307,14 @@ export function PlayersBrowser({
               : "Ajoute ton premier joueur pour commencer le suivi."}
           </p>
           {canCreate && !q && !category && (
-            <Link href="/joueurs/nouveau" className="btn-primary mt-4">
-              + Nouveau joueur
-            </Link>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              <Link href="/joueurs/nouveau" className="btn-primary">
+                + Nouveau joueur
+              </Link>
+              <Link href="/administration" className="btn-secondary">
+                ⤒ Importer depuis Excel
+              </Link>
+            </div>
           )}
         </div>
       ) : (

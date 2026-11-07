@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { requireProfile, calculateAge } from "@/lib/data";
+import { requireProfile } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { formatDateLong } from "@/lib/sessions";
+import { PresenceChart } from "@/components/presence-chart";
+import { PlayerSummary } from "@/components/player-summary";
 
 function StatCard({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
   return (
@@ -66,7 +68,7 @@ async function DirectionDashboard(profile: { id: string; role: string; full_name
   const playersQ = supabase.from("players").select("id, first_name, last_name, status, team_id");
   const [{ data: players }, { data: attendanceRows }, { data: upcoming }, { data: past }, { data: evals }, { data: teamsAll }, { data: tcAll }] = await Promise.all([
     myTeamIds ? (myTeamIds.length ? playersQ.in("team_id", myTeamIds) : playersQ.limit(0)) : playersQ,
-    supabase.from("attendance").select("status, player_id, training_id"),
+    supabase.from("attendance").select("status, player_id, training_id, trainings(date)"),
     supabase
       .from("trainings")
       .select("id, date, start_time, objective, coach_id, gym_id, team_id, teams(name), gyms(name)")
@@ -93,6 +95,19 @@ async function DirectionDashboard(profile: { id: string; role: string; full_name
   const att = (attendanceRows ?? []).filter((a) => playerIds.has(a.player_id));
   const present = att.filter((a) => a.status === "present" || a.status === "retard").length;
   const attendanceRate = att.length > 0 ? Math.round((present / att.length) * 100) : null;
+  const months: { key: string; label: string; ok: number; n: number }[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(new Date().getFullYear(), new Date().getMonth() - i, 1);
+    months.push({ key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`, label: d.toLocaleDateString("fr-FR", { month: "short" }), ok: 0, n: 0 });
+  }
+  for (const a of att) {
+    const date = (a.trainings as { date: string } | null)?.date;
+    const m = date ? months.find((x) => x.key === date.slice(0, 7)) : undefined;
+    if (!m) continue;
+    m.n++;
+    if (a.status === "present" || a.status === "retard") m.ok++;
+  }
+  const chart = months.map((m) => ({ label: m.label, rate: m.n ? Math.round((m.ok / m.n) * 100) : 0, sessions: m.n }));
   const sessionsWithAttendance = new Set((attendanceRows ?? []).map((a) => a.training_id));
   const toCall = pastMine.filter((t) => !sessionsWithAttendance.has(t.id));
 
@@ -156,6 +171,13 @@ async function DirectionDashboard(profile: { id: string; role: string; full_name
         </div>
       </div>
 
+      {att.length > 0 && (
+        <div className="card">
+          <h2 className="mb-3 font-semibold">Présence par mois</h2>
+          <PresenceChart data={chart} />
+        </div>
+      )}
+
       <div className="card">
         <h2 className="mb-3 font-semibold">Accès rapides</h2>
         <div className="flex flex-wrap gap-3">
@@ -171,78 +193,15 @@ async function DirectionDashboard(profile: { id: string; role: string; full_name
 
 async function PlayerDashboard(playerUserId: string) {
   const supabase = await createClient();
-
-  const { data: player } = await supabase
-    .from("players")
-    .select("*, teams(name, category)")
-    .eq("user_id", playerUserId)
-    .maybeSingle();
-
+  const { data: player } = await supabase.from("players").select("id").eq("user_id", playerUserId).maybeSingle();
   if (!player) {
     return (
       <div className="card">
-        <p>Aucune fiche joueur n&apos;est encore associée à votre compte. Contactez votre coach.</p>
+        <p>Aucune fiche joueur n&apos;est encore associée à ton compte. Contacte ton coach.</p>
       </div>
     );
   }
-
-  const [{ data: evaluations }, { data: goals }] = await Promise.all([
-    supabase
-      .from("evaluations")
-      .select("evaluation_type, score")
-      .eq("player_id", player.id),
-    supabase
-      .from("goals")
-      .select("*")
-      .eq("player_id", player.id)
-      .order("due_date", { ascending: true }),
-  ]);
-
-  const avgByType = (type: string) => {
-    const rows = evaluations?.filter((e) => e.evaluation_type === type) ?? [];
-    if (rows.length === 0) return null;
-    return (rows.reduce((s, r) => s + Number(r.score), 0) / rows.length).toFixed(1);
-  };
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">
-          {player.first_name} {player.last_name}
-        </h1>
-        <p className="text-sm text-dim">
-          {player.teams?.name ?? "Sans catégorie"} · {calculateAge(player.birth_date)} ans
-        </p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard label="Indice technique" value={avgByType("technique") ?? "—"} />
-        <StatCard label="Indice tactique" value={avgByType("tactique") ?? "—"} />
-        <StatCard label="Indice physique" value={avgByType("physique") ?? "—"} />
-        <StatCard label="Indice mental" value={avgByType("mental") ?? "—"} />
-      </div>
-
-      <div className="card">
-        <h2 className="mb-3 font-semibold">Mes objectifs</h2>
-        {goals && goals.length > 0 ? (
-          <ul className="space-y-2">
-            {goals.map((g) => (
-              <li key={g.id} className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
-                <span>{g.title}</span>
-                <span className="badge">{g.status}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-sm text-faint">Aucun objectif défini pour le moment.</p>
-        )}
-      </div>
-
-      <Link href={`/joueurs/${player.id}`} className="btn-primary inline-flex w-fit">
-        Voir ma fiche complète
-      </Link>
-    </div>
-  );
+  return <PlayerSummary playerId={player.id} />;
 }
 
 export default async function DashboardPage() {
@@ -254,26 +213,13 @@ export default async function DashboardPage() {
 
   if (profile.role === "parent") {
     const supabase = await createClient();
-    const { data: children } = await supabase
-      .from("parent_player")
-      .select("players(id, first_name, last_name, photo_url)")
-      .eq("parent_id", profile.id);
-
+    const { data: children } = await supabase.from("parent_player").select("player_id").eq("parent_id", profile.id);
+    const ids = (children ?? []).map((c) => c.player_id);
     return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-bold">Mes enfants</h1>
-        {children && children.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {children.map((c) => c.players && (
-              <Link key={c.players.id} href={`/joueurs/${c.players.id}`} className="card block">
-                <p className="font-semibold">{c.players.first_name} {c.players.last_name}</p>
-                <p className="text-sm text-faint">Voir la fiche complète →</p>
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-dim">Aucun enfant n&apos;est encore rattaché à votre compte.</p>
-        )}
+      <div className="space-y-10">
+        <h1 className="display text-2xl font-bold">{ids.length > 1 ? "Mes enfants" : "Mon enfant"}</h1>
+        {ids.map((id) => <PlayerSummary key={id} playerId={id} />)}
+        {ids.length === 0 && <div className="empty">Aucun enfant n&apos;est encore rattaché à ton compte. Demande à l&apos;administrateur de l&apos;académie.</div>}
       </div>
     );
   }

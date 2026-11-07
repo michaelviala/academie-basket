@@ -126,19 +126,22 @@ export function Icon({ name }: { name: IconName }) {
   }
 }
 
-export const ALL_ITEMS: { href: string; label: string; icon: IconName; roles?: Profile["role"][] }[] = [
-  { href: "/dashboard", label: "Tableau de bord", icon: "home" },
-  { href: "/joueurs", label: "Joueurs", icon: "users" },
-  { href: "/carnet-technique", label: "Carnet technique", icon: "notebook" },
-  { href: "/bibliotheque", label: "Bibliothèque", icon: "library", roles: ["admin", "directeur_sportif", "coach", "preparateur_physique"] },
-  { href: "/seances", label: "Séances", icon: "video" },
-  { href: "/systemes", label: "Systèmes", icon: "play", roles: ["admin", "directeur_sportif", "coach", "preparateur_physique"] },
-  { href: "/videos", label: "Vidéos", icon: "clip" },
-  { href: "/tableaux", label: "Tableau blanc", icon: "board", roles: ["admin", "directeur_sportif", "coach", "preparateur_physique", "joueur"] },
-  { href: "/notifications", label: "Notifications", icon: "bell" },
-  { href: "/coachs", label: "Coachs", icon: "whistle", roles: ["admin", "directeur_sportif"] },
-  { href: "/rapports", label: "Rapports", icon: "file", roles: ["admin", "directeur_sportif", "coach"] },
-  { href: "/administration", label: "Administration", icon: "settings", roles: ["admin"] },
+export type NavGroup = "suivi" | "outils" | "club";
+export const NAV_GROUPS: Record<NavGroup, string> = { suivi: "Suivi", outils: "Vidéo & tactique", club: "Club" };
+
+export const ALL_ITEMS: { href: string; label: string; icon: IconName; roles?: Profile["role"][]; group: NavGroup }[] = [
+  { href: "/dashboard", label: "Tableau de bord", icon: "home", group: "suivi" },
+  { href: "/joueurs", label: "Joueurs", icon: "users", group: "suivi" },
+  { href: "/carnet-technique", label: "Carnet technique", icon: "notebook", group: "suivi" },
+  { href: "/seances", label: "Séances", icon: "video", group: "suivi" },
+  { href: "/notifications", label: "Notifications", icon: "bell", group: "suivi" },
+  { href: "/bibliotheque", label: "Bibliothèque", icon: "library", roles: ["admin", "directeur_sportif", "coach", "preparateur_physique"], group: "outils" },
+  { href: "/systemes", label: "Systèmes", icon: "play", roles: ["admin", "directeur_sportif", "coach", "preparateur_physique"], group: "outils" },
+  { href: "/videos", label: "Vidéos", icon: "clip", group: "outils" },
+  { href: "/tableaux", label: "Tableau blanc", icon: "board", roles: ["admin", "directeur_sportif", "coach", "preparateur_physique", "joueur"], group: "outils" },
+  { href: "/coachs", label: "Coachs", icon: "whistle", roles: ["admin", "directeur_sportif"], group: "club" },
+  { href: "/rapports", label: "Rapports", icon: "file", roles: ["admin", "directeur_sportif", "coach"], group: "club" },
+  { href: "/administration", label: "Administration", icon: "settings", roles: ["admin"], group: "club" },
 ];
 
 export function Nav({ role, unreadNotifications = 0 }: { role: Profile["role"]; unreadNotifications?: number }) {
@@ -147,21 +150,40 @@ export function Nav({ role, unreadNotifications = 0 }: { role: Profile["role"]; 
 
   return (
     <nav className="flex flex-col gap-1 px-3">
-      {items.map((item) => {
-        const active = pathname === item.href || pathname.startsWith(item.href + "/");
+      <form action="/recherche" role="search" className="px-1 pb-1">
+        <input
+          name="q"
+          type="search"
+          placeholder="Rechercher…"
+          aria-label="Rechercher"
+          className="input"
+          style={{ padding: "7px 10px", fontSize: 13 }}
+        />
+      </form>
+      {(Object.keys(NAV_GROUPS) as NavGroup[]).map((g) => {
+        const list = items.filter((i) => i.group === g);
+        if (list.length === 0) return null;
         return (
-          <Link key={item.href} href={item.href} className={`nav-link ${active ? "active" : ""}`}>
-            <Icon name={item.icon} />
-            <span className="flex-1">{item.label}</span>
-            {item.icon === "bell" && unreadNotifications > 0 && (
-              <span
-                className="flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold text-white"
-                style={{ background: "var(--brand)" }}
-              >
-                {unreadNotifications > 9 ? "9+" : unreadNotifications}
-              </span>
-            )}
-          </Link>
+          <div key={g} className="flex flex-col gap-1">
+            <p className="px-3 pb-0.5 pt-3 text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--text-faint)" }}>{NAV_GROUPS[g]}</p>
+            {list.map((item) => {
+              const active = pathname === item.href || pathname.startsWith(item.href + "/");
+              return (
+                <Link key={item.href} href={item.href} className={`nav-link ${active ? "active" : ""}`}>
+                  <Icon name={item.icon} />
+                  <span className="flex-1">{item.label}</span>
+                  {item.icon === "bell" && unreadNotifications > 0 && (
+                    <span
+                      className="flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[11px] font-bold text-white"
+                      style={{ background: "var(--brand)" }}
+                    >
+                      {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
         );
       })}
     </nav>

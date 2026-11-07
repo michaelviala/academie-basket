@@ -255,6 +255,11 @@ export default async function JoueurPage({
     }));
   }
 
+  const staffView = ["admin", "directeur_sportif", "coach"].includes(profile.role);
+  const { data: guardians } = staffView
+    ? await supabase.from("player_guardians").select("id, full_name, relationship, email, phone, is_primary").eq("player_id", id).order("is_primary", { ascending: false })
+    : { data: null };
+
   const { data: injuries } = canSeeInjuries
     ? await supabase
         .from("injuries")
@@ -415,6 +420,9 @@ export default async function JoueurPage({
               >
                 Cahier technique{player.teams?.category ? ` ${player.teams.category}` : ""}
               </Link>
+              <Link href={`/joueurs/${player.id}/rapport`} className="btn-secondary">
+                Rapport PDF
+              </Link>
             </div>
           </div>
 
@@ -464,8 +472,30 @@ export default async function JoueurPage({
         </dl>
       </section>
 
+      {staffView && (
+        <section className="card" aria-label="Parents et responsables">
+          <h2 className="mb-2 text-sm font-semibold">Parents / responsables</h2>
+          {(guardians ?? []).length === 0 ? (
+            <p className="text-sm text-faint">Aucun parent renseigné. {profile.role === "coach" ? "Demande à la direction de les ajouter." : <Link href="/administration" className="underline">Les ajouter dans l&apos;administration</Link>}</p>
+          ) : (
+            <ul className="grid gap-2 sm:grid-cols-2">
+              {(guardians ?? []).map((g) => (
+                <li key={g.id} className="rounded-lg px-3 py-2 text-sm" style={{ background: "var(--surf-2)" }}>
+                  <p className="font-medium">{g.full_name} <span className="text-xs text-faint">· {({ mere: "Mère", pere: "Père", tuteur: "Tuteur" } as Record<string, string>)[g.relationship] ?? "Responsable"}{g.is_primary ? " · contact principal" : ""}</span></p>
+                  <p className="mt-0.5 flex flex-wrap gap-x-4 text-xs">
+                    {g.phone && <a href={`tel:${g.phone.replace(/\s/g, "")}`} className="underline">📞 {g.phone}</a>}
+                    {g.email && <a href={`mailto:${g.email}`} className="underline">✉ {g.email}</a>}
+                    {!g.phone && !g.email && <span className="text-faint">Aucun contact</span>}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+
       {/* ===== ONGLETS ===== */}
-      <nav aria-label="Sections de la fiche" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 [&>a]:shrink-0 [&>a]:whitespace-nowrap">
+      <nav aria-label="Sections de la fiche" className="player-tabs -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 [&>a]:shrink-0 [&>a]:whitespace-nowrap">
         {visibleTabs.map((t) => {
           const active = t.key === activeTab;
           const count = tabCounts[t.key];
