@@ -507,6 +507,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           end_seconds: number | null
+          essential: boolean
           file_name: string | null
           file_path: string | null
           file_size: number | null
@@ -524,6 +525,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           end_seconds?: number | null
+          essential?: boolean
           file_name?: string | null
           file_path?: string | null
           file_size?: number | null
@@ -541,6 +543,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           end_seconds?: number | null
+          essential?: boolean
           file_name?: string | null
           file_path?: string | null
           file_size?: number | null

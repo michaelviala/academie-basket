@@ -35,7 +35,7 @@ src/lib/                  logique pure et accès données (player-stats, attenda
 proxy.ts                  protection des routes (matcher : ne pas dupliquer manifest.webmanifest)
 deploy/ Dockerfile docker-compose.yml .env.production.example
 ```
-Les migrations SQL ne sont **pas** dans le dépôt : elles sont appliquées via le connecteur Supabase (MCP), numérotées (dernières : 15 gyms_details, 16 attendance_unique, 17 profiles_parcours, 18 teams_color, 19 player_measurements, 20 library_favorites).
+Les migrations SQL ne sont **pas** dans le dépôt : elles sont appliquées via le connecteur Supabase (MCP), numérotées (dernières : 15 gyms_details, 16 attendance_unique, 17 profiles_parcours, 18 teams_color, 19 player_measurements, 20 library_favorites, 21 library_essential).
 
 ## 4. Rôles et droits
 Rôles : `admin`, `directeur_sportif`, `coach`, `preparateur_physique`, `joueur`, `parent`. Le rôle est lu **uniquement dans `raw_app_meta_data`** par le trigger `handle_new_user` (jamais `user_metadata`). Fonctions RLS : `is_staff()`, `is_direction()`, `coaches_team(team_id)`, `coaches_player(player_id)`, `can_view_player`, `can_view_team`. Un coach ne modifie que les joueurs de ses catégories. Liens parents (`player_guardians`) lisibles par la direction et les coachs du joueur. ⚠️ Données de mineurs : accès restreint, RGPD.
@@ -58,7 +58,7 @@ Rôles : `admin`, `directeur_sportif`, `coach`, `preparateur_physique`, `joueur`
 - **Coachs** : photo (bucket `coach-photos`), champ **Parcours** (`profiles.parcours`), création de compte via clé service.
 - **Vidéo** : feedbacks vidéo limités à 12 s avec compte à rebours ; seuls les coachs commentent ; dictée vocale plutôt que saisie ; module vidéo PIVOT porté par étapes ; stockage : fichiers ≤ 50 Mo ou liens YouTube.
 - **Tableau blanc** : demi-terrain / terrain complet, thèmes parquet/sombre/blanc, plein écran avec barre d'outils à droite, flèches ← → pour changer de page, **pointeur laser** (touche L), logo du club au rond central (terrain complet).
-- **Bibliothèque** : favoris **personnels** (`library_favorites`, RLS : chacun ne voit que les siens) ; étoile ☆/★ sur chaque carte et dans la fiche ; onglet « ★ Favoris » en premier, la page s'ouvre dessus (sur « Tout » tant qu'il n'y a aucun favori).
+- **Bibliothèque** : favoris **personnels** (`library_favorites`, RLS : chacun ne voit que les siens) ; étoile ☆/★ sur chaque carte et dans la fiche ; onglet « ★ Favoris » en premier, la page s'ouvre dessus (sinon sur « 📌 À connaître », sinon sur « Tout »). **Documents à connaître** (nutrition, arbitrage…) : `library_items.essential`, visibles par tout le staff, marqués/démarqués par la direction seule (trigger `library_essential_guard`) ; onglet « 📌 À connaître ».
 - Import Excel/CSV joueurs + parents (Administration › Import) ; lignes sans date de naissance valide ignorées (`birth_date` obligatoire).
 - Notifications : seulement feedback de séance (joueur) et blessure déclarée (direction/prépa physique). Page peu utile en l'état : à enrichir ou à retirer.
 
@@ -75,3 +75,4 @@ Rôles : `admin`, `directeur_sportif`, `coach`, `preparateur_physique`, `joueur`
 - 2026-11-07 : revue complète du site et réalisation des propositions (thème, chargement/erreur, appel de présence, tableaux de bord coach/direction/parent, PWA et menu groupé, recherche, import Excel, rôles, bilan PDF).
 - 2026-11-07 : tableau blanc (plein écran, laser, logo, export PDF avec notes) ; « équipe » → « catégorie » ; coach : photo + parcours ; couleur unique par catégorie ; « Carnets techniques » ; mesures de croissance avec historique ; évaluations par type de compétence + histogramme ; bouton « Bilan PDF ».
 - 2026-11-08 : Bibliothèque : favoris personnels (étoile, onglet Favoris ouvert par défaut), migration 20.
+- 2026-11-08 : Bibliothèque : « 📌 À connaître » (documents communs choisis par la direction), migration 21.

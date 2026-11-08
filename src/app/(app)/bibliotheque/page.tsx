@@ -10,7 +10,7 @@ export default async function BibliothequePage() {
   const { data: rows } = await supabase
     .from("library_items")
     .select(
-      "id, kind, title, description, tags, file_path, thumbnail_path, file_name, file_size, mime_type, video_url, start_seconds, end_seconds, created_at, created_by",
+      "id, kind, title, description, tags, essential, file_path, thumbnail_path, file_name, file_size, mime_type, video_url, start_seconds, end_seconds, created_at, created_by",
     )
     .order("created_at", { ascending: false })
     .limit(1000);
@@ -75,6 +75,8 @@ export default async function BibliothequePage() {
     author: r.created_by ? (authors.get(r.created_by) ?? null) : null,
     canDelete: isDirection || r.created_by === profile.id,
     isFavorite: favorites.has(r.id),
+    essential: r.essential,
+    canMarkEssential: isDirection,
   }));
 
   return (
@@ -82,7 +84,7 @@ export default async function BibliothequePage() {
       <div>
         <h1 className="display text-3xl font-bold uppercase">Bibliothèque</h1>
         <p className="text-sm" style={{ color: "var(--text-faint)" }}>
-          Documents et séquences vidéo du club. Mets une étoile ★ pour retrouver tes favoris en premier.
+          Documents et séquences vidéo du club. Tes favoris ★ et les documents à connaître 📌 sont en tête.
         </p>
       </div>
       <LibraryBrowser

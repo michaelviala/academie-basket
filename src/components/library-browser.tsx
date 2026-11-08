@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   addLibraryItem,
   deleteLibraryItem,
+  setLibraryEssential,
   setLibraryFavorite,
   setLibraryThumbnail,
   updateLibraryTags,
@@ -36,7 +37,7 @@ const PdfViewer = dynamic(() => import("@/components/pdf-viewer"), {
   ),
 });
 
-type KindFilter = "favorites" | "all" | "document" | "video";
+type KindFilter = "favorites" | "essential" | "all" | "document" | "video";
 
 const FILE_STYLE: Record<
   ReturnType<typeof fileKind>,
@@ -74,10 +75,27 @@ export function LibraryBrowser({
   canAdd: boolean;
 }) {
   const [q, setQ] = useState("");
-  // La page s'ouvre sur les favoris (ou sur « Tout » tant qu'il n'y en a aucun)
+  // La page s'ouvre sur les favoris, sinon sur les documents à connaître, sinon sur « Tout »
   const [kind, setKind] = useState<KindFilter>(
-    items.some((i) => i.isFavorite) ? "favorites" : "all",
+    items.some((i) => i.isFavorite)
+      ? "favorites"
+      : items.some((i) => i.essential)
+        ? "essential"
+        : "all",
   );
+  const [essOverride, setEssOverride] = useState<Record<string, boolean>>({});
+  const isEss = (i: LibraryItem) => essOverride[i.id] ?? i.essential;
+  function toggleEssential(i: LibraryItem) {
+    const next = !isEss(i);
+    setFavError(null);
+    setEssOverride((cur) => ({ ...cur, [i.id]: next }));
+    void setLibraryEssential(i.id, next).then((r) => {
+      if (r.error) {
+        setEssOverride((cur) => ({ ...cur, [i.id]: !next }));
+        setFavError(r.error);
+      }
+    });
+  }
   const [favOverride, setFavOverride] = useState<Record<string, boolean>>({});
   const [favError, setFavError] = useState<string | null>(null);
   const isFav = (i: LibraryItem) => favOverride[i.id] ?? i.isFavorite;
@@ -111,6 +129,8 @@ export function LibraryBrowser({
     return items.filter((i) => {
       if (kind === "favorites") {
         if (!isFav(i)) return false;
+      } else if (kind === "essential") {
+        if (!isEss(i)) return false;
       } else if (kind !== "all" && i.kind !== kind) return false;
       if (!activeTags.every((t) => i.tags.includes(t))) return false;
       if (tokens.length === 0) return true;
@@ -126,7 +146,7 @@ export function LibraryBrowser({
       return tokens.every((t) => hay.includes(t));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, q, kind, activeTags, favOverride]);
+  }, [items, q, kind, activeTags, favOverride, essOverride]);
 
   // Vignettes générées à la volée pour les anciens éléments (aperçu immédiat, enregistrées pour la suite)
   const [localThumbs, setLocalThumbs] = useState<Record<string, string>>({});
@@ -180,6 +200,7 @@ export function LibraryBrowser({
     );
   const counts = {
     favorites: items.filter((i) => isFav(i)).length,
+    essential: items.filter((i) => isEss(i)).length,
     all: items.length,
     document: items.filter((i) => i.kind === "document").length,
     video: items.filter((i) => i.kind === "video").length,
@@ -212,6 +233,7 @@ export function LibraryBrowser({
           {(
             [
               ["favorites", "★ Favoris"],
+              ["essential", "📌 À connaître"],
               ["all", "Tout"],
               ["document", "Documents"],
               ["video", "Vidéos"],
@@ -279,18 +301,29 @@ export function LibraryBrowser({
           >
             {items.length === 0
               ? "La bibliothèque est vide"
-              : kind === "favorites" && !q && activeTags.length === 0
-                ? "Aucun favori pour l'instant"
+              : (kind === "favorites" || kind === "essential") &&
+                  !q &&
+                  activeTags.length === 0
+                ? kind === "favorites"
+                  ? "Aucun favori pour l'instant"
+                  : "Aucun document à connaître"
                 : "Aucun résultat"}
           </p>
           <p className="mt-1 text-sm">
             {items.length === 0
               ? "Ajoute un premier document ou une séquence vidéo."
-              : kind === "favorites" && !q && activeTags.length === 0
-                ? "Touche l'étoile ☆ d'un document ou d'une vidéo pour le retrouver ici."
+              : (kind === "favorites" || kind === "essential") &&
+                  !q &&
+                  activeTags.length === 0
+                ? kind === "favorites"
+                  ? "Touche l'étoile ☆ d'un document ou d'une vidéo pour le retrouver ici."
+                  : "La direction choisit ici les documents que tout le staff doit connaître (nutrition, arbitrage…)."
                 : "Essaie d'autres mots ou retire un tag."}
           </p>
-          {items.length > 0 && kind === "favorites" && !q && activeTags.length === 0 && (
+          {items.length > 0 &&
+            (kind === "favorites" || kind === "essential") &&
+            !q &&
+            activeTags.length === 0 && (
             <button
               type="button"
               className="btn-secondary mt-4"
@@ -394,6 +427,7 @@ export function LibraryBrowser({
                       className="truncate text-xs"
                       style={{ color: "var(--text-faint)" }}
                     >
+                      {isEss(i) ? "📌 À connaître · " : ""}
                       {st.label}
                       {i.file_size ? ` · ${formatSize(i.file_size)}` : ""}
                       {i.kind === "video" &&
@@ -450,6 +484,8 @@ export function LibraryBrowser({
           item={opened}
           favorite={isFav(opened)}
           onToggleFavorite={() => toggleFav(opened)}
+          essential={isEss(opened)}
+          onToggleEssential={() => toggleEssential(opened)}
           knownTags={allTags.map(([t]) => t)}
           onClose={() => setOpenId(null)}
         />
@@ -493,12 +529,16 @@ function ItemModal({
   item,
   favorite,
   onToggleFavorite,
+  essential,
+  onToggleEssential,
   knownTags,
   onClose,
 }: {
   item: LibraryItem;
   favorite: boolean;
   onToggleFavorite: () => void;
+  essential: boolean;
+  onToggleEssential: () => void;
   knownTags: string[];
   onClose: () => void;
 }) {
@@ -604,6 +644,7 @@ function ItemModal({
             style={{ color: st.color }}
           >
             {st.label}
+            {essential && " · 📌 À connaître"}
           </p>
           <h3 className="display text-2xl font-bold uppercase leading-tight">
             {item.title}
@@ -798,6 +839,16 @@ function ItemModal({
         >
           {favorite ? "★ Dans mes favoris" : "☆ Ajouter aux favoris"}
         </button>
+        {item.canMarkEssential && (
+          <button
+            type="button"
+            className="btn-secondary"
+            aria-pressed={essential}
+            onClick={onToggleEssential}
+          >
+            {essential ? "📌 Retirer de « À connaître »" : "📌 Marquer « À connaître »"}
+          </button>
+        )}
         {item.canDelete && (
           <button
             type="button"

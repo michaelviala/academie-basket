@@ -178,3 +178,23 @@ export async function setLibraryFavorite(
   revalidatePath("/bibliotheque");
   return { success: true };
 }
+
+/** Marque ou démarque un document « à connaître » pour tout le staff (direction uniquement). */
+export async function setLibraryEssential(
+  itemId: string,
+  essential: boolean,
+): Promise<Result> {
+  const profile = await requireProfile();
+  if (!["admin", "directeur_sportif"].includes(profile.role))
+    return { error: "Réservé à la direction." };
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("library_items")
+    .update({ essential })
+    .eq("id", itemId)
+    .select("id");
+  if (error) return { error: "Modification impossible." };
+  if (!data || data.length === 0) return { error: "Modification refusée." };
+  revalidatePath("/bibliotheque");
+  return { success: true };
+}

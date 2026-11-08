@@ -31,6 +31,10 @@ export type LibraryItem = {
   canDelete: boolean;
   /** Mis en favori par l'utilisateur connecté. */
   isFavorite: boolean;
+  /** Document « à connaître » pour tout le staff (choisi par la direction). */
+  essential: boolean;
+  /** L'utilisateur peut marquer un document « à connaître » (direction). */
+  canMarkEssential: boolean;
 };
 
 /** « Tir, Défense ; U13 » → ["tir", "défense", "u13"] (minuscules, sans doublon, 12 max). */
