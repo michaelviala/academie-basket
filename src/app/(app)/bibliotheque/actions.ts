@@ -152,3 +152,29 @@ export async function deleteLibraryItem(itemId: string): Promise<Result> {
   revalidatePath("/bibliotheque");
   return { success: true };
 }
+
+/** Ajoute ou retire une ressource des favoris de l'utilisateur connecté (favoris personnels). */
+export async function setLibraryFavorite(
+  itemId: string,
+  favorite: boolean,
+): Promise<Result> {
+  const profile = await requireProfile();
+  const supabase = await createClient();
+  if (favorite) {
+    const { error } = await supabase
+      .from("library_favorites")
+      .insert({ user_id: profile.id, item_id: itemId });
+    // 23505 : déjà en favori, rien à faire
+    if (error && error.code !== "23505")
+      return { error: "Impossible d'ajouter aux favoris." };
+  } else {
+    const { error } = await supabase
+      .from("library_favorites")
+      .delete()
+      .eq("user_id", profile.id)
+      .eq("item_id", itemId);
+    if (error) return { error: "Impossible de retirer des favoris." };
+  }
+  revalidatePath("/bibliotheque");
+  return { success: true };
+}

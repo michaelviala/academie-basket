@@ -29,6 +29,8 @@ export type LibraryItem = {
   hasStoredThumb: boolean;
   author: string | null;
   canDelete: boolean;
+  /** Mis en favori par l'utilisateur connecté. */
+  isFavorite: boolean;
 };
 
 /** « Tir, Défense ; U13 » → ["tir", "défense", "u13"] (minuscules, sans doublon, 12 max). */

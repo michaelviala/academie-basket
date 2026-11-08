@@ -17,6 +17,13 @@ export default async function BibliothequePage() {
 
   const items = rows ?? [];
 
+  // Favoris de l'utilisateur connecté (si la lecture échoue, la bibliothèque reste utilisable)
+  const { data: favRows } = await supabase
+    .from("library_favorites")
+    .select("item_id")
+    .eq("user_id", profile.id);
+  const favorites = new Set((favRows ?? []).map((f) => f.item_id));
+
   // Liens temporaires (1 h) vers les fichiers hébergés
   const paths = items
     .flatMap((r) => [r.file_path, r.thumbnail_path])
@@ -67,6 +74,7 @@ export default async function BibliothequePage() {
     signedUrl: r.file_path ? (signed.get(r.file_path) ?? null) : null,
     author: r.created_by ? (authors.get(r.created_by) ?? null) : null,
     canDelete: isDirection || r.created_by === profile.id,
+    isFavorite: favorites.has(r.id),
   }));
 
   return (
@@ -74,7 +82,7 @@ export default async function BibliothequePage() {
       <div>
         <h1 className="display text-3xl font-bold uppercase">Bibliothèque</h1>
         <p className="text-sm" style={{ color: "var(--text-faint)" }}>
-          Documents et séquences vidéo du club, classés par tags.
+          Documents et séquences vidéo du club. Mets une étoile ★ pour retrouver tes favoris en premier.
         </p>
       </div>
       <LibraryBrowser

@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   addLibraryItem,
   deleteLibraryItem,
+  setLibraryFavorite,
   setLibraryThumbnail,
   updateLibraryTags,
 } from "@/app/(app)/bibliotheque/actions";
@@ -35,7 +36,7 @@ const PdfViewer = dynamic(() => import("@/components/pdf-viewer"), {
   ),
 });
 
-type KindFilter = "all" | "document" | "video";
+type KindFilter = "favorites" | "all" | "document" | "video";
 
 const FILE_STYLE: Record<
   ReturnType<typeof fileKind>,
@@ -73,7 +74,24 @@ export function LibraryBrowser({
   canAdd: boolean;
 }) {
   const [q, setQ] = useState("");
-  const [kind, setKind] = useState<KindFilter>("all");
+  // La page s'ouvre sur les favoris (ou sur « Tout » tant qu'il n'y en a aucun)
+  const [kind, setKind] = useState<KindFilter>(
+    items.some((i) => i.isFavorite) ? "favorites" : "all",
+  );
+  const [favOverride, setFavOverride] = useState<Record<string, boolean>>({});
+  const [favError, setFavError] = useState<string | null>(null);
+  const isFav = (i: LibraryItem) => favOverride[i.id] ?? i.isFavorite;
+  function toggleFav(i: LibraryItem) {
+    const next = !isFav(i);
+    setFavError(null);
+    setFavOverride((cur) => ({ ...cur, [i.id]: next }));
+    void setLibraryFavorite(i.id, next).then((r) => {
+      if (r.error) {
+        setFavOverride((cur) => ({ ...cur, [i.id]: !next }));
+        setFavError(r.error);
+      }
+    });
+  }
   const [activeTags, setActiveTags] = useState<string[]>([]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -91,7 +109,9 @@ export function LibraryBrowser({
   const shown = useMemo(() => {
     const tokens = normalize(q).split(/\s+/).filter(Boolean);
     return items.filter((i) => {
-      if (kind !== "all" && i.kind !== kind) return false;
+      if (kind === "favorites") {
+        if (!isFav(i)) return false;
+      } else if (kind !== "all" && i.kind !== kind) return false;
       if (!activeTags.every((t) => i.tags.includes(t))) return false;
       if (tokens.length === 0) return true;
       const hay = normalize(
@@ -105,7 +125,8 @@ export function LibraryBrowser({
       );
       return tokens.every((t) => hay.includes(t));
     });
-  }, [items, q, kind, activeTags]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, q, kind, activeTags, favOverride]);
 
   // Vignettes générées à la volée pour les anciens éléments (aperçu immédiat, enregistrées pour la suite)
   const [localThumbs, setLocalThumbs] = useState<Record<string, string>>({});
@@ -158,6 +179,7 @@ export function LibraryBrowser({
       cur.includes(t) ? cur.filter((x) => x !== t) : [...cur, t],
     );
   const counts = {
+    favorites: items.filter((i) => isFav(i)).length,
     all: items.length,
     document: items.filter((i) => i.kind === "document").length,
     video: items.filter((i) => i.kind === "video").length,
@@ -189,6 +211,7 @@ export function LibraryBrowser({
         <div className="seg">
           {(
             [
+              ["favorites", "★ Favoris"],
               ["all", "Tout"],
               ["document", "Documents"],
               ["video", "Vidéos"],
@@ -254,13 +277,28 @@ export function LibraryBrowser({
             className="display text-xl font-bold uppercase"
             style={{ color: "var(--text-dim)" }}
           >
-            {items.length === 0 ? "La bibliothèque est vide" : "Aucun résultat"}
+            {items.length === 0
+              ? "La bibliothèque est vide"
+              : kind === "favorites" && !q && activeTags.length === 0
+                ? "Aucun favori pour l'instant"
+                : "Aucun résultat"}
           </p>
           <p className="mt-1 text-sm">
             {items.length === 0
               ? "Ajoute un premier document ou une séquence vidéo."
-              : "Essaie d'autres mots ou retire un tag."}
+              : kind === "favorites" && !q && activeTags.length === 0
+                ? "Touche l'étoile ☆ d'un document ou d'une vidéo pour le retrouver ici."
+                : "Essaie d'autres mots ou retire un tag."}
           </p>
+          {items.length > 0 && kind === "favorites" && !q && activeTags.length === 0 && (
+            <button
+              type="button"
+              className="btn-secondary mt-4"
+              onClick={() => setKind("all")}
+            >
+              Voir toute la bibliothèque
+            </button>
+          )}
           {items.length === 0 && canAdd && (
             <button
               type="button"
@@ -279,13 +317,33 @@ export function LibraryBrowser({
             return (
               <div
                 key={i.id}
-                className="card flex min-w-0 cursor-pointer flex-col gap-3 transition-transform hover:-translate-y-0.5"
+                className="card relative flex min-w-0 cursor-pointer flex-col gap-3 transition-transform hover:-translate-y-0.5"
                 style={{ borderTop: `3px solid ${st.color}` }}
                 onClick={() => setOpenId(i.id)}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => e.key === "Enter" && setOpenId(i.id)}
               >
+                <button
+                  type="button"
+                  aria-label={
+                    isFav(i) ? "Retirer des favoris" : "Ajouter aux favoris"
+                  }
+                  aria-pressed={isFav(i)}
+                  title={isFav(i) ? "Retirer des favoris" : "Ajouter aux favoris"}
+                  className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full text-xl"
+                  style={{
+                    background: "rgba(0,0,0,0.6)",
+                    color: isFav(i) ? "#facc15" : "#fff",
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFav(i);
+                  }}
+                  onKeyDown={(e) => e.stopPropagation()}
+                >
+                  {isFav(i) ? "★" : "☆"}
+                </button>
                 {thumb && (
                   <div
                     className="relative aspect-[16/10] overflow-hidden rounded-lg"
@@ -328,7 +386,7 @@ export function LibraryBrowser({
                       {st.icon}
                     </div>
                   )}
-                  <div className="min-w-0 flex-1">
+                  <div className={`min-w-0 flex-1 ${thumb ? "" : "pr-10"}`}>
                     <p className="truncate font-semibold" title={i.title}>
                       {i.title}
                     </p>
@@ -381,9 +439,17 @@ export function LibraryBrowser({
         </div>
       )}
 
+      {favError && (
+        <p className="text-xs" style={{ color: "#f87171" }}>
+          {favError}
+        </p>
+      )}
+
       {opened && (
         <ItemModal
           item={opened}
+          favorite={isFav(opened)}
+          onToggleFavorite={() => toggleFav(opened)}
           knownTags={allTags.map(([t]) => t)}
           onClose={() => setOpenId(null)}
         />
@@ -425,10 +491,14 @@ function Overlay({
 
 function ItemModal({
   item,
+  favorite,
+  onToggleFavorite,
   knownTags,
   onClose,
 }: {
   item: LibraryItem;
+  favorite: boolean;
+  onToggleFavorite: () => void;
   knownTags: string[];
   onClose: () => void;
 }) {
@@ -719,6 +789,15 @@ function ItemModal({
             {item.signedUrl ? "Télécharger / ouvrir" : "Ouvrir la vidéo"}
           </a>
         )}
+        <button
+          type="button"
+          className="btn-secondary"
+          aria-pressed={favorite}
+          style={favorite ? { color: "#facc15" } : undefined}
+          onClick={onToggleFavorite}
+        >
+          {favorite ? "★ Dans mes favoris" : "☆ Ajouter aux favoris"}
+        </button>
         {item.canDelete && (
           <button
             type="button"

@@ -475,6 +475,32 @@ export type Database = {
           },
         ]
       }
+      library_favorites: {
+        Row: {
+          created_at: string
+          item_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          item_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          item_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_favorites_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "library_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       library_items: {
         Row: {
           created_at: string
