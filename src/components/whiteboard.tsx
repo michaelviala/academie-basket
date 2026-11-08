@@ -21,6 +21,7 @@ import {
   type WbEl,
   type WbPage,
 } from "@/lib/whiteboard";
+import { WhiteboardLegend } from "@/components/whiteboard-legend";
 
 export type WbBoard = {
   id: string;
@@ -78,6 +79,7 @@ export function Whiteboard({ board, teams, canEdit }: { board: WbBoard; teams: {
   const [errMsg, setErrMsg] = useState<string | null>(null);
   const [ver, setVer] = useState(0);
   const [full, setFull] = useState(false);
+  const [legend, setLegend] = useState(false);
   // pointeur laser : éphémère, jamais enregistré
   const [laserView, setLaserView] = useState(false);
   const [laserHead, setLaserHead] = useState<Pt | null>(null);
@@ -511,6 +513,8 @@ export function Whiteboard({ board, teams, canEdit }: { board: WbBoard; teams: {
     </div>
   );
 
+  const legendModal = legend ? <WhiteboardLegend theme={theme} onClose={() => setLegend(false)} /> : null;
+
   if (full)
     return (
       <div className="fixed inset-0 z-[100] flex flex-col gap-2 p-3" style={{ background: dark ? "#0f1015" : "#111" }}>
@@ -534,6 +538,7 @@ export function Whiteboard({ board, teams, canEdit }: { board: WbBoard; teams: {
               {status === "saved" ? "✓ Enregistré" : status === "error" ? "Erreur d'enregistrement" : "Enregistrement…"}
             </span>
           )}
+          <button type="button" className="btn-secondary" onClick={() => setLegend(true)}>❓ Légende</button>
           <button type="button" className="btn-secondary" onClick={() => setFull(false)}>✕ Quitter</button>
         </div>
         <div className="flex min-h-0 flex-1 gap-2">
@@ -543,6 +548,7 @@ export function Whiteboard({ board, teams, canEdit }: { board: WbBoard; teams: {
           </div>
           {canEdit && toolsPanel("flex w-[176px] flex-none flex-col gap-3 overflow-y-auto rounded-xl border p-3")}
         </div>
+        {legendModal}
       </div>
     );
 
@@ -561,6 +567,7 @@ export function Whiteboard({ board, teams, canEdit }: { board: WbBoard; teams: {
             🔴 Laser
           </button>
         )}
+        <button type="button" className="btn-secondary" onClick={() => setLegend(true)} title="Tableau de tous les éléments et leur signification">❓ Légende</button>
         <Link href={`/tableaux/${board.id}/pdf`} className="btn-secondary" title="Exporter toutes les pages avec leurs notes">⤓ Export PDF</Link>
         <button type="button" className="btn-secondary" onClick={() => setFull(true)}>⛶ Plein écran</button>
       </div>
@@ -634,6 +641,7 @@ export function Whiteboard({ board, teams, canEdit }: { board: WbBoard; teams: {
           </div>
         )}
       </div>
+      {legendModal}
     </div>
   );
 }
