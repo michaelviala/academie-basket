@@ -181,7 +181,7 @@ export function Injuries({
       )}
 
       <p className="text-[11px]" style={{ color: "var(--text-faint)" }}>
-        Visible uniquement par : administrateur, directeur sportif, préparateur physique.
+        Visible uniquement par : administrateur, préparateur physique.
       </p>
     </div>
   );

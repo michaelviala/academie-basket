@@ -3,11 +3,11 @@
 import { useState, useTransition } from "react";
 import { createCoach } from "@/app/(app)/coachs/actions";
 
-const COACH_ROLES = ["coach", "directeur_sportif", "preparateur_physique"] as const;
+// Le rôle « directeur sportif » existe toujours en base mais n'est plus proposé (l'académie n'en a pas).
+const COACH_ROLES = ["coach", "preparateur_physique"] as const;
 
 const ROLE_LABELS: Record<(typeof COACH_ROLES)[number], string> = {
   coach: "Coach",
-  directeur_sportif: "Directeur sportif",
   preparateur_physique: "Préparateur physique",
 };
 

@@ -85,7 +85,7 @@ export function Meetings({
         <form action={(fd) => handleSubmit(fd)} className="space-y-3 rounded-lg p-3" style={{ background: "var(--surf-2, #1c1f26)" }}>
           <label className="-mb-1 block text-xs" style={{ color: "var(--text-faint)" }}>Date</label>
           <input className="input" type="date" name="meeting_date" />
-          <input className="input" name="participants" placeholder="Participants (ex. Coach Martin, Directeur sportif, Parent)" />
+          <input className="input" name="participants" placeholder="Participants (ex. Coach Martin, Préparateur physique, Parent)" />
           <textarea className="input" name="summary" placeholder="Compte rendu" rows={4} />
           <button className="btn-primary" type="submit" disabled={isPending}>Clôturer la réunion</button>
         </form>

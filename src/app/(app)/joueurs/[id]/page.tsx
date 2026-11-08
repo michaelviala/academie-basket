@@ -822,7 +822,7 @@ export default async function JoueurPage({
       {/* ===== BLESSURES (accès restreint) ===== */}
       {activeTab === "blessures" && canSeeInjuries && (
         <section className="card">
-          <SectionTitle hint="Module sécurisé — accès restreint : administrateur, directeur sportif, préparateur physique.">Blessures</SectionTitle>
+          <SectionTitle hint="Module sécurisé — accès restreint : administrateur, préparateur physique.">Blessures</SectionTitle>
           <Injuries playerId={player.id} injuries={injuries ?? []} declareAction={declareInjury} updateAction={updateInjury} deleteAction={deleteInjury} />
         </section>
       )}

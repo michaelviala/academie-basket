@@ -156,7 +156,7 @@ export default async function AdministrationPage({ searchParams }: { searchParam
       children: (links ?? []).filter((l) => l.parent_id === p.id).map((l) => l.player_id),
     }));
     const opts = (players ?? []).map((p) => ({ id: p.id, name: `${p.first_name} ${p.last_name}`, userId: p.user_id }));
-    return <AdminUsers users={users} players={opts} roles={ROLE_LABELS} meId={profile.id} />;
+    return <AdminUsers users={users} players={opts} roles={Object.fromEntries(Object.entries(ROLE_LABELS).filter(([r]) => r !== "directeur_sportif"))} meId={profile.id} />;
   }
 
   async function ClubTab() {
