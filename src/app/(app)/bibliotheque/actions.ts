@@ -128,8 +128,8 @@ export async function updateLibraryTags(
 
 export async function deleteLibraryItem(itemId: string): Promise<Result> {
   const profile = await requireProfile();
-  if (!LIBRARY_EDIT_ROLES.includes(profile.role))
-    return { error: "Action réservée à l'équipe encadrante." };
+  if (profile.role !== "admin" && profile.role !== "coach")
+    return { error: "Seuls les coachs et l'administrateur peuvent supprimer un document." };
   const supabase = await createClient();
   const { data: item } = await supabase
     .from("library_items")
@@ -145,7 +145,7 @@ export async function deleteLibraryItem(itemId: string): Promise<Result> {
   if (!data || data.length === 0)
     return {
       error:
-        "Suppression refusée (seul l'auteur ou la direction peut supprimer).",
+        "Suppression refusée (l'administrateur supprime tout, un coach seulement ses propres documents).",
     };
   if (item?.file_path)
     await supabase.storage.from("library").remove([item.file_path]);

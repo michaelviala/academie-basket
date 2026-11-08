@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/data";
-import { LIBRARY_EDIT_ROLES, youtubeId, type LibraryItem } from "@/lib/library";
+import { canDeleteLibraryItem, LIBRARY_EDIT_ROLES, youtubeId, type LibraryItem } from "@/lib/library";
 import { LibraryBrowser } from "@/components/library-browser";
 
 export default async function BibliothequePage() {
@@ -74,6 +74,7 @@ export default async function BibliothequePage() {
     signedUrl: r.file_path ? (signed.get(r.file_path) ?? null) : null,
     author: r.created_by ? (authors.get(r.created_by) ?? null) : null,
     canDelete: isDirection || r.created_by === profile.id,
+    canRemove: canDeleteLibraryItem(profile.role, r.created_by, profile.id),
     isFavorite: favorites.has(r.id),
     essential: r.essential,
     canMarkEssential: isDirection,

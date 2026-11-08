@@ -849,7 +849,7 @@ function ItemModal({
             {essential ? "📌 Retirer de « À connaître »" : "📌 Marquer « À connaître »"}
           </button>
         )}
-        {item.canDelete && (
+        {item.canRemove && (
           <button
             type="button"
             className="btn-secondary"

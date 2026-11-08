@@ -6,6 +6,10 @@ export const LIBRARY_EDIT_ROLES = [
   "coach",
   "preparateur_physique",
 ];
+/** Seuls l'admin (tout) et les coachs (leurs propres documents) peuvent supprimer. */
+export function canDeleteLibraryItem(role: string, createdBy: string | null, userId: string): boolean {
+  return role === "admin" || (role === "coach" && createdBy === userId);
+}
 export const MAX_FILE_BYTES = 50 * 1024 * 1024;
 
 export type LibraryItem = {
@@ -29,6 +33,8 @@ export type LibraryItem = {
   hasStoredThumb: boolean;
   author: string | null;
   canDelete: boolean;
+  /** Peut supprimer le document (admin, ou coach auteur). */
+  canRemove: boolean;
   /** Mis en favori par l'utilisateur connecté. */
   isFavorite: boolean;
   /** Document « à connaître » pour tout le staff (choisi par la direction). */
