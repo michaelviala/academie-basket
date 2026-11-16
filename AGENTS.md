@@ -60,7 +60,7 @@ Rôles : `admin`, `directeur_sportif`, `coach`, `preparateur_physique`, `joueur`
 - **Tableau blanc** : demi-terrain / terrain complet, thèmes parquet/sombre/blanc, plein écran avec barre d'outils à droite, flèches ← → pour changer de page, **pointeur laser** (touche L), logo du club au rond central (terrain complet). **Bouton « ❓ Légende »** (page et plein écran) : tableau de tous les éléments (aspect réel, signification, comment l'ajouter) — `components/whiteboard-legend.tsx` ; à mettre à jour si on ajoute un outil.
 - **Bibliothèque** : favoris **personnels** (`library_favorites`, RLS : chacun ne voit que les siens) ; étoile ☆/★ sur chaque carte et dans la fiche ; onglet « ★ Favoris » en premier, la page s'ouvre dessus (sinon sur « 📌 À connaître », sinon sur « Tout »). **Documents à connaître** (nutrition, arbitrage…) : `library_items.essential`, visibles par tout le staff, marqués/démarqués par la direction seule (trigger `library_essential_guard`) ; onglet « 📌 À connaître ». **Suppression d'un document : uniquement `admin` (tout) et `coach` (ses propres documents)** — RLS `library_delete` + `canDeleteLibraryItem` ; ni directeur sportif ni préparateur physique.
 - **Rôle « directeur sportif » masqué** : l'académie n'en a pas. Il n'est plus proposé (création de coach, Administration › Utilisateurs) ni cité dans les textes ; il reste en base et dans les contrôles de droits (inoffensif, réactivable).
-- Import Excel/CSV joueurs + parents (Administration › Import) ; lignes sans date de naissance valide ignorées (`birth_date` obligatoire).
+- Import Excel/CSV joueurs + parents : bouton « Importer un fichier Excel » sur la page Joueurs (direction) et dans Administration › Joueurs ; correspondance des colonnes par groupe (identité, fiche : taille/poids/envergure/main/postes/date d'entrée/ancien club, parents) ; joueurs déjà présents : seuls les champs vides sont complétés ; lignes sans date de naissance valide ignorées (`birth_date` obligatoire).
 - Notifications : seulement feedback de séance (joueur) et blessure déclarée (direction/prépa physique). Page peu utile en l'état : à enrichir ou à retirer.
 
 ## 7. Reste à faire / points ouverts
@@ -80,3 +80,4 @@ Rôles : `admin`, `directeur_sportif`, `coach`, `preparateur_physique`, `joueur`
 - 2026-11-08 : Bibliothèque : suppression réservée à l'admin et aux coachs (auteur), migration 22.
 - 2026-11-08 : rôle « directeur sportif » masqué de l'interface (conservé en base).
 - 2026-11-08 : tableau blanc : bouton « Légende » (tableau des éléments).
+- 2026-11-16 : page Joueurs : bouton « Importer un fichier Excel » ; correspondance des colonnes étendue à toute la fiche joueur. Travail désormais directement sur GitHub (clone dans l'environnement cloud), rien en local chez Michael.
