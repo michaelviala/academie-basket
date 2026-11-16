@@ -7,6 +7,13 @@ import { importPlayers, type ImportResult } from "@/app/(app)/administration/imp
 
 type Sheet = { headers: string[]; rows: unknown[][] };
 
+const GROUPS: { key: "joueur" | "fiche" | "parent1" | "parent2"; label: string }[] = [
+  { key: "joueur", label: "Identité" },
+  { key: "fiche", label: "Fiche joueur (facultatif)" },
+  { key: "parent1", label: "Parent 1" },
+  { key: "parent2", label: "Parent 2" },
+];
+
 async function readFile(file: File): Promise<Sheet> {
   let all: unknown[][];
   if (/\.csv$|\.txt$/i.test(file.name)) {
@@ -91,17 +98,23 @@ export function ImportPlayers({ onClose }: { onClose: () => void }) {
         <>
           <div>
             <p className="mb-2 text-sm font-medium">1. Vérifie la correspondance des colonnes <span className="text-faint">({fileName} · {sheet.rows.length} lignes)</span></p>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {FIELDS.map((f) => (
-                <label key={f.key} className="text-xs">
-                  <span className="label">{f.label}{f.required ? " *" : ""}</span>
-                  <select className="input" value={mapping[f.key] ?? ""} onChange={(e) => setField(f.key, e.target.value)}>
-                    <option value="">— ignorer —</option>
-                    {sheet.headers.map((h, i) => <option key={i} value={i}>{h || `Colonne ${i + 1}`}</option>)}
-                  </select>
-                </label>
-              ))}
-            </div>
+            <p className="mb-2 text-xs text-faint">Pour chaque champ de la fiche joueur, choisis la colonne du fichier qui lui correspond. Les champs marqués * sont obligatoires ; les autres restent vides s&apos;ils ne sont pas associés.</p>
+            {GROUPS.map((g) => (
+              <div key={g.key} className="mb-3">
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--text-faint)" }}>{g.label}</p>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {FIELDS.filter((f) => f.group === g.key).map((f) => (
+                    <label key={f.key} className="text-xs">
+                      <span className="label">{f.label}{f.required ? " *" : ""}</span>
+                      <select className="input" value={mapping[f.key] ?? ""} onChange={(e) => setField(f.key, e.target.value)}>
+                        <option value="">— ignorer —</option>
+                        {sheet.headers.map((h, i) => <option key={i} value={i}>{h || `Colonne ${i + 1}`}</option>)}
+                      </select>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
             {missingRequired.length > 0 && (
               <p className="mt-2 text-sm" style={{ color: "#fbbf24" }}>À associer : {missingRequired.map((f) => f.label).join(", ")}.</p>
             )}
@@ -117,7 +130,7 @@ export function ImportPlayers({ onClose }: { onClose: () => void }) {
             <div className="overflow-x-auto rounded-lg" style={{ border: "1px solid var(--border)" }}>
               <table className="w-full text-xs">
                 <thead style={{ background: "var(--surf-2)" }}>
-                  <tr className="text-left"><th className="p-2">Joueur</th><th className="p-2">Naissance</th><th className="p-2">Catégorie</th><th className="p-2">Parents</th></tr>
+                  <tr className="text-left"><th className="p-2">Joueur</th><th className="p-2">Naissance</th><th className="p-2">Catégorie</th><th className="p-2">Fiche</th><th className="p-2">Parents</th></tr>
                 </thead>
                 <tbody>
                   {built.players.slice(0, 8).map((p, i) => (
@@ -125,6 +138,7 @@ export function ImportPlayers({ onClose }: { onClose: () => void }) {
                       <td className="p-2">{p.firstName} {p.lastName}</td>
                       <td className="p-2">{new Date(p.birthDate).toLocaleDateString("fr-FR")}</td>
                       <td className="p-2">{p.team || "—"}</td>
+                      <td className="p-2">{[p.pos1, p.height ? `${p.height} cm` : "", p.weight ? `${p.weight} kg` : "", p.hand, p.prevClub].filter(Boolean).join(" · ") || "—"}</td>
                       <td className="p-2">{p.guardians.map((g) => `${g.fullName}${g.email ? " · " + g.email : ""}${g.phone ? " · " + g.phone : ""}`).join(" / ") || "—"}</td>
                     </tr>
                   ))}

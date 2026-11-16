@@ -11,6 +11,7 @@ import {
   type EvalRow,
 } from "@/lib/player-stats";
 import { PlayersBrowser, type PlayerRow } from "@/components/players-browser";
+import { PlayersImportButton } from "@/components/players-import-button";
 
 export default async function JoueursPage({
   searchParams,
@@ -89,6 +90,7 @@ export default async function JoueursPage({
   const canCreate = ["admin", "directeur_sportif", "coach"].includes(
     profile.role,
   );
+  const canImport = ["admin", "directeur_sportif"].includes(profile.role);
 
   return (
     <div className="space-y-6">
@@ -99,11 +101,14 @@ export default async function JoueursPage({
             Suivi de la progression de chaque joueur de l&apos;académie.
           </p>
         </div>
-        {canCreate && (
-          <Link href="/joueurs/nouveau" className="btn-primary">
-            + Nouveau joueur
-          </Link>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {canImport && <PlayersImportButton />}
+          {canCreate && (
+            <Link href="/joueurs/nouveau" className="btn-primary">
+              + Nouveau joueur
+            </Link>
+          )}
+        </div>
       </div>
 
       <PlayersBrowser

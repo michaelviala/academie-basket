@@ -5,15 +5,24 @@ export const norm = (v: unknown) =>
 
 export type FieldKey =
   | "lastName" | "firstName" | "birthDate" | "team" | "jersey"
+  | "height" | "weight" | "wingspan" | "hand" | "pos1" | "pos2" | "entryDate" | "prevClub"
   | "p1Name" | "p1Email" | "p1Phone" | "p1Rel"
   | "p2Name" | "p2Email" | "p2Phone" | "p2Rel";
 
-export const FIELDS: { key: FieldKey; label: string; required?: boolean; group: "joueur" | "parent1" | "parent2"; hints: string[] }[] = [
+export const FIELDS: { key: FieldKey; label: string; required?: boolean; group: "joueur" | "fiche" | "parent1" | "parent2"; hints: string[] }[] = [
   { key: "lastName", label: "Nom du joueur", required: true, group: "joueur", hints: ["nom joueur", "nom du joueur", "nom licencie", "nom"] },
   { key: "firstName", label: "Prénom du joueur", required: true, group: "joueur", hints: ["prenom joueur", "prenom du joueur", "prenom licencie", "prenom"] },
   { key: "birthDate", label: "Date de naissance", required: true, group: "joueur", hints: ["date de naissance", "naissance", "date naissance", "ne le", "ne(e) le"] },
   { key: "team", label: "Catégorie", group: "joueur", hints: ["equipe", "categorie", "niveau", "groupe"] },
   { key: "jersey", label: "N° de maillot", group: "joueur", hints: ["maillot", "numero", "n°"] },
+  { key: "height", label: "Taille (cm)", group: "fiche", hints: ["taille cm", "taille"] },
+  { key: "weight", label: "Poids (kg)", group: "fiche", hints: ["poids kg", "poids"] },
+  { key: "wingspan", label: "Envergure (cm)", group: "fiche", hints: ["envergure cm", "envergure"] },
+  { key: "hand", label: "Main dominante", group: "fiche", hints: ["main dominante", "main forte", "lateralite", "main"] },
+  { key: "pos1", label: "Poste principal", group: "fiche", hints: ["poste principal", "poste 1", "poste", "position"] },
+  { key: "pos2", label: "Poste secondaire", group: "fiche", hints: ["poste secondaire", "poste 2", "position 2"] },
+  { key: "entryDate", label: "Date d'entrée dans l'académie", group: "fiche", hints: ["date d entree", "date entree", "date d arrivee", "date arrivee", "entree academie", "entree", "arrivee"] },
+  { key: "prevClub", label: "Ancien club", group: "fiche", hints: ["ancien club", "club precedent", "club d origine", "club d avant", "ex club"] },
   { key: "p1Name", label: "Parent 1 — nom", group: "parent1", hints: ["parent 1 nom", "nom parent 1", "responsable 1", "parent 1", "mere", "nom mere", "nom parent", "parent", "responsable legal", "responsable"] },
   { key: "p1Email", label: "Parent 1 — e-mail", group: "parent1", hints: ["email parent 1", "mail parent 1", "e mail parent 1", "email mere", "mail mere", "email parent", "mail parent", "email responsable", "email", "mail", "e mail"] },
   { key: "p1Phone", label: "Parent 1 — téléphone", group: "parent1", hints: ["tel parent 1", "telephone parent 1", "portable parent 1", "tel mere", "portable mere", "tel parent", "telephone parent", "portable", "telephone", "tel", "mobile"] },
@@ -45,12 +54,21 @@ export function guessMapping(headers: string[]): Mapping {
 
 export type Relationship = "mere" | "pere" | "tuteur" | "autre";
 export type ParsedGuardian = { fullName: string; relationship: Relationship; email: string; phone: string };
+export type DominantHand = "droite" | "gauche" | "ambidextre";
 export type ParsedPlayer = {
   lastName: string;
   firstName: string;
   birthDate: string; // AAAA-MM-JJ
   team: string;
   jersey: number | null;
+  height: number | null;
+  weight: number | null;
+  wingspan: number | null;
+  hand: DominantHand | null;
+  pos1: string;
+  pos2: string;
+  entryDate: string | null; // AAAA-MM-JJ
+  prevClub: string;
   guardians: ParsedGuardian[];
 };
 export type RowIssue = { line: number; message: string };
@@ -81,6 +99,22 @@ export function cleanPhone(v: unknown): string {
   let s = text(v);
   if (/^\d{9}$/.test(s)) s = "0" + s; // Excel a retiré le 0 initial
   return s.replace(/[^\d +.()\-]/g, "").trim();
+}
+
+/** Nombre décimal (virgule ou point), borné ; null si absent ou hors limites. */
+export function parseNumber(v: unknown, min: number, max: number): number | null {
+  if (v instanceof Date) return null;
+  const n = typeof v === "number" ? v : parseFloat(String(v ?? "").replace(",", ".").replace(/[^\d.\-]/g, ""));
+  return Number.isFinite(n) && n >= min && n <= max ? Math.round(n * 10) / 10 : null;
+}
+
+export function parseHand(v: unknown): DominantHand | null {
+  const n = norm(v);
+  if (!n) return null;
+  if (/ambi|les deux|deux mains/.test(n)) return "ambidextre";
+  if (/gauch|left|^g$/.test(n)) return "gauche";
+  if (/droit|right|^d$/.test(n)) return "droite";
+  return null;
 }
 
 function guessRel(label: string, fallback: Relationship): Relationship {
@@ -126,7 +160,20 @@ export function buildPlayers(rows: unknown[][], mapping: Mapping, headers: strin
       for (const g of guardians) if (!cur.guardians.some((x) => norm(x.fullName) === norm(g.fullName))) cur.guardians.push(g);
       if (!cur.team) cur.team = text(get(r, "team"));
     } else {
-      byKey.set(key, { lastName, firstName, birthDate, team: text(get(r, "team")), jersey: Number.isFinite(jerseyN) && jerseyN >= 0 && jerseyN < 100 ? jerseyN : null, guardians });
+      byKey.set(key, {
+        lastName, firstName, birthDate,
+        team: text(get(r, "team")),
+        jersey: Number.isFinite(jerseyN) && jerseyN >= 0 && jerseyN < 100 ? jerseyN : null,
+        height: parseNumber(get(r, "height"), 80, 250),
+        weight: parseNumber(get(r, "weight"), 15, 200),
+        wingspan: parseNumber(get(r, "wingspan"), 80, 260),
+        hand: parseHand(get(r, "hand")),
+        pos1: text(get(r, "pos1")),
+        pos2: text(get(r, "pos2")),
+        entryDate: parseDate(get(r, "entryDate")),
+        prevClub: text(get(r, "prevClub")),
+        guardians,
+      });
     }
   });
   return { players: [...byKey.values()], issues };
@@ -155,5 +202,5 @@ export function parseCsv(textContent: string): string[][] {
 }
 
 export const TEMPLATE_CSV =
-  "Nom;Prénom;Date de naissance;Catégorie;N° maillot;Parent 1 nom;Parent 1 e-mail;Parent 1 téléphone;Parent 2 nom;Parent 2 e-mail;Parent 2 téléphone\n" +
-  "DUPONT;Lucas;12/03/2014;U11;7;Sophie Dupont;sophie.dupont@exemple.fr;0612345678;Marc Dupont;;0687654321\n";
+  "Nom;Prénom;Date de naissance;Catégorie;N° maillot;Taille (cm);Poids (kg);Envergure (cm);Main dominante;Poste principal;Poste secondaire;Date d'entrée;Ancien club;Parent 1 nom;Parent 1 e-mail;Parent 1 téléphone;Parent 2 nom;Parent 2 e-mail;Parent 2 téléphone\n" +
+  "DUPONT;Lucas;12/03/2014;U11;7;142;36,5;145;droite;Meneur;Arrière;01/09/2025;BC Exemple;Sophie Dupont;sophie.dupont@exemple.fr;0612345678;Marc Dupont;;0687654321\n";

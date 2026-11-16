@@ -25,7 +25,7 @@ export async function importPlayers(rows: ParsedPlayer[], createTeams: boolean):
   const [{ data: teams }, { data: season }, { data: players }] = await Promise.all([
     supabase.from("teams").select("id, name, category"),
     supabase.from("seasons").select("id").eq("is_active", true).maybeSingle(),
-    supabase.from("players").select("id, first_name, last_name, birth_date, team_id"),
+    supabase.from("players").select("id, first_name, last_name, birth_date, team_id, height_cm, weight_kg, wingspan_cm, dominant_hand, primary_position, secondary_position, entry_date, previous_club"),
   ]);
 
   const result: ImportResult = { ...empty, teamsCreated: [], noTeam: [] };
@@ -45,8 +45,21 @@ export async function importPlayers(rows: ParsedPlayer[], createTeams: boolean):
     }
   }
 
-  const existingKey = new Map<string, { id: string; team_id: string | null }>();
-  for (const p of players ?? []) existingKey.set(`${norm(p.last_name)}|${norm(p.first_name)}|${p.birth_date}`, { id: p.id, team_id: p.team_id });
+  type Existing = NonNullable<typeof players>[number];
+  const existingKey = new Map<string, Existing>();
+  for (const p of players ?? []) existingKey.set(`${norm(p.last_name)}|${norm(p.first_name)}|${p.birth_date}`, p);
+
+  /** Champs de la fiche issus du fichier (null = non renseigné). */
+  const ficheFields = (r: ParsedPlayer) => ({
+    height_cm: r.height,
+    weight_kg: r.weight,
+    wingspan_cm: r.wingspan,
+    dominant_hand: r.hand,
+    primary_position: r.pos1 || null,
+    secondary_position: r.pos2 || null,
+    entry_date: r.entryDate,
+    previous_club: r.prevClub || null,
+  });
 
   const toInsert: { row: ParsedPlayer; team_id: string | null }[] = [];
   const idByRow = new Map<ParsedPlayer, string>();
@@ -58,7 +71,14 @@ export async function importPlayers(rows: ParsedPlayer[], createTeams: boolean):
     if (ex) {
       idByRow.set(r, ex.id);
       result.existing++;
-      if (!ex.team_id && team_id) await supabase.from("players").update({ team_id }).eq("id", ex.id);
+      // Joueur déjà présent : on complète seulement les champs encore vides, sans écraser l'existant
+      type Patch = Partial<ReturnType<typeof ficheFields>> & { team_id?: string };
+      const patch: Patch = {};
+      if (!ex.team_id && team_id) patch.team_id = team_id;
+      for (const [k, v] of Object.entries(ficheFields(r)) as [keyof ReturnType<typeof ficheFields>, unknown][]) {
+        if (v !== null && v !== undefined && ex[k] == null) (patch as Record<string, unknown>)[k] = v;
+      }
+      if (Object.keys(patch).length) await supabase.from("players").update(patch).eq("id", ex.id);
     } else toInsert.push({ row: r, team_id });
   }
   result.noTeam = [...noTeam];
@@ -75,7 +95,8 @@ export async function importPlayers(rows: ParsedPlayer[], createTeams: boolean):
           team_id,
           jersey_number: row.jersey,
           season_id: season?.id ?? null,
-          entry_date: new Date().toISOString().slice(0, 10),
+          ...ficheFields(row),
+          entry_date: row.entryDate ?? new Date().toISOString().slice(0, 10),
         })),
       )
       .select("id, first_name, last_name, birth_date");

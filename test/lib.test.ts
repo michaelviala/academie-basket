@@ -51,3 +51,13 @@ test("parent : e-mail invalide refusé", () => {
   assert.ok("error" in cleanGuardian(base));
   assert.ok("ok" in cleanGuardian({ ...base, email: "a@b.fr" }));
 });
+
+test("import : champs de la fiche joueur (taille, poids, main, postes, entrée, ancien club)", () => {
+  const headers = ["Nom", "Prénom", "Date de naissance", "Taille (cm)", "Poids (kg)", "Envergure", "Main dominante", "Poste principal", "Poste secondaire", "Date d'entrée", "Ancien club"];
+  const m = guessMapping(headers);
+  assert.deepEqual([m.height, m.weight, m.wingspan, m.hand, m.pos1, m.pos2, m.entryDate, m.prevClub], [3, 4, 5, 6, 7, 8, 9, 10]);
+  const { players } = buildPlayers([["DUPONT", "Lucas", "12/03/2014", "142", "36,5", "", "Gaucher", "Meneur", "Arrière", "01/09/2025", "BC Exemple"]], m, headers);
+  assert.equal(players.length, 1);
+  const p = players[0];
+  assert.deepEqual([p.height, p.weight, p.wingspan, p.hand, p.pos1, p.pos2, p.entryDate, p.prevClub], [142, 36.5, null, "gauche", "Meneur", "Arrière", "2025-09-01", "BC Exemple"]);
+});
