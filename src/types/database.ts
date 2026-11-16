@@ -1235,6 +1235,7 @@ export type Database = {
       }
       seasons: {
         Row: {
+          archived: boolean
           created_at: string
           end_date: string
           id: string
@@ -1243,6 +1244,7 @@ export type Database = {
           start_date: string
         }
         Insert: {
+          archived?: boolean
           created_at?: string
           end_date: string
           id?: string
@@ -1251,6 +1253,7 @@ export type Database = {
           start_date: string
         }
         Update: {
+          archived?: boolean
           created_at?: string
           end_date?: string
           id?: string

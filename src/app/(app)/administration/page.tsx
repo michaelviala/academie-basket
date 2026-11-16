@@ -9,6 +9,8 @@ import { AdminUsers, type AdminUser } from "@/components/admin-users";
 import { AdminCoaches, type AdminCoach } from "@/components/admin-coaches";
 import { GymsManager } from "@/components/gyms-manager";
 import { AdminPlayers, type AdminPlayer } from "@/components/admin-players";
+import { AdminSeasons, type AdminSeason } from "@/components/admin-seasons";
+import { AdminSkills, type AdminSkill } from "@/components/admin-skills";
 import type { Guardian } from "@/lib/guardians";
 
 const TABS = [
@@ -124,7 +126,7 @@ export default async function AdministrationPage({ searchParams }: { searchParam
   async function TeamsTab() {
     const [{ data: teams }, { data: seasons }, { data: players }, { data: tc }] = await Promise.all([
       supabase.from("teams").select("id, name, category, color, season_id").order("category").order("name"),
-      supabase.from("seasons").select("id, label, is_active").order("start_date", { ascending: false }),
+      supabase.from("seasons").select("id, label, is_active").eq("archived", false).order("start_date", { ascending: false }),
       supabase.from("players").select("id, first_name, last_name, team_id").order("last_name"),
       supabase.from("team_coaches").select("team_id, profiles(full_name)"),
     ]);
@@ -175,37 +177,27 @@ export default async function AdministrationPage({ searchParams }: { searchParam
   }
 
   async function SeasonsTab() {
-    const [{ data: seasons }, { data: skillsCount }] = await Promise.all([
-      supabase.from("seasons").select("id, label, start_date, end_date, is_active").order("start_date", { ascending: false }),
-      supabase.from("skills").select("category"),
+    const [{ data: seasons }, { data: skills }, { data: teams }, { data: players }, { data: evals }] = await Promise.all([
+      supabase.from("seasons").select("id, label, start_date, end_date, is_active, archived").order("start_date", { ascending: false }),
+      supabase.from("skills").select("id, name, category").order("name"),
+      supabase.from("teams").select("season_id"),
+      supabase.from("players").select("season_id"),
+      supabase.from("evaluations").select("skill_id"),
     ]);
-    const skillsByCategory = (skillsCount ?? []).reduce<Record<string, number>>((acc, s) => {
-      acc[s.category] = (acc[s.category] ?? 0) + 1;
-      return acc;
-    }, {});
+    const teamCount = new Map<string, number>();
+    for (const t of teams ?? []) if (t.season_id) teamCount.set(t.season_id, (teamCount.get(t.season_id) ?? 0) + 1);
+    const playerCount = new Map<string, number>();
+    for (const p of players ?? []) if (p.season_id) playerCount.set(p.season_id, (playerCount.get(p.season_id) ?? 0) + 1);
+    const evalCount = new Map<string, number>();
+    for (const e of evals ?? []) if (e.skill_id) evalCount.set(e.skill_id, (evalCount.get(e.skill_id) ?? 0) + 1);
+    const seasonRows: AdminSeason[] = (seasons ?? []).map((s) => ({ ...s, teams: teamCount.get(s.id) ?? 0, players: playerCount.get(s.id) ?? 0 }));
+    const skillRows: AdminSkill[] = (skills ?? []).map((s) => ({ ...s, evaluations: evalCount.get(s.id) ?? 0 }));
     return (
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="card">
-          <h2 className="mb-3 font-semibold">Saisons</h2>
-          {seasons?.map((s) => (
-            <div key={s.id} className="flex items-center justify-between text-sm">
-              <span>{s.label} ({s.start_date} → {s.end_date})</span>
-              {s.is_active && (
-                <span className="badge" style={{ background: "rgba(34,197,94,0.12)", color: "#4ade80", borderColor: "transparent" }}>Active</span>
-              )}
-            </div>
-          ))}
-        </div>
-        <div className="card">
-          <h2 className="mb-3 font-semibold">Référentiel de compétences</h2>
-          {Object.entries(skillsByCategory).map(([cat, count]) => (
-            <div key={cat} className="flex items-center justify-between text-sm">
-              <span className="capitalize">{cat}</span>
-              <span style={{ color: "var(--text-faint)" }}>{count} compétences</span>
-            </div>
-          ))}
-        </div>
+        <AdminSeasons seasons={seasonRows} />
+        <AdminSkills skills={skillRows} />
       </div>
     );
   }
+
 }

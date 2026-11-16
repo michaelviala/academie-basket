@@ -5,7 +5,7 @@ export default async function NouveauJoueurPage() {
   const supabase = await createClient();
   const [{ data: teams }, { data: seasons }] = await Promise.all([
     supabase.from("teams").select("id, name, category").order("name"),
-    supabase.from("seasons").select("id, label").order("start_date", { ascending: false }),
+    supabase.from("seasons").select("id, label").eq("archived", false).order("start_date", { ascending: false }),
   ]);
 
   return (
