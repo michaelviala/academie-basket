@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { WeekPlanning } from "@/components/week-planning";
+import { CycleBand } from "@/components/cycle-band";
+import type { GuidePeriod } from "@/lib/technical-guide";
+
 
 type CalendarTraining = {
   id: string;
@@ -46,6 +49,7 @@ export function TrainingCalendar({
   gyms,
   mineIds,
   compact = false,
+  cycles = [],
 }: {
   trainings: CalendarTraining[];
   teams: { id: string; name: string; color?: string | null }[];
@@ -55,9 +59,13 @@ export function TrainingCalendar({
   mineIds?: string[];
   /** Mode simplifié (joueur, parent) : pas de filtres catégorie / coach. */
   compact?: boolean;
+  /** Périodes du cycle annuel (carnet technique) ; bandeau affichable / masquable. */
+  cycles?: GuidePeriod[];
 }) {
   const [view, setView] = useState<"semaine" | "mois">("semaine");
   const [onlyMine, setOnlyMine] = useState(!!mineIds);
+  const [showCycles, setShowCycles] = useState(true);
+  const toggleCycles = () => setShowCycles((v) => !v);
   const mineSet = useMemo(() => new Set(mineIds ?? []), [mineIds]);
   const scoped = useMemo(
     () => (mineIds && onlyMine ? trainings.filter((t) => mineSet.has(t.id)) : trainings),
@@ -134,8 +142,23 @@ export function TrainingCalendar({
           <button type="button" className={!onlyMine ? "active" : ""} onClick={() => setOnlyMine(false)}>Tous les créneaux ({trainings.length})</button>
         </div>
       )}
+      {cycles.length > 0 && (
+        <button
+          type="button"
+          className="btn-secondary"
+          style={{ padding: "4px 10px", fontSize: 12 }}
+          aria-pressed={showCycles}
+          onClick={toggleCycles}
+          title="Afficher ou masquer les périodes du cycle annuel (carnet technique)"
+        >
+          {showCycles ? "▣ Cycles" : "☐ Cycles"}
+        </button>
+      )}
     </div>
   );
+  const cycleBand = cycles.length > 0 && showCycles
+    ? <CycleBand periods={cycles} month={(view === "mois" ? month : today.getMonth()) + 1} />
+    : null;
 
   if (view === "semaine") {
     return (
@@ -161,6 +184,7 @@ export function TrainingCalendar({
             </select>
           </div>
         </div>
+        {cycleBand}
         <WeekPlanning
           trainings={scoped.filter((t) => (!teamFilter || t.team_id === teamFilter) && (!coachFilter || t.coach_id === coachFilter) && (!gymFilter || t.gym_id === gymFilter))}
           teams={teams}
@@ -247,6 +271,8 @@ export function TrainingCalendar({
           )}
         </div>
       </div>
+
+      {cycleBand}
 
       {teams.length > 0 && (
         <div className="flex flex-wrap gap-3">

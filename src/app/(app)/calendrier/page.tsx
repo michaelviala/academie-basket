@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/data";
 import { SESSION_EDIT_ROLES } from "@/lib/sessions";
 import { getSessionFormData } from "@/lib/sessions-data";
+import { getTechnicalGuide } from "@/lib/technical-guide-data";
 import { TrainingCalendar } from "@/components/training-calendar";
 
 /**
@@ -15,9 +16,10 @@ import { TrainingCalendar } from "@/components/training-calendar";
 export default async function CalendrierPage() {
   const profile = await requireProfile();
   const supabase = await createClient();
-  const [{ data: all }, { teams, gyms, coaches }] = await Promise.all([
+  const [{ data: all }, { teams, gyms, coaches }, { guide }] = await Promise.all([
     supabase.from("trainings").select("*, teams(name), gyms(name)").order("date", { ascending: false }),
     getSessionFormData(),
+    getTechnicalGuide(),
   ]);
   let trainings = all ?? [];
 
@@ -54,7 +56,7 @@ export default async function CalendrierPage() {
           <Link href="/seances/nouvelle" className="btn-primary">+ Nouvelle séance</Link>
         )}
       </div>
-      <TrainingCalendar trainings={trainings} teams={teams} coaches={coaches} gyms={gyms} mineIds={mineIds} compact={compact} />
+      <TrainingCalendar trainings={trainings} teams={teams} coaches={coaches} gyms={gyms} mineIds={mineIds} compact={compact} cycles={guide.cycle.periods} />
     </div>
   );
 }
