@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { calculateAge, getClubSettings, requireProfile } from "@/lib/data";
 import { getCategoryColors, getTechnicalGuide } from "@/lib/technical-guide-data";
 import { GuideAssessment } from "@/components/guide-assessment";
+import { itemLabel } from "@/lib/guide-assessment";
 import {
   EVAL_COLORS,
   EVAL_LABELS,
@@ -306,7 +307,7 @@ export default async function JoueurPage({
   const visibleTabs = TABS.filter((t) => !("restricted" in t) || canSeeInjuries);
   const tabCounts: Partial<Record<TabKey, number>> = {
     evaluations: ev.length,
-    carnet: guideCategory ? guideCategory.attack.length + guideCategory.defense.length : 0,
+    carnet: guideCategory ? [...guideCategory.attack, ...guideCategory.defense].filter((i) => itemLabel(i)).length : 0,
     objectifs: goalList.length,
     physique: physicalTests?.length ?? 0,
     suivi: (feedbacks?.length ?? 0) + (meetings?.length ?? 0) + (selfAssessments?.length ?? 0),

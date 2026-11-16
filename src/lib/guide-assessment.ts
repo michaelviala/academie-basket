@@ -35,6 +35,16 @@ export type GridRow = {
 
 const key = (section: string, label: string) => `${section}::${label.trim().toLowerCase()}`;
 
+/** Libellé d'un contenu du carnet : son label, sinon le début de son texte (certains contenus n'ont qu'un texte). */
+export function itemLabel(it: { label: string; text: string }): string {
+  const l = it.label.trim();
+  if (l) return l;
+  const t = it.text.trim().replace(/\s+/g, " ");
+  if (!t) return "";
+  const cut = t.length > 80 ? t.slice(0, 77).replace(/[ ,;:(]+\S*$/, "") + "…" : t;
+  return cut;
+}
+
 /** Lignes de la grille : les contenus attaque + défense de la catégorie, avec le dernier statut connu. */
 export function buildGrid(cat: GuideCategory, records: AssessmentRecord[]): GridRow[] {
   const byKey = new Map<string, AssessmentRecord[]>();
@@ -45,9 +55,11 @@ export function buildGrid(cat: GuideCategory, records: AssessmentRecord[]): Grid
   const rows: GridRow[] = [];
   for (const section of ["attack", "defense"] as const) {
     for (const it of cat[section]) {
-      if (!it.label.trim()) continue;
-      const hist = (byKey.get(key(section, it.label)) ?? []).sort((a, b) => (a.assessed_at < b.assessed_at ? 1 : a.assessed_at > b.assessed_at ? -1 : 0));
-      rows.push({ section, label: it.label, text: it.text, last: hist[0] ?? null, count: hist.length });
+      const label = itemLabel(it);
+      if (!label) continue;
+      const hist = (byKey.get(key(section, label)) ?? []).sort((a, b) => (a.assessed_at < b.assessed_at ? 1 : a.assessed_at > b.assessed_at ? -1 : 0));
+      // si le libellé vient du texte, on n'affiche pas le texte une seconde fois
+      rows.push({ section, label, text: it.label.trim() ? it.text : "", last: hist[0] ?? null, count: hist.length });
     }
   }
   return rows;

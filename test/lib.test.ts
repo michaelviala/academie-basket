@@ -96,3 +96,14 @@ test("carnet technique : grille d'évaluation et synthèse", async () => {
   const s = summarize(rows);
   assert.deepEqual([s.total, s.acquis, s.non_evalue, s.pct], [3, 1, 2, 33]);
 });
+
+test("carnet technique : contenu sans libellé → libellé tiré du texte", async () => {
+  const { buildGrid, itemLabel } = await import("../src/lib/guide-assessment.ts");
+  assert.equal(itemLabel({ label: "", text: "Posture de base (fléchisseur, appuis larges)." }), "Posture de base (fléchisseur, appuis larges).");
+  assert.equal(itemLabel({ label: "Tir", text: "x" }), "Tir");
+  const cat = { code: "U11", color: "#000", title: "", subtitle: "", badge: "", tactical: "", physical: "", philosophy: "", attack: [], defense: [{ label: "", text: "Notion « Mon joueur / La balle »." }, { label: "", text: "" }] };
+  const rows = buildGrid(cat, []);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].section, "defense");
+  assert.equal(rows[0].text, "");
+});
