@@ -19,8 +19,8 @@ Application web de **suivi du développement des joueurs** d'une académie de ba
 
 ## 2. Stack
 - **Next.js 16** (App Router, params/searchParams asynchrones, server actions, `proxy.ts`), React 19 (lint strict : pas d'appel impur au rendu, pas de setState dans le corps d'un effet), Tailwind 4, recharts.
-- **Supabase** (projet « Academie », id `wprlqpocuvawzjvzvyyd`) : Postgres + RLS + Auth + Storage. Buckets : `club-assets`, `coach-photos`, `player-photos` (publics), `library` (privé).
-- **Hébergement** : Docker sur un VPS Hostinger, `/opt/academie-basket`, derrière nginx-proxy + acme-companion (réseau `web`), site `academie.club30.cloud`.
+- **Supabase** : **production = projet « academie-prod » (`hmtfpjkarphahiiffkfx`)** ; **démo = projet « Academie » (`wprlqpocuvawzjvzvyyd`)**, données fictives, servie sur demo.club30.cloud (voir `deploy/DEMO.md`). Les migrations s'appliquent **aux deux projets**. Postgres + RLS + Auth + Storage. Buckets : `club-assets`, `coach-photos`, `player-photos` (publics), `library` (privé).
+- **Hébergement** : Docker sur un VPS Hostinger, derrière nginx-proxy + acme-companion (réseau `web`) : prod `/opt/academie-basket` → `academie.club30.cloud`, démo `/opt/academie-demo` → `demo.club30.cloud` (`CONTAINER_NAME` distinct dans chaque `.env`).
 - **Tests** : `npm test` (tests purs dans `test/*.test.ts`, via `node --experimental-strip-types`). `tsconfig` exclut `test/` (sinon le build Docker échoue). Pas de test RLS pour l'instant.
 
 ## 3. Structure
@@ -43,7 +43,7 @@ Rôles : `admin`, `directeur_sportif`, `coach`, `preparateur_physique`, `joueur`
 ## 5. Règles de travail (obligatoires)
 1. **Lire `node_modules/next/dist/docs/` avant tout code touchant le framework.**
 2. **Terminer = fusionner dans `main` et pousser**, sans attendre qu'on le demande (Michael met à jour le site en continu).
-3. **Chaque compte rendu rappelle la commande de mise à jour du serveur** : `cd /opt/academie-basket && git pull && docker compose up -d --build` (ajouter `npm install` si une dépendance a changé).
+3. **Chaque compte rendu rappelle la commande de mise à jour du serveur** : `cd /opt/academie-basket && git pull && docker compose up -d --build` (ajouter `npm install` si une dépendance a changé) ; et pour la démo `cd /opt/academie-demo && git pull && docker compose up -d --build`.
 4. Après chaque changement : `npx tsc --noEmit`, `npx eslint`, `npm test`, puis commit en français. Messages terminés par `Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>` et `Claude-Session: …`.
 5. Migrations : via le MCP Supabase, **puis** `get_advisors` (sécurité) et régénération de `src/types/database.ts`. Les avertissements connus (fonctions SECURITY DEFINER, protection mots de passe compromis) sont déjà acceptés.
 6. **Aucun secret dans le code, git ou la conversation.** `SUPABASE_SERVICE_ROLE_KEY` uniquement dans l'environnement du VPS (sert à « Nouveau coach »).
@@ -95,3 +95,4 @@ Rôles : `admin`, `directeur_sportif`, `coach`, `preparateur_physique`, `joueur`
 - 2026-11-16 : calendrier : bandeau des cycles annuels (affichable / masquable).
 - 2026-11-16 : onglet « Carnet technique » sur la fiche joueur (évaluation acquis / en cours / à revoir des contenus du carnet), migration 24 (`deploy/sql/24_guide_assessments.sql`).
 - 2026-11-16 : Administration › Saisons & référentiel entièrement éditable (migration 25).
+- 2026-11-16 : mise en production — nouveau projet Supabase « academie-prod » (25 migrations rejouées, configuration copiée : carnet, club, gymnases, saison 2026-2027, catégories, vidéo bibliothèque, système, tableaux) ; l'ancien projet « Academie » devient la démo avec 4 comptes de démo (`deploy/DEMO.md`).

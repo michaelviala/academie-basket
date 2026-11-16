@@ -5,7 +5,8 @@ services:
       args:
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-    container_name: academie-basket
+    # Un nom différent par instance (prod : academie-basket, démo : academie-demo)
+    container_name: ${CONTAINER_NAME:-academie-basket}
     restart: unless-stopped
     environment:
       - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
