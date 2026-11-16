@@ -14,11 +14,14 @@ const CATEGORIES_BY_TYPE: Record<string, string[]> = {
 export function EvaluationForm({
   skills,
   action,
+  initialType = "",
 }: {
   skills: Skill[];
   action: (formData: FormData) => void | Promise<void>;
+  /** Rubrique présélectionnée (ouverture depuis une brique de la fiche). */
+  initialType?: string;
 }) {
-  const [evaluationType, setEvaluationType] = useState("");
+  const [evaluationType, setEvaluationType] = useState(initialType);
 
   const filteredSkills = useMemo(() => {
     if (!evaluationType) return skills;
@@ -50,7 +53,7 @@ export function EvaluationForm({
         ))}
       </select>
       <input className="input" type="number" name="score" min={1} max={10} step={0.5} placeholder="Score" required />
-      <input className="input" type="date" name="evaluated_at" />
+      <input className="input" type="date" name="evaluated_at" defaultValue={new Date().toISOString().slice(0, 10)} />
       <textarea className="input col-span-2" name="comment" placeholder="Commentaire" rows={2} />
       <button className="btn-primary col-span-2" type="submit">Enregistrer l&apos;évaluation</button>
     </form>

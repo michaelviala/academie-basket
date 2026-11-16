@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { EvaluationForm } from "@/components/evaluation-form";
 import {
   deleteEvaluation,
   updateEvaluation,
@@ -62,8 +64,14 @@ export function PlayerEvaluations({
   attendanceRate,
   attendancePresent,
   attendanceTotal,
+  skills = [],
+  addAction,
 }: {
   playerId: string;
+  /** Compétences pour le formulaire « + Évaluation » des briques. */
+  skills?: { id: string; category: string; name: string }[];
+  /** Action serveur d'ajout (déjà liée au joueur) ; absente = pas de bouton sur les briques. */
+  addAction?: (formData: FormData) => void | Promise<void>;
   evaluatorNames?: Record<string, string>;
   canEdit?: boolean;
   initialType?: EvalType;
@@ -75,6 +83,10 @@ export function PlayerEvaluations({
   const [active, setActive] = useState<EvalType>(initialType);
   // Affichage côte à côte : compétences de la rubrique (gauche) et progression (droite), ou focus sur l'un des deux
   const [focus, setFocus] = useState<"both" | "competences" | "progression">("both");
+  // Fenêtre « Nouvelle évaluation » ouverte depuis une brique (rubrique présélectionnée)
+  const [newFor, setNewFor] = useState<EvalType | null>(null);
+  const [adding, startAdding] = useTransition();
+  const router = useRouter();
 
   const byType = (type: EvalType) =>
     evaluations.filter((e) => e.evaluation_type === type);
@@ -171,11 +183,9 @@ export function PlayerEvaluations({
           const isActive = t === active;
           const rows = byType(t);
           return (
-            <button
+            <div
               key={t}
-              type="button"
-              onClick={() => { setActive(t); setCat(""); }}
-              className="rounded-xl px-4 py-4 text-center transition-colors"
+              className="relative rounded-xl transition-colors"
               style={{
                 background: "var(--surf)",
                 border: isActive
@@ -183,22 +193,47 @@ export function PlayerEvaluations({
                   : "1px solid var(--border)",
               }}
             >
-              <p
-                className="text-xs font-bold uppercase tracking-widest"
-                style={{ color: "var(--text-dim)" }}
+              <button
+                type="button"
+                onClick={() => { setActive(t); setCat(""); }}
+                className="w-full rounded-xl px-4 py-4 text-center"
+                aria-pressed={isActive}
               >
-                {EVAL_TYPE_LABELS[t]}
-              </p>
-              <p className="display mt-1 text-3xl font-bold">
-                {avgByType(t) ?? "—"}
-              </p>
-              <p
-                className="mt-0.5 text-xs"
-                style={{ color: "var(--text-faint)" }}
-              >
-                {rows.length} évaluation{rows.length > 1 ? "s" : ""}
-              </p>
-            </button>
+                <p
+                  className="text-xs font-bold uppercase tracking-widest"
+                  style={{ color: "var(--text-dim)" }}
+                >
+                  {EVAL_TYPE_LABELS[t]}
+                </p>
+                <p className="display mt-1 text-3xl font-bold">
+                  {avgByType(t) ?? "—"}
+                </p>
+                <p
+                  className="mt-0.5 text-xs"
+                  style={{ color: "var(--text-faint)" }}
+                >
+                  {rows.length} évaluation{rows.length > 1 ? "s" : ""}
+                </p>
+              </button>
+              {addAction && (
+                <button
+                  type="button"
+                  className="absolute right-2 top-2 rounded-full text-xs font-bold leading-none"
+                  style={{
+                    width: 24,
+                    height: 24,
+                    background: isActive ? "var(--brand)" : "var(--surf-2)",
+                    color: isActive ? "#fff" : "var(--text-dim)",
+                    border: "1px solid var(--border)",
+                  }}
+                  title={`Nouvelle évaluation — ${EVAL_TYPE_LABELS[t]}`}
+                  aria-label={`Nouvelle évaluation ${EVAL_TYPE_LABELS[t]}`}
+                  onClick={() => { setActive(t); setCat(""); setNewFor(t); }}
+                >
+                  +
+                </button>
+              )}
+            </div>
           );
         })}
 
@@ -313,6 +348,40 @@ export function PlayerEvaluations({
           </div>
         )}
       </div>
+
+      {newFor && addAction && (
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-3 sm:items-center sm:p-6"
+          style={{ background: "rgba(0,0,0,.7)" }}
+          onClick={() => !adding && setNewFor(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Nouvelle évaluation"
+        >
+          <div className="card w-full max-w-lg space-y-3" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="display text-xl font-bold uppercase">Nouvelle évaluation</h2>
+                <p className="text-xs" style={{ color: "var(--text-faint)" }}>Rubrique {EVAL_TYPE_LABELS[newFor]} · choisis une compétence et une note sur 10.</p>
+              </div>
+              <button type="button" className="text-xs" onClick={() => setNewFor(null)} disabled={adding}>Fermer ✕</button>
+            </div>
+            <EvaluationForm
+              key={newFor}
+              skills={skills}
+              initialType={newFor}
+              action={(fd) =>
+                startAdding(async () => {
+                  await addAction(fd);
+                  setNewFor(null);
+                  router.refresh();
+                })
+              }
+            />
+            {adding && <p className="text-xs" style={{ color: "var(--text-faint)" }}>Enregistrement…</p>}
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <div className="mb-3 flex items-center justify-between">

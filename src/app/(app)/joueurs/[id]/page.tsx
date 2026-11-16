@@ -662,7 +662,7 @@ export default async function JoueurPage({
       {/* ===== ÉVALUATIONS ===== */}
       {activeTab === "evaluations" && (
         <div className="space-y-6">
-          <PlayerEvaluations key={initialType} playerId={player.id} evaluatorNames={evaluatorNames} canEdit={["admin", "directeur_sportif"].includes(profile.role)} initialType={initialType} evaluations={ev} attendanceRate={attendanceRate} attendancePresent={attendancePresent} attendanceTotal={attendanceTotal} />
+          <PlayerEvaluations key={initialType} playerId={player.id} evaluatorNames={evaluatorNames} canEdit={["admin", "directeur_sportif"].includes(profile.role)} initialType={initialType} evaluations={ev} attendanceRate={attendanceRate} attendancePresent={attendancePresent} attendanceTotal={attendanceTotal} skills={skills ?? []} addAction={addEvaluation.bind(null, player.id)} />
           <section id="nouvelle-evaluation" className="card scroll-mt-4">
             <SectionTitle hint="Choisis une rubrique, une compétence et une note sur 10.">Nouvelle évaluation</SectionTitle>
             <EvaluationForm skills={skills ?? []} action={addEvaluation.bind(null, player.id)} />
