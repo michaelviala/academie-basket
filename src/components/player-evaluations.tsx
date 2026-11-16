@@ -73,6 +73,8 @@ export function PlayerEvaluations({
   attendanceTotal: number;
 }) {
   const [active, setActive] = useState<EvalType>(initialType);
+  // Affichage côte à côte : compétences de la rubrique (gauche) et progression (droite), ou focus sur l'un des deux
+  const [focus, setFocus] = useState<"both" | "competences" | "progression">("both");
 
   const byType = (type: EvalType) =>
     evaluations.filter((e) => e.evaluation_type === type);
@@ -254,28 +256,62 @@ export function PlayerEvaluations({
           </div>
         </div>
       </div>
-      <p className="mb-4 mt-2 text-xs" style={{ color: "var(--text-faint)" }}>
-        Cliquer sur un indice affiche le détail de ses évaluations ci-dessous.
-      </p>
-
-      <div className="card mb-4">
-        <h2 className="mb-3 font-semibold">Progression</h2>
-        <PlayerEvaluationChart evaluations={evaluations} />
+      <div className="mb-4 mt-2 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs" style={{ color: "var(--text-faint)" }}>
+          Cliquer sur une rubrique affiche ses compétences à gauche ; la progression globale reste à droite.
+        </p>
+        <div className="seg" aria-label="Affichage des graphiques">
+          <button type="button" className={focus === "both" ? "active" : ""} onClick={() => setFocus("both")}>Les deux</button>
+          <button type="button" className={focus === "competences" ? "active" : ""} onClick={() => setFocus("competences")}>Compétences</button>
+          <button type="button" className={focus === "progression" ? "active" : ""} onClick={() => setFocus("progression")}>Progression</button>
+        </div>
       </div>
 
-      <div className="card mb-4">
-        <h2 className="mb-3 font-semibold">
-          Compétences — {EVAL_TYPE_LABELS[active]}
-          {cat ? ` · ${catLabel(cat)}` : ""}
-        </h2>
-        <CompetencyHistogram
-          color={EVAL_COLORS[active]}
-          evals={activeRows.map((e) => ({
-            skill: histoLabel(e),
-            score: Number(e.score),
-            date: e.evaluated_at,
-          }))}
-        />
+      <div className={`mb-4 grid gap-4 ${focus === "both" ? "lg:grid-cols-2" : ""}`}>
+        {focus !== "progression" && (
+          <div className="card min-w-0">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="font-semibold">
+                Compétences — {EVAL_TYPE_LABELS[active]}
+                {cat ? ` · ${catLabel(cat)}` : ""}
+              </h2>
+              <button
+                type="button"
+                className="text-xs"
+                style={{ color: "var(--text-faint)" }}
+                onClick={() => setFocus(focus === "both" ? "progression" : "both")}
+                title={focus === "both" ? "Masquer les compétences" : "Réafficher la progression"}
+              >
+                {focus === "both" ? "Masquer" : "Afficher la progression"}
+              </button>
+            </div>
+            <CompetencyHistogram
+              color={EVAL_COLORS[active]}
+              evals={activeRows.map((e) => ({
+                skill: histoLabel(e),
+                score: Number(e.score),
+                date: e.evaluated_at,
+              }))}
+            />
+          </div>
+        )}
+        {focus !== "competences" && (
+          <div className="card min-w-0">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="font-semibold">Progression</h2>
+              <button
+                type="button"
+                className="text-xs"
+                style={{ color: "var(--text-faint)" }}
+                onClick={() => setFocus(focus === "both" ? "competences" : "both")}
+                title={focus === "both" ? "Masquer la progression" : "Réafficher les compétences"}
+              >
+                {focus === "both" ? "Masquer" : "Afficher les compétences"}
+              </button>
+            </div>
+            <PlayerEvaluationChart evaluations={evaluations} compact={focus === "both"} />
+          </div>
+        )}
       </div>
 
       <div className="card">

@@ -86,7 +86,7 @@ function CustomTooltip({
   );
 }
 
-export function PlayerEvaluationChart({ evaluations }: { evaluations: Evaluation[] }) {
+export function PlayerEvaluationChart({ evaluations, compact = false }: { evaluations: Evaluation[]; compact?: boolean }) {
   const [activeType, setActiveType] = useState<EvalType | null>(null);
   const [quarter, setQuarter] = useState("");
 
@@ -220,7 +220,7 @@ export function PlayerEvaluationChart({ evaluations }: { evaluations: Evaluation
             : "Pas encore assez d'évaluations pour tracer une progression."}
         </p>
       ) : (
-        <div style={{ width: "100%", height: 280 }}>
+        <div style={{ width: "100%", height: compact ? 320 : 280 }}>
           <ResponsiveContainer>
             <LineChart data={data} margin={{ top: 8, right: 12, left: -16, bottom: 0 }}>
               <CartesianGrid stroke="var(--border)" strokeDasharray="0" vertical={false} />
