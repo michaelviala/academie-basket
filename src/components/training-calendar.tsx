@@ -44,13 +44,25 @@ export function TrainingCalendar({
   teams,
   coaches,
   gyms,
+  mineIds,
+  compact = false,
 }: {
   trainings: CalendarTraining[];
   teams: { id: string; name: string; color?: string | null }[];
   coaches: { id: string; full_name: string }[];
   gyms: { id: string; name: string; courts?: number }[];
+  /** Identifiants des créneaux « à moi » (coach : ses séances et celles de ses catégories). Active le bouton Mes créneaux / Tous les créneaux. */
+  mineIds?: string[];
+  /** Mode simplifié (joueur, parent) : pas de filtres catégorie / coach. */
+  compact?: boolean;
 }) {
   const [view, setView] = useState<"semaine" | "mois">("semaine");
+  const [onlyMine, setOnlyMine] = useState(!!mineIds);
+  const mineSet = useMemo(() => new Set(mineIds ?? []), [mineIds]);
+  const scoped = useMemo(
+    () => (mineIds && onlyMine ? trainings.filter((t) => mineSet.has(t.id)) : trainings),
+    [trainings, mineIds, onlyMine, mineSet],
+  );
   const today = new Date();
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
   const [teamFilter, setTeamFilter] = useState("");
@@ -65,7 +77,7 @@ export function TrainingCalendar({
 
   const byDate = useMemo(() => {
     const map = new Map<string, CalendarTraining[]>();
-    trainings
+    scoped
       .filter((t) => !teamFilter || t.team_id === teamFilter)
       .filter((t) => !coachFilter || t.coach_id === coachFilter)
       .filter((t) => !gymFilter || t.gym_id === gymFilter)
@@ -76,7 +88,7 @@ export function TrainingCalendar({
         map.set(t.date, list);
       });
     return map;
-  }, [trainings, teamFilter, coachFilter, gymFilter]);
+  }, [scoped, teamFilter, coachFilter, gymFilter]);
 
   const year = cursor.getFullYear();
   const month = cursor.getMonth();
@@ -111,9 +123,17 @@ export function TrainingCalendar({
   const todayKey = toKey(today.getFullYear(), today.getMonth(), today.getDate());
 
   const toggle = (
-    <div className="seg">
-      <button type="button" className={view === "semaine" ? "active" : ""} onClick={() => setView("semaine")}>Semaine</button>
-      <button type="button" className={view === "mois" ? "active" : ""} onClick={() => setView("mois")}>Mois</button>
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="seg">
+        <button type="button" className={view === "semaine" ? "active" : ""} onClick={() => setView("semaine")}>Semaine</button>
+        <button type="button" className={view === "mois" ? "active" : ""} onClick={() => setView("mois")}>Mois</button>
+      </div>
+      {mineIds && (
+        <div className="seg" aria-label="Portée du calendrier">
+          <button type="button" className={onlyMine ? "active" : ""} onClick={() => setOnlyMine(true)}>Mes créneaux ({mineIds.length})</button>
+          <button type="button" className={!onlyMine ? "active" : ""} onClick={() => setOnlyMine(false)}>Tous les créneaux ({trainings.length})</button>
+        </div>
+      )}
     </div>
   );
 
@@ -123,14 +143,18 @@ export function TrainingCalendar({
         <div className="flex flex-wrap items-center justify-between gap-3">
           {toggle}
           <div className="flex flex-wrap gap-2">
-            <select className="input" style={{ width: "auto" }} value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)}>
-              <option value="">Toutes les catégories</option>
-              {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-            <select className="input" style={{ width: "auto" }} value={coachFilter} onChange={(e) => setCoachFilter(e.target.value)}>
-              <option value="">Tous les coachs</option>
-              {coaches.map((c) => <option key={c.id} value={c.id}>{c.full_name}</option>)}
-            </select>
+            {!compact && (
+              <select className="input" style={{ width: "auto" }} value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)}>
+                <option value="">Toutes les catégories</option>
+                {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            )}
+            {!compact && (
+              <select className="input" style={{ width: "auto" }} value={coachFilter} onChange={(e) => setCoachFilter(e.target.value)}>
+                <option value="">Tous les coachs</option>
+                {coaches.map((c) => <option key={c.id} value={c.id}>{c.full_name}</option>)}
+              </select>
+            )}
             <select className="input" style={{ width: "auto" }} value={gymFilter} onChange={(e) => setGymFilter(e.target.value)}>
               <option value="">Toutes les salles</option>
               {gyms.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
@@ -138,7 +162,7 @@ export function TrainingCalendar({
           </div>
         </div>
         <WeekPlanning
-          trainings={trainings.filter((t) => (!teamFilter || t.team_id === teamFilter) && (!coachFilter || t.coach_id === coachFilter) && (!gymFilter || t.gym_id === gymFilter))}
+          trainings={scoped.filter((t) => (!teamFilter || t.team_id === teamFilter) && (!coachFilter || t.coach_id === coachFilter) && (!gymFilter || t.gym_id === gymFilter))}
           teams={teams}
           coaches={coaches}
           gyms={gyms}
@@ -182,7 +206,7 @@ export function TrainingCalendar({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {teams.length > 0 && (
+          {!compact && teams.length > 0 && (
             <select
               className="input"
               style={{ width: "auto" }}
@@ -195,7 +219,7 @@ export function TrainingCalendar({
               ))}
             </select>
           )}
-          {coaches.length > 0 && (
+          {!compact && coaches.length > 0 && (
             <select
               className="input"
               style={{ width: "auto" }}

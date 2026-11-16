@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Profile } from "@/lib/data";
 
-export type IconName = "home" | "users" | "trophy" | "video" | "clip" | "bell" | "notebook" | "whistle" | "file" | "settings" | "library" | "play" | "board";
+export type IconName = "home" | "users" | "trophy" | "video" | "clip" | "bell" | "notebook" | "whistle" | "file" | "settings" | "library" | "play" | "board" | "calendar";
 
 export function Icon({ name }: { name: IconName }) {
   const common = {
@@ -116,6 +116,13 @@ export function Icon({ name }: { name: IconName }) {
           <circle cx="12" cy="12" r="2.6" />
         </svg>
       );
+    case "calendar":
+      return (
+        <svg {...common}>
+          <rect x="3" y="5" width="18" height="16" rx="2" />
+          <path d="M3 10h18M8 3v4M16 3v4" />
+        </svg>
+      );
     case "settings":
       return (
         <svg {...common}>
@@ -134,6 +141,7 @@ export const ALL_ITEMS: { href: string; label: string; icon: IconName; roles?: P
   { href: "/joueurs", label: "Joueurs", icon: "users", group: "suivi" },
   { href: "/carnet-technique", label: "Carnets techniques", icon: "notebook", group: "suivi" },
   { href: "/seances", label: "Séances", icon: "video", group: "suivi" },
+  { href: "/calendrier", label: "Calendrier", icon: "calendar", group: "suivi" },
   { href: "/notifications", label: "Notifications", icon: "bell", group: "suivi" },
   { href: "/bibliotheque", label: "Bibliothèque", icon: "library", roles: ["admin", "directeur_sportif", "coach", "preparateur_physique"], group: "outils" },
   { href: "/systemes", label: "Systèmes", icon: "play", roles: ["admin", "directeur_sportif", "coach", "preparateur_physique"], group: "outils" },

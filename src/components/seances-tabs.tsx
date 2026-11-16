@@ -2,7 +2,7 @@ import Link from "next/link";
 
 const TABS = [
   { key: "contenu", href: "/seances", label: "Contenu des séances" },
-  { key: "calendrier", href: "/seances/calendrier", label: "Calendrier" },
+  { key: "calendrier", href: "/calendrier", label: "Calendrier" },
 ] as const;
 
 export function SeancesHeader({

@@ -25,7 +25,7 @@ Application web de **suivi du développement des joueurs** d'une académie de ba
 
 ## 3. Structure
 ```
-src/app/(app)/            pages protégées : dashboard, joueurs, seances, carnet-technique, coachs,
+src/app/(app)/            pages protégées : dashboard, joueurs, seances, calendrier, carnet-technique, coachs,
                           administration, videos, bibliotheque, systemes, tableaux, rapports, recherche, notifications
 src/app/(app)/{loading,error,not-found}.tsx
 src/app/{login,signup,manifest.ts}
@@ -61,6 +61,7 @@ Rôles : `admin`, `directeur_sportif`, `coach`, `preparateur_physique`, `joueur`
 - **Bibliothèque** : favoris **personnels** (`library_favorites`, RLS : chacun ne voit que les siens) ; étoile ☆/★ sur chaque carte et dans la fiche ; onglet « ★ Favoris » en premier, la page s'ouvre dessus (sinon sur « 📌 À connaître », sinon sur « Tout »). **Documents à connaître** (nutrition, arbitrage…) : `library_items.essential`, visibles par tout le staff, marqués/démarqués par la direction seule (trigger `library_essential_guard`) ; onglet « 📌 À connaître ». **Suppression d'un document : uniquement `admin` (tout) et `coach` (ses propres documents)** — RLS `library_delete` + `canDeleteLibraryItem` ; ni directeur sportif ni préparateur physique.
 - **Rôle « directeur sportif » masqué** : l'académie n'en a pas. Il n'est plus proposé (création de coach, Administration › Utilisateurs) ni cité dans les textes ; il reste en base et dans les contrôles de droits (inoffensif, réactivable).
 - Import Excel/CSV joueurs + parents : Administration › Joueurs (pas de bouton sur la page Joueurs, décision du 2026-11-16) ; correspondance des colonnes par groupe (identité, fiche : taille/poids/envergure/main/postes/date d'entrée/ancien club, parents) ; joueurs déjà présents : seuls les champs vides sont complétés ; lignes sans date de naissance valide ignorées (`birth_date` obligatoire).
+- **Calendrier** (rubrique du menu, `/calendrier` ; `/seances/calendrier` redirige) : joueur → séances de sa catégorie ; parent → catégories de ses enfants ; coach → « Mes créneaux » par défaut (ses séances + celles de ses catégories via `team_coaches`) avec bascule « Tous les créneaux » ; direction / prépa physique → tout. Composant `training-calendar.tsx` (props `mineIds`, `compact`).
 - Notifications : seulement feedback de séance (joueur) et blessure déclarée (direction/prépa physique). Page peu utile en l'état : à enrichir ou à retirer.
 
 ## 7. Reste à faire / points ouverts
@@ -81,3 +82,4 @@ Rôles : `admin`, `directeur_sportif`, `coach`, `preparateur_physique`, `joueur`
 - 2026-11-08 : rôle « directeur sportif » masqué de l'interface (conservé en base).
 - 2026-11-08 : tableau blanc : bouton « Légende » (tableau des éléments).
 - 2026-11-16 : import Excel : correspondance des colonnes étendue à toute la fiche joueur (bouton sur la page Joueurs ajouté puis retiré : il existe déjà dans Administration). Travail désormais directement sur GitHub (clone dans l'environnement cloud), rien en local chez Michael.
+- 2026-11-16 : rubrique Calendrier dans le menu, filtrée par rôle (joueur, parent, coach avec Mes créneaux / Tous les créneaux).
