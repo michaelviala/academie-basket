@@ -11,6 +11,8 @@ export type SessionPayload = {
   title: string;
   date: string;
   start_time: string;
+  /** Heure de fin facultative : si renseignée, la durée enregistrée = fin − début. */
+  end_time?: string;
   team_id: string;
   gym_id: string;
   coach_id: string;
@@ -38,6 +40,10 @@ function validate(p: SessionPayload): string | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(p.date)) return "La date est invalide.";
   if (p.start_time && !/^\d{2}:\d{2}$/.test(p.start_time))
     return "L'heure de début est invalide.";
+  if (p.end_time && !/^\d{2}:\d{2}$/.test(p.end_time))
+    return "L'heure de fin est invalide.";
+  if (p.end_time && p.start_time && minutesBetween(p.start_time, p.end_time) <= 0)
+    return "L'heure de fin doit être après l'heure de début.";
   if (!p.team_id) return "Choisis la catégorie concernée.";
   if (p.blocks.some((b) => !b.name.trim()))
     return "Chaque bloc doit avoir un titre.";
@@ -72,8 +78,17 @@ function blockRows(trainingId: string, blocks: SessionPayload["blocks"]) {
   }));
 }
 
+/** Minutes entre deux heures HH:MM (0 si invalide). */
+function minutesBetween(start: string, end: string): number {
+  const [sh, sm] = start.split(":").map(Number);
+  const [eh, em] = end.split(":").map(Number);
+  if (![sh, sm, eh, em].every(Number.isFinite)) return 0;
+  return eh * 60 + em - (sh * 60 + sm);
+}
+
 function trainingFields(p: SessionPayload, fallbackCoach: string) {
-  const total = totalMinutes(p.blocks);
+  const fromEnd = p.end_time && p.start_time ? minutesBetween(p.start_time, p.end_time) : 0;
+  const total = fromEnd > 0 ? fromEnd : totalMinutes(p.blocks);
   return {
     objective: p.title.trim().slice(0, 200),
     date: p.date,

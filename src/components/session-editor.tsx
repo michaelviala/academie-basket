@@ -35,6 +35,8 @@ export type SessionInitial = {
   title: string;
   date: string;
   start_time: string;
+  /** Heure de fin (HH:MM) ; vide = calculée d'après le déroulé. */
+  end_time?: string;
   team_id: string;
   gym_id: string;
   coach_id: string;
@@ -76,6 +78,9 @@ export function SessionEditor({
   const [title, setTitle] = useState(initial.title);
   const [date, setDate] = useState(initial.date);
   const [startTime, setStartTime] = useState(initial.start_time);
+  // Fin : suit le déroulé tant que l'utilisateur ne l'a pas modifiée à la main
+  const [endTouched, setEndTouched] = useState(!!initial.end_time);
+  const [endManual, setEndManual] = useState(initial.end_time ?? "");
   const [teamId, setTeamId] = useState(initial.team_id);
   const [gymId, setGymId] = useState(initial.gym_id);
   const [coachId, setCoachId] = useState(initial.coach_id);
@@ -91,6 +96,7 @@ export function SessionEditor({
   );
 
   const total = totalMinutes(blocks);
+  const endTime = endTouched ? endManual : (clockAt(startTime, total) ?? "");
   const skillGroups = useMemo(() => {
     const g = new Map<string, Skill[]>();
     skills.forEach((s) => g.set(s.category, [...(g.get(s.category) ?? []), s]));
@@ -127,6 +133,7 @@ export function SessionEditor({
       title,
       date,
       start_time: startTime,
+      end_time: endTime,
       team_id: teamId,
       gym_id: gymId,
       coach_id: coachId,
@@ -191,7 +198,7 @@ export function SessionEditor({
         save();
       }}
     >
-      <div className="grid gap-3 sm:grid-cols-[1fr_180px_140px]">
+      <div className="grid gap-3 sm:grid-cols-[minmax(200px,480px)_170px_120px_120px]">
         <label className="label">
           Titre
           <input
@@ -221,10 +228,21 @@ export function SessionEditor({
             onChange={(e) => setStartTime(e.target.value)}
           />
         </label>
+        <label className="label">
+          Fin
+          <input
+            className="input mt-1 w-full"
+            type="time"
+            value={endTime}
+            min={startTime || undefined}
+            onChange={(e) => { setEndTouched(true); setEndManual(e.target.value); }}
+            title={endTouched ? "Heure de fin saisie" : "Calculée d'après le déroulé"}
+          />
+        </label>
       </div>
 
       {!sessionId && (
-        <div className="grid gap-3 sm:grid-cols-[1fr_180px]">
+        <div className="grid gap-3 sm:grid-cols-[minmax(200px,480px)_170px]">
           <label className="label">
             Périodicité
             <select

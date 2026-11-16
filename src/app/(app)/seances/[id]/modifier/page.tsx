@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/data";
 import { getSessionFormData } from "@/lib/sessions-data";
-import { SESSION_EDIT_ROLES, formatDateLong } from "@/lib/sessions";
+import { SESSION_EDIT_ROLES, clockAt, formatDateLong } from "@/lib/sessions";
 import { SessionEditor } from "@/components/session-editor";
 
 export default async function ModifierSeancePage({
@@ -59,6 +59,7 @@ export default async function ModifierSeancePage({
           title: training.objective ?? "",
           date: training.date,
           start_time: training.start_time?.slice(0, 5) ?? "",
+          end_time: training.duration_minutes ? (clockAt(training.start_time?.slice(0, 5), training.duration_minutes) ?? "") : "",
           team_id: training.team_id ?? "",
           gym_id: training.gym_id ?? "",
           coach_id: training.coach_id ?? "",
