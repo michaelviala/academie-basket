@@ -79,7 +79,7 @@ export function EvaluationForm({
         </div>
       </div>
       <input className="input col-span-2" type="date" name="evaluated_at" defaultValue={new Date().toISOString().slice(0, 10)} />
-      <textarea className="input col-span-2" name="comment" placeholder="Commentaire" rows={2} />
+      <textarea className="input col-span-2" name="comment" placeholder="Commentaire (points forts, axes de travail, contexte…)" rows={5} style={{ minHeight: 120 }} />
       <button className="btn-primary col-span-2" type="submit">Enregistrer l&apos;évaluation</button>
     </form>
   );
