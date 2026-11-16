@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { FOCUSES } from "@/lib/blocks";
 import { requireProfile } from "@/lib/data";
 import { BLOCK_TYPES, SESSION_EDIT_ROLES, totalMinutes } from "@/lib/sessions";
+import { expandDates, validateRecurrence, type Recurrence } from "@/lib/recurrence";
 
 export type SessionPayload = {
   title: string;
@@ -15,6 +16,8 @@ export type SessionPayload = {
   coach_id: string;
   intensity: string;
   focus?: string;
+  /** Périodicité (création seulement) : la séance est dupliquée à chaque date jusqu'à la date de fin. */
+  recurrence?: Recurrence;
   blocks: {
     name: string;
     block_type: string;
@@ -25,7 +28,7 @@ export type SessionPayload = {
   }[];
 };
 
-type Result = { error?: string; id?: string };
+type Result = { error?: string; id?: string; count?: number };
 
 const FOCUS_VALUES: string[] = FOCUSES.map((f) => f.value);
 const BLOCK_VALUES: string[] = BLOCK_TYPES.map((b) => b.value);
@@ -91,26 +94,65 @@ export async function createSession(p: SessionPayload): Promise<Result> {
   const invalid = validate(p);
   if (invalid) return { error: invalid };
 
+  const rec = p.recurrence ?? null;
+  if (rec) {
+    const bad = validateRecurrence(p.date, rec);
+    if (bad) return { error: bad };
+  }
+  const dates = rec ? expandDates(p.date, rec) : [p.date];
+  if (dates.length === 0) return { error: "Aucune date ne correspond à cette périodicité." };
+  const series_id = dates.length > 1 ? crypto.randomUUID() : null;
+
   const supabase = await createClient();
+  const fields = trainingFields(p, profile.id);
   const { data, error } = await supabase
     .from("trainings")
-    .insert(trainingFields(p, profile.id))
-    .select("id")
-    .single();
-  if (error || !data)
+    .insert(dates.map((date) => ({ ...fields, date, series_id })))
+    .select("id, date");
+  if (error || !data || data.length === 0)
     return { error: error?.message ?? "Création impossible." };
+  const ids = data.map((d) => d.id);
+  const firstId = [...data].sort((a, b) => a.date.localeCompare(b.date))[0].id;
 
   if (p.blocks.length > 0) {
     const { error: blocksError } = await supabase
       .from("training_exercises")
-      .insert(blockRows(data.id, p.blocks));
+      .insert(ids.flatMap((id) => blockRows(id, p.blocks)));
     if (blocksError) {
-      await supabase.from("trainings").delete().eq("id", data.id);
+      await supabase.from("trainings").delete().in("id", ids);
       return { error: blocksError.message };
     }
   }
   revalidatePath("/seances");
-  return { id: data.id };
+  revalidatePath("/calendrier");
+  return { id: firstId, count: ids.length };
+}
+
+/** Supprime une séance périodique et toutes les suivantes de la même série (celles qui ont déjà des présences ou des feedbacks sont conservées). */
+export async function deleteSeriesFrom(id: string): Promise<Result> {
+  const profile = await requireProfile();
+  if (!SESSION_EDIT_ROLES.includes(profile.role))
+    return { error: "Action réservée à l'équipe encadrante." };
+  const supabase = await createClient();
+  const { data: me } = await supabase.from("trainings").select("series_id, date").eq("id", id).maybeSingle();
+  if (!me?.series_id) return deleteSession(id);
+  const { data: rows } = await supabase
+    .from("trainings")
+    .select("id")
+    .eq("series_id", me.series_id)
+    .gte("date", me.date);
+  const ids = (rows ?? []).map((r) => r.id);
+  if (ids.length === 0) return { error: "Aucune séance à supprimer." };
+  let count = 0;
+  for (const tid of ids) {
+    await supabase.from("training_exercises").delete().eq("training_id", tid);
+    const { data, error } = await supabase.from("trainings").delete().eq("id", tid).select("id");
+    if (!error && data && data.length > 0) count++;
+  }
+  revalidatePath("/seances");
+  revalidatePath("/calendrier");
+  if (count === 0) return { error: "Suppression refusée (séances avec présences ou feedbacks)." };
+  return { count };
 }
 
 export async function updateSession(

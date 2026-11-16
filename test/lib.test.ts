@@ -61,3 +61,19 @@ test("import : champs de la fiche joueur (taille, poids, main, postes, entrée, 
   const p = players[0];
   assert.deepEqual([p.height, p.weight, p.wingspan, p.hand, p.pos1, p.pos2, p.entryDate, p.prevClub], [142, 36.5, null, "gauche", "Meneur", "Arrière", "2025-09-01", "BC Exemple"]);
 });
+
+test("périodicité : libellés et dates générées", async () => {
+  const { expandDates, recurrenceOptions, defaultRecurrence } = await import("../src/lib/recurrence.ts");
+  const labels = recurrenceOptions("2026-11-16").map((o) => o.label);
+  assert.equal(labels[2], "Toutes les semaines le lundi");
+  assert.equal(labels[3], "Tous les mois le troisième lundi");
+  assert.equal(labels[4], "Tous les ans le 16 novembre");
+  const base = defaultRecurrence("2026-12-31");
+  assert.deepEqual(expandDates("2026-11-16", { ...base, freq: "none" }), ["2026-11-16"]);
+  assert.deepEqual(expandDates("2026-11-16", { ...base, freq: "weekly" }), ["2026-11-16", "2026-11-23", "2026-11-30", "2026-12-07", "2026-12-14", "2026-12-21", "2026-12-28"]);
+  assert.deepEqual(expandDates("2026-11-16", { ...base, freq: "monthly_nth" }), ["2026-11-16", "2026-12-21"]);
+  assert.equal(expandDates("2026-11-16", { ...base, freq: "weekdays", until: "2026-11-22" }).length, 5);
+  assert.deepEqual(expandDates("2026-11-16", { ...base, freq: "custom", unit: "week", interval: 2, weekdays: [0, 2], until: "2026-12-06" }), ["2026-11-16", "2026-11-18", "2026-11-30", "2026-12-02"]);
+  assert.deepEqual(expandDates("2026-11-16", { ...base, freq: "yearly", until: "2028-01-01" }), ["2026-11-16", "2027-11-16"]);
+  assert.equal(expandDates("2026-11-16", { ...base, freq: "daily", until: "2030-01-01" }).length, 120);
+});

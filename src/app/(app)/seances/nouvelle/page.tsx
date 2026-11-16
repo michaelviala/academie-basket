@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { FOCUSES } from "@/lib/blocks";
+import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/data";
 import { getSessionFormData } from "@/lib/sessions-data";
 import {
@@ -22,7 +23,12 @@ export default async function NouvelleSeancePage({
     date && /^\d{4}-\d{2}-\d{2}$/.test(date)
       ? date
       : new Date().toISOString().slice(0, 10);
-  const { teams, gyms, coaches, skills, systems } = await getSessionFormData();
+  const supabase = await createClient();
+  const [{ teams, gyms, coaches, skills, systems }, { data: season }] = await Promise.all([
+    getSessionFormData(),
+    supabase.from("seasons").select("end_date").eq("is_active", true).maybeSingle(),
+  ]);
+  const seasonEnd = season?.end_date && season.end_date >= day ? season.end_date : null;
 
   const defaults = BLOCK_TYPES.filter(
     (b) => b.value === "echauffement" || b.value === "technique",
@@ -72,6 +78,7 @@ export default async function NouvelleSeancePage({
         coaches={coaches}
         skills={skills}
         systems={systems}
+        seasonEnd={seasonEnd}
       />
     </div>
   );

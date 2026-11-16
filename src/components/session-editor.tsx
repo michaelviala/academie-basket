@@ -6,9 +6,19 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import {
   createSession,
+  deleteSeriesFrom,
   deleteSession,
   updateSession,
 } from "@/app/(app)/seances/actions";
+import {
+  WEEKDAY_LABELS,
+  WEEKDAY_SHORT,
+  defaultRecurrence,
+  describeRecurrence,
+  expandDates,
+  recurrenceOptions,
+  type Recurrence,
+} from "@/lib/recurrence";
 import {
   BLOCK_TYPES,
   INTENSITIES,
@@ -44,8 +54,14 @@ export function SessionEditor({
   coaches,
   skills,
   systems = [],
+  seasonEnd,
+  seriesId = null,
 }: {
   sessionId?: string;
+  /** Fin de la saison active : date de fin proposée par défaut pour une séance périodique. */
+  seasonEnd?: string | null;
+  /** Identifiant de série si la séance fait partie d'une périodicité (modification). */
+  seriesId?: string | null;
   initial: SessionInitial;
   teams: Option[];
   gyms: Option[];
@@ -65,6 +81,11 @@ export function SessionEditor({
   const [coachId, setCoachId] = useState(initial.coach_id);
   const [focus, setFocus] = useState(initial.focus);
   const [intensity, setIntensity] = useState(initial.intensity);
+  const [rec, setRec] = useState<Recurrence>(() => defaultRecurrence(seasonEnd ?? ""));
+  const occurrences = useMemo(
+    () => (sessionId || rec.freq === "none" || !/^\d{4}-\d{2}-\d{2}$/.test(rec.until) ? null : expandDates(date, rec).length),
+    [sessionId, date, rec],
+  );
   const [blocks, setBlocks] = useState<BlockDraft[]>(() =>
     initial.blocks.map((b) => ({ ...b, key: newKey() })),
   );
@@ -111,6 +132,7 @@ export function SessionEditor({
       coach_id: coachId,
       focus,
       intensity,
+      recurrence: !sessionId && rec.freq !== "none" ? rec : undefined,
       blocks: blocks.map((b) => ({
         name: b.name,
         block_type: b.block_type,
@@ -126,7 +148,22 @@ export function SessionEditor({
         : await createSession(payload);
       if (r.error || !r.id)
         return setError(r.error ?? "Enregistrement impossible.");
-      router.push(`/seances/${r.id}`);
+      router.push(r.count && r.count > 1 ? "/calendrier" : `/seances/${r.id}`);
+      router.refresh();
+    });
+  }
+
+  function removeSeries() {
+    if (
+      !sessionId ||
+      !window.confirm("Supprimer cette séance et toutes les suivantes de la même série ?")
+    )
+      return;
+    setError(null);
+    startTransition(async () => {
+      const r = await deleteSeriesFrom(sessionId);
+      if (r.error) return setError(r.error);
+      router.push("/calendrier");
       router.refresh();
     });
   }
@@ -185,6 +222,94 @@ export function SessionEditor({
           />
         </label>
       </div>
+
+      {!sessionId && (
+        <div className="grid gap-3 sm:grid-cols-[1fr_180px]">
+          <label className="label">
+            Périodicité
+            <select
+              className="input mt-1 w-full"
+              value={rec.freq}
+              onChange={(e) => setRec((r) => ({ ...r, freq: e.target.value as Recurrence["freq"] }))}
+            >
+              {recurrenceOptions(date).map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </label>
+          {rec.freq !== "none" && (
+            <label className="label">
+              Jusqu&apos;au
+              <input
+                className="input mt-1 w-full"
+                type="date"
+                value={rec.until}
+                min={date}
+                onChange={(e) => setRec((r) => ({ ...r, until: e.target.value }))}
+                required
+              />
+            </label>
+          )}
+          {rec.freq === "custom" && (
+            <div className="sm:col-span-2 flex flex-wrap items-center gap-3 rounded-xl p-3" style={{ background: "var(--surf-2)", border: "1px solid var(--border)" }}>
+              <span className="text-sm">Tous les</span>
+              <input
+                className="input"
+                style={{ width: 70 }}
+                type="number"
+                min={1}
+                max={52}
+                value={rec.interval}
+                onChange={(e) => setRec((r) => ({ ...r, interval: Math.max(1, Number(e.target.value) || 1) }))}
+              />
+              <select
+                className="input"
+                style={{ width: "auto" }}
+                value={rec.unit}
+                onChange={(e) => setRec((r) => ({ ...r, unit: e.target.value as Recurrence["unit"] }))}
+              >
+                <option value="day">jour(s)</option>
+                <option value="week">semaine(s)</option>
+                <option value="month">mois</option>
+              </select>
+              {rec.unit === "week" && (
+                <div className="flex items-center gap-1" role="group" aria-label="Jours de la semaine">
+                  {WEEKDAY_SHORT.map((l, i) => {
+                    const on = rec.weekdays.includes(i);
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        title={WEEKDAY_LABELS[i]}
+                        aria-pressed={on}
+                        className="rounded-full text-xs font-bold"
+                        style={{
+                          width: 30,
+                          height: 30,
+                          background: on ? "var(--brand)" : "var(--surf)",
+                          color: on ? "#fff" : "var(--text-dim)",
+                          border: "1px solid var(--border)",
+                        }}
+                        onClick={() =>
+                          setRec((r) => ({ ...r, weekdays: on ? r.weekdays.filter((x) => x !== i) : [...r.weekdays, i] }))
+                        }
+                      >
+                        {l}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+          {rec.freq !== "none" && (
+            <p className="sm:col-span-2 text-xs" style={{ color: "var(--text-faint)" }}>
+              {describeRecurrence(date, rec)}
+              {occurrences !== null && <> · <b>{occurrences}</b> séance(s) seront créées, chacune avec le même déroulé (120 maximum).</>}
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <label className="label">
@@ -519,7 +644,9 @@ export function SessionEditor({
             ? "Enregistrement…"
             : sessionId
               ? "Enregistrer la séance"
-              : "Créer la séance"}
+              : occurrences && occurrences > 1
+                ? `Créer ${occurrences} séances`
+                : "Créer la séance"}
         </button>
         <Link
           href={sessionId ? `/seances/${sessionId}` : "/seances"}
@@ -536,6 +663,17 @@ export function SessionEditor({
             disabled={pending}
           >
             Supprimer la séance
+          </button>
+        )}
+        {sessionId && seriesId && (
+          <button
+            type="button"
+            className="btn-secondary"
+            style={{ color: "#f87171" }}
+            onClick={removeSeries}
+            disabled={pending}
+          >
+            Supprimer cette séance et les suivantes
           </button>
         )}
       </div>

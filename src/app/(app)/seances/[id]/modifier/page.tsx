@@ -54,6 +54,7 @@ export default async function ModifierSeancePage({
       </div>
       <SessionEditor
         sessionId={id}
+        seriesId={training.series_id}
         initial={{
           title: training.objective ?? "",
           date: training.date,

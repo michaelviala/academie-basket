@@ -107,6 +107,9 @@ export default async function SeancePage({
             {training.intensity && (
               <span className="badge">Intensité {training.intensity}</span>
             )}
+            {training.series_id && (
+              <span className="badge" title="Cette séance fait partie d'une série créée avec une périodicité">🔁 Séance périodique</span>
+            )}
           </div>
         </div>
         {canManage && (

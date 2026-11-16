@@ -1531,6 +1531,7 @@ export type Database = {
           id: string
           intensity: string | null
           objective: string | null
+          series_id: string | null
           start_time: string | null
           team_id: string | null
         }
@@ -1545,6 +1546,7 @@ export type Database = {
           id?: string
           intensity?: string | null
           objective?: string | null
+          series_id?: string | null
           start_time?: string | null
           team_id?: string | null
         }
@@ -1559,6 +1561,7 @@ export type Database = {
           id?: string
           intensity?: string | null
           objective?: string | null
+          series_id?: string | null
           start_time?: string | null
           team_id?: string | null
         }
