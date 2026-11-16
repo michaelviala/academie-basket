@@ -2,7 +2,7 @@
 
 Même code que la production, mais reliée au projet Supabase « Academie » (`wprlqpocuvawzjvzvyyd`),
 qui contient des données fictives (13 joueurs, évaluations, séances…). La production utilise le projet
-« academie-prod » (`hmtfpjkarphahiiffkfx`).
+« academie3 » (`hmtfpjkarphahiiffkfx`).
 
 ## Comptes de démonstration (mot de passe commun : `Demo2026!`)
 | Rôle   | E-mail               | Détail                                   |
