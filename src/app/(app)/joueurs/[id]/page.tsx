@@ -3,7 +3,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { calculateAge, getClubSettings, requireProfile } from "@/lib/data";
-import { getCategoryColors } from "@/lib/technical-guide-data";
+import { getCategoryColors, getTechnicalGuide } from "@/lib/technical-guide-data";
+import { GuideAssessment } from "@/components/guide-assessment";
 import {
   EVAL_COLORS,
   EVAL_LABELS,
@@ -50,6 +51,7 @@ import { Meetings } from "@/components/meetings";
 const TABS = [
   { key: "apercu", label: "Vue d'ensemble" },
   { key: "evaluations", label: "Évaluations" },
+  { key: "carnet", label: "Carnet technique" },
   { key: "objectifs", label: "Objectifs & plan" },
   { key: "physique", label: "Physique" },
   { key: "suivi", label: "Suivi" },
@@ -214,6 +216,8 @@ export default async function JoueurPage({
     { data: feedbacks },
     settings,
     colors,
+    { data: guideAssessments },
+    { guide },
   ] = await Promise.all([
     supabase.from("skills").select("id, category, name").order("category"),
     supabase
@@ -241,7 +245,12 @@ export default async function JoueurPage({
       .limit(20),
     getClubSettings(),
     getCategoryColors(),
+    supabase.from("guide_assessments").select("id, section, item_label, status, comment, assessed_at, assessor_id").eq("player_id", id).order("assessed_at", { ascending: false }).limit(2000),
+    getTechnicalGuide(),
   ]);
+  const guideCategory = player.teams?.category
+    ? guide.categories.find((c) => c.code.trim().toUpperCase() === player.teams!.category.trim().toUpperCase()) ?? null
+    : null;
 
   const canManageVideos = ["admin", "directeur_sportif", "coach"].includes(profile.role);
   const canSeeVideos = canManageVideos || profile.role === "preparateur_physique";
@@ -274,7 +283,7 @@ export default async function JoueurPage({
     : { data: null };
 
   const ev = evaluations ?? [];
-  const evaluatorIds = Array.from(new Set(ev.map((e) => e.evaluator_id).filter((v): v is string => !!v)));
+  const evaluatorIds = Array.from(new Set([...ev.map((e) => e.evaluator_id), ...(guideAssessments ?? []).map((g) => g.assessor_id)].filter((v): v is string => !!v)));
   const evaluatorNames: Record<string, string> = {};
   if (evaluatorIds.length > 0) {
     const { data: evaluators } = await supabase.from("profiles").select("id, full_name").in("id", evaluatorIds);
@@ -297,6 +306,7 @@ export default async function JoueurPage({
   const visibleTabs = TABS.filter((t) => !("restricted" in t) || canSeeInjuries);
   const tabCounts: Partial<Record<TabKey, number>> = {
     evaluations: ev.length,
+    carnet: guideCategory ? guideCategory.attack.length + guideCategory.defense.length : 0,
     objectifs: goalList.length,
     physique: physicalTests?.length ?? 0,
     suivi: (feedbacks?.length ?? 0) + (meetings?.length ?? 0) + (selfAssessments?.length ?? 0),
@@ -668,6 +678,17 @@ export default async function JoueurPage({
             <EvaluationForm skills={skills ?? []} action={addEvaluation.bind(null, player.id)} />
           </section>
         </div>
+      )}
+
+      {/* ===== CARNET TECHNIQUE ===== */}
+      {activeTab === "carnet" && (
+        <GuideAssessment
+          playerId={player.id}
+          category={guideCategory}
+          records={guideAssessments ?? []}
+          canEdit={staffView}
+          assessorNames={evaluatorNames}
+        />
       )}
 
       {/* ===== OBJECTIFS & PLAN ===== */}

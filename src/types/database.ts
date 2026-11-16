@@ -982,6 +982,53 @@ export type Database = {
           },
         ]
       }
+      guide_assessments: {
+        Row: {
+          assessed_at: string
+          assessor_id: string | null
+          category_code: string
+          comment: string | null
+          created_at: string
+          id: string
+          item_label: string
+          player_id: string
+          section: string
+          status: string
+        }
+        Insert: {
+          assessed_at?: string
+          assessor_id?: string | null
+          category_code: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          item_label: string
+          player_id: string
+          section: string
+          status: string
+        }
+        Update: {
+          assessed_at?: string
+          assessor_id?: string | null
+          category_code?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          item_label?: string
+          player_id?: string
+          section?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guide_assessments_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       player_measurements: {
         Row: {
           created_at: string

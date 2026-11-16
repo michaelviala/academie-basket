@@ -77,3 +77,22 @@ test("périodicité : libellés et dates générées", async () => {
   assert.deepEqual(expandDates("2026-11-16", { ...base, freq: "yearly", until: "2028-01-01" }), ["2026-11-16", "2027-11-16"]);
   assert.equal(expandDates("2026-11-16", { ...base, freq: "daily", until: "2030-01-01" }).length, 120);
 });
+
+test("carnet technique : grille d'évaluation et synthèse", async () => {
+  const { buildGrid, summarize } = await import("../src/lib/guide-assessment.ts");
+  const cat = {
+    code: "U11", color: "#22c55e", title: "", subtitle: "", badge: "", tactical: "", physical: "", philosophy: "",
+    attack: [{ label: "Tir en course", text: "" }, { label: "Dribble de progression", text: "" }],
+    defense: [{ label: "Position défensive", text: "" }],
+  };
+  const rows = buildGrid(cat, [
+    { id: "1", section: "attack", item_label: "Tir en course", status: "a_revoir", comment: null, assessed_at: "2026-10-01", assessor_id: null },
+    { id: "2", section: "attack", item_label: "tir en course", status: "acquis", comment: "ok", assessed_at: "2026-11-10", assessor_id: null },
+  ]);
+  assert.equal(rows.length, 3);
+  assert.equal(rows[0].last?.status, "acquis");
+  assert.equal(rows[0].count, 2);
+  assert.equal(rows[1].last, null);
+  const s = summarize(rows);
+  assert.deepEqual([s.total, s.acquis, s.non_evalue, s.pct], [3, 1, 2, 33]);
+});

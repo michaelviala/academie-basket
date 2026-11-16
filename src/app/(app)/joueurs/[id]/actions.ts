@@ -362,3 +362,33 @@ async function syncCurrentMeasures(playerId: string, extra: Record<string, unkno
     .eq("id", playerId);
   return error ? error.message : null;
 }
+
+/** Enregistre une série d'évaluations « carnet technique » (une ligne historisée par contenu modifié). */
+export async function saveGuideAssessments(
+  playerId: string,
+  input: { categoryCode: string; assessedAt: string; items: { section: string; label: string; status: string; comment: string }[] },
+): Promise<{ error?: string; saved?: number }> {
+  const { isStatus } = await import("@/lib/guide-assessment");
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Non connecté." };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.assessedAt)) return { error: "Date d'évaluation invalide." };
+  const rows = input.items
+    .filter((i) => (i.section === "attack" || i.section === "defense") && i.label.trim() && isStatus(i.status))
+    .slice(0, 200)
+    .map((i) => ({
+      player_id: playerId,
+      category_code: input.categoryCode.slice(0, 20),
+      section: i.section,
+      item_label: i.label.trim().slice(0, 80),
+      status: i.status,
+      comment: i.comment.trim().slice(0, 600) || null,
+      assessed_at: input.assessedAt,
+      assessor_id: user.id,
+    }));
+  if (rows.length === 0) return { error: "Aucun contenu à enregistrer." };
+  const { error } = await supabase.from("guide_assessments").insert(rows);
+  if (error) return { error: error.message };
+  revalidatePath(`/joueurs/${playerId}`);
+  return { saved: rows.length };
+}
