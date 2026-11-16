@@ -22,6 +22,8 @@ export function EvaluationForm({
   initialType?: string;
 }) {
   const [evaluationType, setEvaluationType] = useState(initialType);
+  const [score, setScore] = useState(5);
+  const scoreColor = score >= 7 ? "var(--green)" : score >= 5 ? "#f59e0b" : "#f87171";
 
   const filteredSkills = useMemo(() => {
     if (!evaluationType) return skills;
@@ -52,8 +54,31 @@ export function EvaluationForm({
           <option key={s.id} value={s.id}>{s.name}</option>
         ))}
       </select>
-      <input className="input" type="number" name="score" min={1} max={10} step={0.5} placeholder="Score" required />
-      <input className="input" type="date" name="evaluated_at" defaultValue={new Date().toISOString().slice(0, 10)} />
+      <div className="col-span-2 rounded-xl px-3 py-3" style={{ background: "var(--surf-2)", border: "1px solid var(--border)" }}>
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--text-dim)" }}>Note</span>
+          <span className="display text-3xl font-bold leading-none" style={{ color: scoreColor }}>
+            {score.toFixed(1).replace(".0", "")}<span className="text-sm font-normal" style={{ color: "var(--text-faint)" }}> /10</span>
+          </span>
+        </div>
+        <input
+          type="range"
+          name="score"
+          min={1}
+          max={10}
+          step={0.5}
+          value={score}
+          onChange={(e) => setScore(Number(e.target.value))}
+          className="score-slider mt-2 w-full"
+          style={{ accentColor: scoreColor }}
+          aria-label="Note sur 10"
+          aria-valuetext={`${score} sur 10`}
+        />
+        <div className="mt-1 flex justify-between text-[10px]" style={{ color: "var(--text-faint)" }}>
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => <span key={n}>{n}</span>)}
+        </div>
+      </div>
+      <input className="input col-span-2" type="date" name="evaluated_at" defaultValue={new Date().toISOString().slice(0, 10)} />
       <textarea className="input col-span-2" name="comment" placeholder="Commentaire" rows={2} />
       <button className="btn-primary col-span-2" type="submit">Enregistrer l&apos;évaluation</button>
     </form>

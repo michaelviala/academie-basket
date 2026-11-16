@@ -331,3 +331,35 @@ h1, h2, h3, .display {
   .wb-full .wb-court svg { max-height: 125mm; }
   .wb-half .wb-court { flex-basis: 150mm; }
 }
+
+/* Curseur de note (évaluations) : gros point facile à attraper au doigt */
+.score-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--surf);
+  border: 1px solid var(--border);
+  outline: none;
+  touch-action: pan-y;
+}
+.score-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--brand);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
+.score-slider::-moz-range-thumb {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--brand);
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+}
