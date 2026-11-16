@@ -53,7 +53,8 @@ Rôles : `admin`, `directeur_sportif`, `coach`, `preparateur_physique`, `joueur`
 ## 6. Décisions produit
 - **Couleur unique par catégorie** : `teams.color`, définie dans Administration › Catégories (même couleur pour tous les teams de même code), reprise des carnets techniques (U11 vert, U13 bleu, U15 orange, U18 rouge). Utilisée partout via `lib/category-color.ts` et `getCategoryColors()`.
 - **Évaluations** : 4 rubriques (technique, tactique, physique, mental) ; les compétences ont un type (`skills.category` : tir, dribble, finition, passe, défense, rebond, tactique, physique, mental). Fiche : cartes par rubrique, courbe de progression, **histogramme des compétences** (dernière note vs précédente), historique groupé par type de compétence avec filtre.
-- **Mesures de croissance** : `player_measurements` (date + taille/poids/envergure), saisie via « Enregistrer une nouvelle mesure » ; `players.height_cm…` = dernière valeur connue ; courbes dans l'onglet Physique ; section « Croissance » dans le bilan PDF.
+- **Fiche joueur — menu ⚙** (`components/player-menu.tsx`, en haut à droite de la carte profil) : « Enregistrer une nouvelle mesure » (fenêtre, encadrement), « Contacts parents » (fenêtre, encadrement ; plus de bloc Parents visible sur la fiche), « Bilan PDF » (plus de bouton dans l'en-tête).
+- **Mesures de croissance** : `player_measurements` (date + taille/poids/envergure), saisie via le menu ⚙ › « Enregistrer une nouvelle mesure » ; `players.height_cm…` = dernière valeur connue ; courbes dans l'onglet Physique ; section « Croissance » dans le bilan PDF.
 - **Bilan PDF** (bouton « Bilan PDF » de la fiche) : page d'impression `joueurs/[id]/rapport` (photo à gauche avec le nom, logo à droite), `window.print()`. Export PDF du **tableau blanc** : `tableaux/[id]/pdf` (A4 paysage, une page par page du tableau, avec les notes).
 - **Coachs** : photo (bucket `coach-photos`), champ **Parcours** (`profiles.parcours`), création de compte via clé service.
 - **Vidéo** : feedbacks vidéo limités à 12 s avec compte à rebours ; seuls les coachs commentent ; dictée vocale plutôt que saisie ; module vidéo PIVOT porté par étapes ; stockage : fichiers ≤ 50 Mo ou liens YouTube.
@@ -86,3 +87,4 @@ Rôles : `admin`, `directeur_sportif`, `coach`, `preparateur_physique`, `joueur`
 - 2026-11-16 : import Excel : correspondance des colonnes étendue à toute la fiche joueur (bouton sur la page Joueurs ajouté puis retiré : il existe déjà dans Administration). Travail désormais directement sur GitHub (clone dans l'environnement cloud), rien en local chez Michael.
 - 2026-11-16 : rubrique Calendrier dans le menu, filtrée par rôle (joueur, parent, coach avec Mes créneaux / Tous les créneaux).
 - 2026-11-16 : séances périodiques (migration 23 `trainings.series_id`, à appliquer par Michael).
+- 2026-11-16 : fiche joueur : menu ⚙ (mesure, contacts parents, bilan PDF) ; séance : champ Fin.

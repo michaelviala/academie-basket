@@ -34,6 +34,7 @@ import {
 import { GoalStatusForm } from "@/components/goal-status-form";
 import { MeasurementsHistory } from "@/components/measurements-history";
 import { PlayerFacts } from "@/components/player-facts";
+import { PlayerMenu } from "@/components/player-menu";
 import { PlayerPhoto } from "@/components/player-photo";
 import { AddPlayerVideo, PlayerClipList, type TrainingOption } from "@/components/player-video";
 import { loadPlayerClips } from "@/lib/player-clips";
@@ -365,9 +366,22 @@ export default async function JoueurPage({
         className="card relative overflow-hidden"
         style={{ borderColor: tint(color, 40), background: `linear-gradient(135deg, ${tint(color, 14)}, var(--surf) 60%)` }}
       >
-        <Link href="/joueurs" className="text-xs" style={{ color: "var(--text-faint)" }}>
-          ← Tous les joueurs
-        </Link>
+        <div className="flex items-start justify-between gap-3">
+          <Link href="/joueurs" className="text-xs" style={{ color: "var(--text-faint)" }}>
+            ← Tous les joueurs
+          </Link>
+          <PlayerMenu
+            playerId={player.id}
+            staff={staffView}
+            canAddGuardians={profile.role !== "coach"}
+            guardians={guardians ?? []}
+            height={player.height_cm}
+            weight={player.weight_kg}
+            wingspan={player.wingspan_cm}
+            hand={player.dominant_hand}
+            previousClub={player.previous_club}
+          />
+        </div>
         <div className="mt-3 flex flex-wrap items-center gap-6">
           <PlayerPhoto
             playerId={player.id}
@@ -416,9 +430,6 @@ export default async function JoueurPage({
               >
                 Carnet technique{player.teams?.category ? ` ${player.teams.category}` : ""}
               </Link>
-              <Link href={`/joueurs/${player.id}/rapport`} className="btn-secondary">
-                Bilan PDF
-              </Link>
             </div>
           </div>
 
@@ -457,8 +468,6 @@ export default async function JoueurPage({
         </div>
 
         <PlayerFacts
-          playerId={player.id}
-          canEdit={staffView}
           entry={player.entry_date ? formatDateFr(player.entry_date) : "—"}
           height={player.height_cm}
           weight={player.weight_kg}
@@ -467,28 +476,6 @@ export default async function JoueurPage({
           previousClub={player.previous_club}
         />
       </section>
-
-      {staffView && (
-        <section className="card" aria-label="Parents et responsables">
-          <h2 className="mb-2 text-sm font-semibold">Parents / responsables</h2>
-          {(guardians ?? []).length === 0 ? (
-            <p className="text-sm text-faint">Aucun parent renseigné. {profile.role === "coach" ? "Demande à la direction de les ajouter." : <Link href="/administration" className="underline">Les ajouter dans l&apos;administration</Link>}</p>
-          ) : (
-            <ul className="grid gap-2 sm:grid-cols-2">
-              {(guardians ?? []).map((g) => (
-                <li key={g.id} className="rounded-lg px-3 py-2 text-sm" style={{ background: "var(--surf-2)" }}>
-                  <p className="font-medium">{g.full_name} <span className="text-xs text-faint">· {({ mere: "Mère", pere: "Père", tuteur: "Tuteur" } as Record<string, string>)[g.relationship] ?? "Responsable"}{g.is_primary ? " · contact principal" : ""}</span></p>
-                  <p className="mt-0.5 flex flex-wrap gap-x-4 text-xs">
-                    {g.phone && <a href={`tel:${g.phone.replace(/\s/g, "")}`} className="underline">📞 {g.phone}</a>}
-                    {g.email && <a href={`mailto:${g.email}`} className="underline">✉ {g.email}</a>}
-                    {!g.phone && !g.email && <span className="text-faint">Aucun contact</span>}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
 
       {/* ===== ONGLETS ===== */}
       <nav aria-label="Sections de la fiche" className="player-tabs -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0 [&>a]:shrink-0 [&>a]:whitespace-nowrap">
