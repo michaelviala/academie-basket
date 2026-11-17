@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { PasswordInput } from "@/components/password-input";
 
 export function LoginForm({ logoUrl }: { logoUrl: string | null }) {
   const router = useRouter();
@@ -25,7 +26,7 @@ export function LoginForm({ logoUrl }: { logoUrl: string | null }) {
     setLoading(false);
 
     if (error) {
-      setError("Identifiants incorrects. Vérifiez votre email et mot de passe.");
+      setError("Identifiants incorrects. Vérifiez votre email et votre mot de passe, ou utilisez « Mot de passe oublié ? ». Pas encore de compte ? Créez-le ci-dessous.");
       return;
     }
 
@@ -69,15 +70,19 @@ export function LoginForm({ logoUrl }: { logoUrl: string | null }) {
           />
         </div>
         <div>
-          <label className="label" htmlFor="password">Mot de passe</label>
-          <input
+          <div className="flex items-center justify-between">
+            <label className="label" htmlFor="password">Mot de passe</label>
+            <a href="/mot-de-passe-oublie" className="text-xs hover:underline" style={{ color: "var(--text-faint)" }}>
+              Mot de passe oublié ?
+            </a>
+          </div>
+          <PasswordInput
             id="password"
-            type="password"
             required
-            className="input"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
+            autoComplete="current-password"
           />
         </div>
 

@@ -32,9 +32,13 @@ export async function updateSession(request: NextRequest) {
   const isAuthRoute =
     request.nextUrl.pathname.startsWith("/login") ||
     request.nextUrl.pathname.startsWith("/signup");
+  // Pages accessibles sans session : mot de passe oublié, retour des liens e-mail
+  const isPublicRoute =
+    request.nextUrl.pathname.startsWith("/mot-de-passe-oublie") ||
+    request.nextUrl.pathname.startsWith("/auth/");
   const isPublicAsset = request.nextUrl.pathname.startsWith("/_next");
 
-  if (!user && !isAuthRoute && !isPublicAsset) {
+  if (!user && !isAuthRoute && !isPublicRoute && !isPublicAsset) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

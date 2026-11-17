@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { PasswordInput } from "@/components/password-input";
 
 export function SignupForm({ logoUrl }: { logoUrl: string | null }) {
   const router = useRouter();
@@ -82,7 +83,7 @@ export function SignupForm({ logoUrl }: { logoUrl: string | null }) {
         </div>
         <div>
           <label className="label">Mot de passe</label>
-          <input className="input" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+          <PasswordInput required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
         </div>
 
         {error && (

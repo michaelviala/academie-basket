@@ -28,7 +28,7 @@ Application web de **suivi du développement des joueurs** d'une académie de ba
 src/app/(app)/            pages protégées : dashboard, joueurs, seances, calendrier, carnet-technique, coachs,
                           administration, videos, bibliotheque, systemes, tableaux, rapports, recherche, notifications
 src/app/(app)/{loading,error,not-found}.tsx
-src/app/{login,signup,manifest.ts}
+src/app/{login,signup,mot-de-passe-oublie,nouveau-mot-de-passe,auth/callback,manifest.ts}
 src/components/           composants (client sauf mention) : nav, app-shell, player-*, whiteboard*, admin-*, guide-*, …
 src/lib/                  logique pure et accès données (player-stats, attendance, whiteboard, technical-guide(-data),
                           category-color, import-players, notifications, sessions…) ; lib/supabase = clients
@@ -62,6 +62,7 @@ Rôles : `admin`, `directeur_sportif`, `coach`, `preparateur_physique`, `joueur`
 - **Vidéo** : feedbacks vidéo limités à 12 s avec compte à rebours ; seuls les coachs commentent ; dictée vocale plutôt que saisie ; module vidéo PIVOT porté par étapes ; stockage : fichiers ≤ 50 Mo ou liens YouTube.
 - **Tableau blanc** : demi-terrain / terrain complet, thèmes parquet/sombre/blanc, plein écran avec barre d'outils à droite, flèches ← → pour changer de page, **pointeur laser** (touche L), logo du club au rond central (terrain complet). **Bouton « ❓ Légende »** (page et plein écran) : tableau de tous les éléments (aspect réel, signification, comment l'ajouter) — `components/whiteboard-legend.tsx` ; à mettre à jour si on ajoute un outil.
 - **Bibliothèque** : favoris **personnels** (`library_favorites`, RLS : chacun ne voit que les siens) ; étoile ☆/★ sur chaque carte et dans la fiche ; onglet « ★ Favoris » en premier, la page s'ouvre dessus (sinon sur « 📌 À connaître », sinon sur « Tout »). **Documents à connaître** (nutrition, arbitrage…) : `library_items.essential`, visibles par tout le staff, marqués/démarqués par la direction seule (trigger `library_essential_guard`) ; onglet « 📌 À connaître ». **Suppression d'un document : uniquement `admin` (tout) et `coach` (ses propres documents)** — RLS `library_delete` + `canDeleteLibraryItem` ; ni directeur sportif ni préparateur physique.
+- **Connexion** : champs mot de passe avec œil (`components/password-input.tsx`) ; « Mot de passe oublié ? » → `/mot-de-passe-oublie` (resetPasswordForEmail, redirectTo `/auth/callback?next=/nouveau-mot-de-passe`) → `/auth/callback` (exchangeCodeForSession) → `/nouveau-mot-de-passe` (updateUser). Les Redirect URLs Supabase doivent contenir `https://<domaine>/**`.
 - **Rôle « directeur sportif » masqué** : l'académie n'en a pas. Il n'est plus proposé (création de coach, Administration › Utilisateurs) ni cité dans les textes ; il reste en base et dans les contrôles de droits (inoffensif, réactivable).
 - Import Excel/CSV joueurs + parents : Administration › Joueurs (pas de bouton sur la page Joueurs, décision du 2026-11-16) ; correspondance des colonnes par groupe (identité, fiche : taille/poids/envergure/main/postes/date d'entrée/ancien club, parents) ; joueurs déjà présents : seuls les champs vides sont complétés ; lignes sans date de naissance valide ignorées (`birth_date` obligatoire).
 - **Séance : heure de fin** (champ « Fin » à côté de « Début ») : pré-remplie d'après le déroulé, modifiable ; si renseignée, `duration_minutes` = fin − début, sinon somme des blocs.
@@ -96,3 +97,4 @@ Rôles : `admin`, `directeur_sportif`, `coach`, `preparateur_physique`, `joueur`
 - 2026-11-16 : onglet « Carnet technique » sur la fiche joueur (évaluation acquis / en cours / à revoir des contenus du carnet), migration 24 (`deploy/sql/24_guide_assessments.sql`).
 - 2026-11-16 : Administration › Saisons & référentiel entièrement éditable (migration 25).
 - 2026-11-16 : mise en production — nouveau projet Supabase « academie3 » (25 migrations rejouées, configuration copiée : carnet, club, gymnases, saison 2026-2027, catégories, vidéo bibliothèque, système, tableaux) ; l'ancien projet « Academie » devient la démo avec 4 comptes de démo (`deploy/DEMO.md`).
+- 2026-11-17 : œil sur les mots de passe, parcours « mot de passe oublié ».
