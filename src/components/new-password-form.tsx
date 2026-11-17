@@ -23,7 +23,16 @@ export function NewPasswordForm() {
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
     if (error) {
-      setError(/weak|pwned|compromised/i.test(error.message) ? "Ce mot de passe est trop faible ou connu dans des fuites de données : choisis-en un autre." : "Impossible de changer le mot de passe : le lien a peut-être expiré. Recommence depuis « Mot de passe oublié ».");
+      const m = error.message;
+      setError(
+        /weak|pwned|compromised/i.test(m)
+          ? "Ce mot de passe est trop faible ou connu dans des fuites de données : choisis-en un autre."
+          : /same|different from the old/i.test(m)
+            ? "Ce mot de passe est identique à l'ancien : choisis-en un nouveau."
+            : /session missing|not authenticated|no session/i.test(m)
+              ? "Tu n'es pas connecté : le lien reçu par e-mail a expiré. Recommence depuis « Mot de passe oublié »."
+              : `Impossible de changer le mot de passe (${m}).`,
+      );
       return;
     }
     router.push("/dashboard");
